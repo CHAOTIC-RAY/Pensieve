@@ -1,0 +1,36 @@
+{
+  "version": 7,
+  "models": [
+    {
+      "model_id": "gemma3-1b-it-litert",
+      "name": "Gemma 3 1B IT (LiteRT Community Web)",
+      "runtime": "litert_lm",
+      "litert_web": true,
+      "litert_community_repo": "litert-community/Gemma3-1B-IT",
+      "litert_file": "Gemma3-1B-IT_multi-prefill-seq_q4_ekv4096.litertlm",
+      "power_tier": "balanced",
+      "context_window_size": 4096,
+      "published": true
+    },
+    {
+      "model_id": "gemma2-2b-it-webllm",
+      "name": "Gemma 2 2B IT (WebLLM WebGPU)",
+      "runtime": "webllm",
+      "litert_web": false,
+      "litert_community_repo": "mlc-ai",
+      "power_tier": "balanced",
+      "context_window_size": 2048,
+      "published": true
+    },
+    {
+      "model_id": "TinyLlama-1.1B-Chat-v1.0-q4f32_1-MLC",
+      "name": "TinyLlama 1.1B Chat (Low Power WebGPU)",
+      "runtime": "webllm",
+      "litert_web": false,
+      "litert_community_repo": "mlc-ai",
+      "power_tier": "low",
+      "context_window_size": 2048,
+      "published": true
+    }
+  ]
+}

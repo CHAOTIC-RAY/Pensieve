@@ -1,0 +1,579 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-body, var(--font-main));
+  --font-display: var(--font-display, var(--font-main));
+  --font-mono: var(--font-secondary);
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  
+  --color-primary: var(--primary, #8b5cf6);
+  --color-background: var(--bg-color);
+  --color-foreground: var(--text-color);
+  
+  --color-card-bg: var(--bg-card);
+  --color-card-title: var(--text-card-title);
+  --color-card-desc: var(--text-card-desc);
+  --color-card-footer: var(--bg-card-footer);
+  --color-card-border: var(--border-card);
+  
+  --color-modal-bg: var(--bg-modal);
+  --color-modal-sidebar: var(--bg-modal-sidebar);
+  --color-border-subtle: var(--border-subtle);
+  --color-input-bg: var(--bg-input);
+  --color-text-heading: var(--text-heading);
+  
+  /* Refined, high-end shadow curves */
+  --shadow-premium: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 8px -1px rgba(0, 0, 0, 0.02);
+  --shadow-premium-hover: 0 20px 40px -4px rgba(0, 0, 0, 0.06), 0 4px 16px -2px rgba(0, 0, 0, 0.03);
+  --shadow-omnibar: 0 30px 60px -15px rgba(0, 0, 0, 0.1), 0 10px 25px -5px rgba(0, 0, 0, 0.04);
+}
+
+:root {
+  --primary: #8b5cf6;
+  --font-body: "Inter", sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --radius-base: 16px;
+  --blur-strength: 24px;
+  
+  --bg-color: #FAF9F6;
+  --text-color: #1A1A1A;
+  --bg-card: #FFFFFF;
+  --text-card-title: #1A1A1A;
+  --text-card-desc: #555555;
+  --bg-card-footer: #FDFCFB;
+  --border-card: rgba(0, 0, 0, 0.04);
+  
+  --bg-modal: #F3F2EE;
+  --bg-modal-sidebar: rgba(0, 0, 0, 0.03);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --bg-input: #FFFFFF;
+  --text-heading: #1A1A1A;
+  
+  --font-main: "Space Grotesk", sans-serif;
+  --font-secondary: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root[data-theme="camera"] {
+  --bg-color: #111111;
+  --text-color: #e5e5e5;
+  --bg-card: #1c1c1e;
+  --text-card-title: #ffffff;
+  --text-card-desc: #a3a3a3;
+  --bg-card-footer: #262626;
+  --border-card: rgba(255, 255, 255, 0.08);
+  --font-main: "Space Grotesk", sans-serif;
+  
+  --bg-modal: #181818;
+  --bg-modal-sidebar: rgba(255, 255, 255, 0.03);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --bg-input: #242424;
+  --text-heading: #ffffff;
+}
+
+:root[data-theme="minimal"] {
+  --bg-color: #FAF9F6;
+  --text-color: #1A1A1A;
+  --bg-card: #FFFFFF;
+  --text-card-title: #1A1A1A;
+  --text-card-desc: #444444;
+  --bg-card-footer: #FDFCFB;
+  --border-card: #E5E5E5;
+  --font-main: "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  --bg-modal: #FFFFFF;
+  --bg-modal-sidebar: #F7F7F7;
+  --border-subtle: #E5E5E5;
+  --bg-input: #FFFFFF;
+  --text-heading: #1A1A1A;
+}
+
+:root[data-theme="editorial"] {
+  --bg-color: #fdfaf6;
+  --text-color: #2c2826;
+  --bg-card: #f6f0e5;
+  --text-card-title: #2c2826;
+  --text-card-desc: #5f5a54;
+  --bg-card-footer: #f0e6d2;
+  --border-card: #dcd0b9;
+  --font-main: "Playfair Display", serif;
+  
+  --bg-modal: #f9f5eb;
+  --bg-modal-sidebar: #f0e6d2;
+  --border-subtle: #dcd0b9;
+  --bg-input: #fdfaf6;
+  --text-heading: #2c2826;
+}
+
+:root[data-theme="classic"] {
+  --bg-color: #F3F2EE;
+  --text-color: #121212;
+  --bg-card: #ffffff;
+  --text-card-title: #121212;
+  --text-card-desc: #555555;
+  --bg-card-footer: #f9f9f9;
+  --border-card: rgba(0, 0, 0, 0.05);
+  --font-main: "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  --bg-modal: #ECEBE6;
+  --bg-modal-sidebar: rgba(0, 0, 0, 0.04);
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --bg-input: #ffffff;
+  --text-heading: #121212;
+}
+
+:root[data-theme="night"] {
+  --bg-color: #0c0d12;
+  --text-color: #eceef4;
+  --bg-card: #15161f;
+  --text-card-title: #f1f3f9;
+  --text-card-desc: #9aa2b5;
+  --bg-card-footer: #1e202f;
+  --border-card: rgba(255, 255, 255, 0.08);
+  --font-main: "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  --bg-modal: #11121a;
+  --bg-modal-sidebar: rgba(255, 255, 255, 0.03);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --bg-input: #1b1c26;
+  --text-heading: #f1f3f9;
+}
+
+/* ==========================================
+   PROPER FULL DARK MODE OVERRIDES
+   ========================================== */
+
+/* Universal Dark Mode Fallback */
+:root[data-theme="dark"] {
+  --bg-color: #121212;
+  --text-color: #F1F1F1;
+  --bg-card: #1C1C1C;
+  --text-card-title: #FFFFFF;
+  --text-card-desc: #A1A1AA;
+  --bg-card-footer: #18181B;
+  --border-card: rgba(255, 255, 255, 0.06);
+  
+  --bg-modal: #161616;
+  --bg-modal-sidebar: rgba(255, 255, 255, 0.02);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --bg-input: #18181B;
+  --text-heading: #FFFFFF;
+}
+
+/* Minimal Style Dark Mode */
+:root[data-theme="dark"][data-ui-style="minimal"] {
+  --bg-color: #080809 !important;
+  --bg-card: #111112 !important;
+  --text-color: #ffffff !important;
+  --text-card-title: #ffffff !important;
+  --text-card-desc: #a1a1aa !important;
+  --bg-card-footer: #171719 !important;
+  --border-card: #222225 !important;
+  --bg-modal: #0d0d0e !important;
+  --border-subtle: #222225 !important;
+  --bg-input: #171719 !important;
+  --text-heading: #ffffff !important;
+}
+
+/* Neumorphism Style Dark Mode */
+:root[data-theme="dark"][data-ui-style="neumorphism"] {
+  --bg-color: #1a1a1d !important;
+  --bg-card: #1a1a1d !important;
+  --text-color: #e4e4e7 !important;
+  --text-card-title: #ffffff !important;
+  --text-card-desc: #a1a1aa !important;
+  --bg-card-footer: #161618 !important;
+  --border-card: transparent !important;
+  --bg-modal: #141416 !important;
+  --border-subtle: rgba(255, 255, 255, 0.04) !important;
+  --bg-input: #161618 !important;
+  --text-heading: #ffffff !important;
+}
+
+/* Glass Style Dark Mode (Midnight Ocean) */
+:root[data-theme="dark"][data-ui-style="glass"] {
+  --bg-color: #0b0e17 !important;
+  --bg-card: rgba(20, 20, 25, 0.45) !important;
+  --text-color: #e2e8f0 !important;
+  --text-card-title: #ffffff !important;
+  --text-card-desc: #94a3b8 !important;
+  --bg-card-footer: rgba(15, 23, 42, 0.25) !important;
+  --border-card: rgba(255, 255, 255, 0.08) !important;
+  --bg-modal: #090b12 !important;
+  --border-subtle: rgba(255, 255, 255, 0.06) !important;
+  --bg-input: rgba(15, 23, 42, 0.4) !important;
+  --text-heading: #ffffff !important;
+}
+
+/* Liquid Glass Style Dark Mode (Cosmic Frost) */
+:root[data-theme="dark"][data-ui-style="liquid-glass"] {
+  --bg-color: #08090f !important;
+  --bg-card: rgba(255, 255, 255, 0.05) !important;
+  --text-color: #f1f5f9 !important;
+  --text-card-title: #ffffff !important;
+  --text-card-desc: #cbd5e1 !important;
+  --bg-card-footer: rgba(0, 0, 0, 0.2) !important;
+  --border-card: rgba(255, 255, 255, 0.12) !important;
+  --bg-modal: #06070a !important;
+  --border-subtle: rgba(255, 255, 255, 0.1) !important;
+  --bg-input: rgba(255, 255, 255, 0.02) !important;
+  --text-heading: #ffffff !important;
+}
+
+/* Brutalist Style Dark Mode (High Contrast Cyberpunk) */
+:root[data-theme="dark"][data-ui-style="brutalist"] {
+  --bg-color: #121212 !important;
+  --bg-card: #121212 !important;
+  --text-color: #FDFCFB !important;
+  --text-card-title: #FDFCFB !important;
+  --text-card-desc: #CCCCCC !important;
+  --bg-card-footer: #121212 !important;
+  --border-card: #FDFCFB !important;
+  --bg-modal: #121212 !important;
+  --border-subtle: #FDFCFB !important;
+  --bg-input: #121212 !important;
+  --text-heading: #FDFCFB !important;
+}
+
+/* Editorial Style Dark Mode (Warm Dark Sepia) */
+:root[data-theme="dark"][data-ui-style="editorial"] {
+  --bg-color: #110e0c !important;
+  --bg-card: #1a1613 !important;
+  --text-color: #e5dfd6 !important;
+  --text-card-title: #ffffff !important;
+  --text-card-desc: #bfb7aa !important;
+  --bg-card-footer: #151210 !important;
+  --border-card: #2c2521 !important;
+  --bg-modal: #14110f !important;
+  --border-subtle: #2c2521 !important;
+  --bg-input: #1a1613 !important;
+  --text-heading: #ffffff !important;
+}
+
+/* Nothing Style Dark Mode (Retro Mono Terminal) */
+:root[data-theme="dark"][data-ui-style="nothing"] {
+  --bg-color: #0D0D0D !important;
+  --bg-card: #0D0D0D !important;
+  --text-color: #FDFCFB !important;
+  --text-card-title: #FDFCFB !important;
+  --text-card-desc: #888888 !important;
+  --bg-card-footer: #0D0D0D !important;
+  --border-card: #FDFCFB !important;
+  --bg-modal: #0D0D0D !important;
+  --border-subtle: #444444 !important;
+  --bg-input: #0D0D0D !important;
+  --text-heading: #FDFCFB !important;
+}
+
+/* Base custom styles to capture mymind's pristine visual feel with Bento Grid styling */
+html, body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  letter-spacing: -0.011em;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Hide scrollbars for ultra-clean layouts while maintaining scrollability */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Elegant masonry columns */
+.masonry-grid {
+  display: flex;
+  width: auto;
+}
+
+/* Smooth custom pulse animation for the processing/thinking card shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-bg {
+  background: linear-gradient(90deg, #f3f3f6 25%, #eaeaea 50%, #f3f3f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* --- HIDE SCROLLBARS GLOBALLY --- */
+
+/* Firefox support */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+/* Chrome, Edge, Safari WebKit scrollbars styling globally */
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-base, 16px);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb,
+[data-theme="camera"] ::-webkit-scrollbar-thumb,
+[data-theme="night"] ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary, #8b5cf6);
+}
+
+/* Hide scrollbars completely on mobile (max-width: 768px) when not necessary */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
+  }
+  * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+}
+
+/* Style-specific customized scrollbars for high craftsmanship */
+[data-ui-style="brutalist"] ::-webkit-scrollbar-thumb {
+  border-radius: 0px !important;
+  border: 1.5px solid var(--text-color, #121212) !important;
+  background-color: var(--primary, #8b5cf6) !important;
+}
+[data-ui-style="brutalist"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-ui-style="nothing"] ::-webkit-scrollbar-thumb {
+  border-radius: 2px !important;
+  border: 1px dashed var(--text-color, #121212) !important;
+  background-color: var(--text-color, #121212) !important;
+  opacity: 0.6;
+}
+
+[data-ui-style="glass"] ::-webkit-scrollbar-thumb,
+[data-ui-style="liquid-glass"] ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+[data-theme="dark"][data-ui-style="glass"] ::-webkit-scrollbar-thumb,
+[data-theme="dark"][data-ui-style="liquid-glass"] ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Faded edges for horizontal scroll containers */
+.mask-fade-edges {
+  mask-image: linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent);
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 20px) !important;
+  }
+}
+
+/* Distraction-free article reader theme styling */
+.markdown-body {
+  font-family: var(--font-sans);
+  line-height: 1.8;
+  font-size: 1.05rem;
+  color: #2c2c2e;
+}
+.markdown-body h1 {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #1c1c1e;
+  letter-spacing: -0.02em;
+}
+.markdown-body h2 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #1c1c1e;
+  letter-spacing: -0.015em;
+}
+.markdown-body p {
+  margin-bottom: 1.25rem;
+}
+.markdown-body ul, .markdown-body ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1.25rem;
+  list-style-type: disc;
+}
+.markdown-body blockquote {
+  border-left: 3px solid #1c1c1e;
+  padding-left: 1.25rem;
+  font-style: italic;
+  color: #48484a;
+  margin: 1.5rem 0;
+}
+
+/* --- THEME STUDIO LAYOUT STYLE MAPPINGS --- */
+
+/* Base Radius Bindings for UI elements */
+.break-inside-avoid, 
+#mymind-omnibar-container, 
+#mymind-sidebar, 
+.card-style,
+aside,
+button,
+input,
+select {
+  border-radius: var(--radius-base, 16px);
+}
+
+/* Ensure buttons are never overly distorted but adapt */
+button.rounded-full {
+  border-radius: 9999px !important;
+}
+
+/* 1. MODERN (Subtle elegance, premium shadows) */
+[data-ui-style="modern"] .break-inside-avoid {
+  border-radius: var(--radius-base, 24px);
+  box-shadow: var(--shadow-premium);
+  border: 1px solid var(--border-card);
+}
+
+/* 2. MINIMAL (Flat, sharp, strict borders) */
+[data-ui-style="minimal"] .break-inside-avoid {
+  border-radius: var(--radius-base, 12px);
+  box-shadow: none !important;
+  border: 1px solid var(--border-card);
+}
+
+/* 3. GLASS (Translucent frosting, ambient depth) */
+[data-ui-style="glass"] .break-inside-avoid {
+  border-radius: var(--radius-base, 32px);
+  background: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(var(--blur-strength, 24px)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.03) !important;
+}
+[data-theme="dark"][data-ui-style="glass"] .break-inside-avoid {
+  background: rgba(18, 18, 22, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 4. LIQUID GLASS (Vibrant reflection highlight, gloss) */
+[data-ui-style="liquid-glass"] .break-inside-avoid {
+  border-radius: var(--radius-base, 40px);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.15)) !important;
+  backdrop-filter: blur(var(--blur-strength, 40px)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.5), 0 20px 40px rgba(0, 0, 0, 0.05) !important;
+}
+[data-theme="dark"][data-ui-style="liquid-glass"] .break-inside-avoid {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 20px 40px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 5. NEUMORPHISM (Soft embossed light/shadow extrusion) */
+[data-ui-style="neumorphism"] .break-inside-avoid {
+  border-radius: var(--radius-base, 32px);
+  background: var(--bg-color) !important;
+  border: none !important;
+  box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.03), -8px -8px 16px rgba(255, 255, 255, 0.7) !important;
+}
+[data-theme="dark"][data-ui-style="neumorphism"] .break-inside-avoid {
+  box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.25), -6px -6px 12px rgba(255, 255, 255, 0.03) !important;
+}
+
+/* 6. BRUTALIST (High-contrast thick borders, flat hard shadow) */
+[data-ui-style="brutalist"] .break-inside-avoid {
+  border-radius: 0px !important;
+  border: 3px solid var(--text-color) !important;
+  box-shadow: 6px 6px 0px var(--text-color) !important;
+  transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+[data-ui-style="brutalist"] .break-inside-avoid:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 8px 8px 0px var(--text-color) !important;
+}
+
+/* 7. EDITORIAL (Classic magazine serif typography and light border) */
+[data-ui-style="editorial"] .break-inside-avoid {
+  border-radius: var(--radius-base, 8px);
+  border: 1px solid var(--border-card) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+}
+
+/* 8. NOTHING (LCD dot grid & dashed outlines) */
+[data-ui-style="nothing"] .break-inside-avoid {
+  border-radius: var(--radius-base, 24px);
+  border: 1.5px dashed var(--text-color) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Hide Images accessibility mode */
+[data-hide-images="true"] img,
+[data-hide-images="true"] .image-placeholder,
+[data-hide-images="true"] .card-img-header {
+  display: none !important;
+}
+
+/* Fullscreen immersive mode tweaks */
+html:fullscreen {
+  background-color: var(--bg-color);
+}
+
+/* Reduce Motion overrides */
+.motion-reduce *,
+.motion-reduce :before,
+.motion-reduce :after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Wallpapers */
+.has-bg-image body {
+  background-image: var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+.has-bg-image body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(243, 242, 238, 0.85); /* fallback light */
+  z-index: -5;
+}
+[data-theme="dark"].has-bg-image body::before {
+  background: rgba(18, 18, 18, 0.88); /* fallback dark overlay for high readability */
+}
+

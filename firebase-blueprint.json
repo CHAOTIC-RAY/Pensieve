@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "MindItem": {
+      "title": "MindItem",
+      "description": "A piece of knowledge",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "tags": { "type": "array" },
+        "createdAt": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "mind-items/{itemId}": {
+      "schema": { "$ref": "#/entities/MindItem" },
+      "description": "Global collection for mind items"
+    }
+  }
+}
