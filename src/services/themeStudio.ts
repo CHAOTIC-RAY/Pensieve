@@ -135,6 +135,10 @@ export const THEME_PRESETS = [
   { name: 'Frost',     color: '#ffffff', fontCombo: 'trendy',    uiStyle: 'liquid-glass', borderRadius: 40, blurStrength: 40, themeMode: 'light' as const },
   { name: 'Bento',     color: '#1a1a1a', fontCombo: 'premium',   uiStyle: 'editorial',    borderRadius: 8,  blurStrength: 4,  themeMode: 'light' as const },
   { name: 'Ink',       color: '#ea3323', fontCombo: 'nothing-v1',uiStyle: 'nothing',      borderRadius: 24, blurStrength: 0,  themeMode: 'dark' as const },
+  { name: 'Axiom',     color: '#ff7b00', fontCombo: 'modern',    uiStyle: 'modern',       borderRadius: 24, blurStrength: 20, themeMode: 'dark' as const },
+  { name: 'OpenClaw',  color: '#00d2ff', fontCombo: 'minimal',   uiStyle: 'glass',        borderRadius: 36, blurStrength: 60, themeMode: 'dark' as const },
+  { name: 'Hypesquad', color: '#ff007f', fontCombo: 'trendy',    uiStyle: 'brutalist',    borderRadius: 16, blurStrength: 10, themeMode: 'dark' as const },
+  { name: 'SmartMeeting', color: '#4f46e5', fontCombo: 'balanced', uiStyle: 'editorial',  borderRadius: 12, blurStrength: 16, themeMode: 'light' as const },
 ];
 
 export const PRESET_COLORS = [

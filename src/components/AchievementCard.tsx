@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
+import { Lock } from 'lucide-react';
 import { Achievement } from '../types';
 
 interface AchievementCardProps {
@@ -17,17 +18,17 @@ export default function AchievementCard({ achievement, unlocked = false }: Achie
   const mouseY = useSpring(y, { stiffness: 150, damping: 20 });
 
   // Map mouse movement to rotation (tilt)
-  const rotateX = useTransform(mouseY, [-0.5, 0.5], [15, -15]);
-  const rotateY = useTransform(mouseX, [-0.5, 0.5], [-15, 15]);
+  const rotateX = useTransform(mouseY, [-0.5, 0.5], [20, -20]);
+  const rotateY = useTransform(mouseX, [-0.5, 0.5], [-20, 20]);
 
   // Map mouse movement to a glare effect
   const glareX = useTransform(mouseX, [-0.5, 0.5], [100, 0]);
   const glareY = useTransform(mouseY, [-0.5, 0.5], [100, 0]);
-  const glareOpacity = useTransform(
-    mouseX, 
-    [-0.5, 0, 0.5], 
-    [0.1, 0.5, 0.1]
-  );
+  const glareOpacity = useTransform(mouseX, [-0.5, 0, 0.5], [0.15, 0.6, 0.15]);
+
+  // Soft ambient glow background movement
+  const glowX = useTransform(mouseX, [-0.5, 0.5], [-20, 20]);
+  const glowY = useTransform(mouseY, [-0.5, 0.5], [-20, 20]);
 
   function handleMouseMove(event: React.MouseEvent<HTMLDivElement>) {
     if (!cardRef.current) return;
@@ -46,17 +47,50 @@ export default function AchievementCard({ achievement, unlocked = false }: Achie
     y.set(0);
   }
 
-  const RarityColor = {
-    Common: 'from-blue-400 to-indigo-500',
-    Rare: 'from-purple-400 to-fuchsia-500',
-    Epic: 'from-rose-400 to-orange-400',
-    Legendary: 'from-amber-300 to-yellow-500'
+  const RarityConfig = {
+    Common: {
+      gradient: 'from-blue-500/20 via-indigo-500/25 to-sky-500/20',
+      badge: 'bg-indigo-500/30 text-indigo-200 border-indigo-500/40',
+      glow: 'bg-indigo-500/30',
+      holo: 'rgba(99, 102, 241, 0.2)'
+    },
+    Rare: {
+      gradient: 'from-purple-500/20 via-fuchsia-500/25 to-pink-500/20',
+      badge: 'bg-fuchsia-500/30 text-fuchsia-200 border-fuchsia-500/40',
+      glow: 'bg-fuchsia-500/30',
+      holo: 'rgba(217, 70, 239, 0.2)'
+    },
+    Epic: {
+      gradient: 'from-rose-500/20 via-orange-500/25 to-amber-500/20',
+      badge: 'bg-rose-500/30 text-rose-200 border-rose-500/40',
+      glow: 'bg-rose-500/30',
+      holo: 'rgba(244, 63, 94, 0.2)'
+    },
+    Legendary: {
+      gradient: 'from-amber-400/20 via-yellow-500/25 to-orange-400/20',
+      badge: 'bg-amber-500/30 text-amber-200 border-amber-500/40',
+      glow: 'bg-amber-500/35',
+      holo: 'rgba(245, 158, 11, 0.2)'
+    }
   };
 
+  const config = RarityConfig[achievement.rarity] || RarityConfig.Common;
   const Icon = achievement.icon;
 
   return (
-    <div className="perspective-1000">
+    <div className="perspective-1000 relative group">
+      {/* 3D Soft Glow Background (iOS / Premium design) */}
+      {unlocked && (
+        <motion.div 
+          style={{
+            x: glowX,
+            y: glowY,
+            filter: 'blur(30px)',
+          }}
+          className={`absolute inset-2 -z-10 rounded-[32px] transition-all duration-300 opacity-60 group-hover:opacity-90 ${config.glow}`}
+        />
+      )}
+
       <motion.div
         ref={cardRef}
         onMouseMove={handleMouseMove}
@@ -66,25 +100,36 @@ export default function AchievementCard({ achievement, unlocked = false }: Achie
           rotateY,
           transformStyle: "preserve-3d",
         }}
-        className={`relative w-64 h-80 rounded-[24px] cursor-pointer overflow-hidden shadow-2xl transition-all duration-300 ${
-          unlocked ? 'opacity-100' : 'opacity-40 grayscale blur-[1px] hover:blur-none hover:grayscale-0'
-        }`}
+        className={`relative w-64 h-80 rounded-[28px] cursor-pointer overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all duration-300 ${
+          unlocked ? 'opacity-100 border border-white/20' : 'opacity-40 grayscale border border-white/5'
+        } bg-white/[0.04] backdrop-blur-[40px] saturate-[180%]`}
       >
-        {/* Card Background / Border */}
-        <div className="absolute inset-0 bg-white/10 backdrop-blur-3xl border border-white/20 rounded-[24px] pointer-events-none z-10" />
-        
-        {/* Animated Glare Layer */}
+        {/* Holographic Sheen/Foil layer */}
         {unlocked && (
           <motion.div 
-            className="absolute inset-0 z-20 pointer-events-none mix-blend-overlay"
+            className="absolute inset-0 z-20 pointer-events-none mix-blend-color-dodge opacity-30"
             style={{
-              background: 'radial-gradient(circle at center, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 60%)',
+              background: `linear-gradient(115deg, transparent 20%, ${config.holo} 40%, transparent 60%)`,
+              left: useTransform(glareX, val => `${val - 50}%`),
+              top: useTransform(glareY, val => `${val - 50}%`),
+              width: '200%',
+              height: '200%'
+            }}
+          />
+        )}
+
+        {/* Animated Glare Spot */}
+        {unlocked && (
+          <motion.div 
+            className="absolute inset-0 z-25 pointer-events-none mix-blend-overlay"
+            style={{
+              background: 'radial-gradient(circle at center, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 65%)',
               opacity: glareOpacity,
               left: useTransform(glareX, val => `${val}%`),
               top: useTransform(glareY, val => `${val}%`),
               transform: 'translate(-50%, -50%)',
-              width: '200%',
-              height: '200%'
+              width: '180%',
+              height: '180%'
             }}
           />
         )}
@@ -92,46 +137,49 @@ export default function AchievementCard({ achievement, unlocked = false }: Achie
         {/* Content Wrapper */}
         <div className="absolute inset-0 z-10 p-5 flex flex-col items-center text-center">
           {/* Header Rarity Badge */}
-          <div className="w-full flex items-center justify-between opacity-60">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-tr ${RarityColor[achievement.rarity]}`}>
-               {Icon && <Icon className="w-4 h-4 text-white" />}
-            </div>
-            <span className="text-[10px] font-bold tracking-widest uppercase text-white drop-shadow-md">
+          <div className="w-full flex items-center justify-between">
+            <span className={`text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full border ${config.badge}`}>
               {achievement.rarity}
             </span>
+            <div className="text-white/40">
+              {!unlocked && <Lock className="w-4 h-4" />}
+            </div>
           </div>
 
-          {/* Image Art */}
-          <div className="mt-2 w-full h-32 rounded-2xl overflow-hidden relative border border-white/10">
-            {achievement.image ? (
-              <img src={achievement.image} alt={achievement.title} className="w-full h-full object-cover" />
-            ) : (
-              <div className={`w-full h-full bg-gradient-to-br ${RarityColor[achievement.rarity]} opacity-20`} />
-            )}
-            <div className="absolute inset-0 bg-black/20" />
+          {/* Rarity art pattern backdrop */}
+          <div className="mt-4 w-full h-32 rounded-2xl overflow-hidden relative border border-white/10 flex items-center justify-center bg-black/10">
+            <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient}`} />
+            
+            {/* The Badge Icon floating in 3D space */}
+            <motion.div 
+              style={{ transform: "translateZ(40px)" }}
+              className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg bg-white/10 backdrop-blur-md border border-white/20`}
+            >
+               {Icon ? <Icon className="w-8 h-8 text-white" /> : <Lock className="w-8 h-8 text-white/30" />}
+            </motion.div>
           </div>
 
           {/* Title & Description */}
-          <div className="mt-4 flex-1 w-full space-y-1 relative" style={{ transform: "translateZ(30px)" }}>
-            <h3 className="text-xl font-bold font-display text-white tracking-tight drop-shadow-lg">
+          <div className="mt-5 flex-1 w-full space-y-1 relative" style={{ transform: "translateZ(30px)" }}>
+            <h3 className="text-lg font-bold font-display text-white tracking-tight drop-shadow-md">
               {achievement.title}
             </h3>
-            <p className="text-xs text-white/70 leading-relaxed max-w-[90%] mx-auto font-sans">
+            <p className="text-[11px] text-white/60 leading-relaxed max-w-[90%] mx-auto font-sans">
               {achievement.description}
             </p>
           </div>
 
           {/* Footer Points/XP */}
-          <div className="w-full mt-auto flex items-center justify-between text-[10px] text-white/50 font-bold uppercase tracking-widest pt-3 border-t border-white/10" style={{ transform: "translateZ(20px)" }}>
+          <div className="w-full mt-auto flex items-center justify-between text-[9px] text-white/40 font-bold uppercase tracking-widest pt-3 border-t border-white/10" style={{ transform: "translateZ(20px)" }}>
             <span>{achievement.unlockedAt ? new Date(achievement.unlockedAt).toLocaleDateString() : 'Locked'}</span>
-            <span className="flex items-center gap-1 text-white/80">
+            <span className="flex items-center gap-1 text-white/80 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
               +{achievement.xp || 10} XP
             </span>
           </div>
         </div>
 
         {/* Depth Shadow / 3D Illusion base */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
       </motion.div>
     </div>
   );
