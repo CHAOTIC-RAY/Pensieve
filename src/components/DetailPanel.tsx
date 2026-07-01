@@ -418,7 +418,6 @@ export default function DetailPanel({
                   </div>
                 )}
               </div>
-            )}
           </div>
 
           {/* Color Harmonic Harmonies section */}
