@@ -31,6 +31,35 @@ export const useSearch = (items: MindItem[], query: string) => {
       return items.map(item => ({ item, score: 0 }));
     }
 
+    const queryLower = query.trim().toLowerCase();
+
+    // Special keyword detection for status and type filters
+    const isReadKeyword = queryLower === 'read' || queryLower === 'read items';
+    const isWatchedKeyword = queryLower === 'watched' || queryLower === 'watched items';
+    const isFilmKeyword = queryLower === 'films' || queryLower === 'movies' || queryLower === 'film';
+    const isAlbumKeyword = queryLower === 'albums' || queryLower === 'album';
+
+    // Apply special keyword filters
+    if (isReadKeyword) {
+      const readItems = items.filter(item => item.isRead);
+      return readItems.map(item => ({ item, score: 0 }));
+    }
+
+    if (isWatchedKeyword) {
+      const watchedItems = items.filter(item => item.isWatched);
+      return watchedItems.map(item => ({ item, score: 0 }));
+    }
+
+    if (isFilmKeyword) {
+      const filmItems = items.filter(item => item.type === 'film');
+      return filmItems.map(item => ({ item, score: 0 }));
+    }
+
+    if (isAlbumKeyword) {
+      const albumItems = items.filter(item => item.type === 'album');
+      return albumItems.map(item => ({ item, score: 0 }));
+    }
+
     // Advanced: Link detection
     const isUrl = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/.test(query.trim());
     

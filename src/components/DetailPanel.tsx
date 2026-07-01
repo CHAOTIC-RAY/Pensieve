@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Calendar, Star, Sparkles, Plus, Trash2, 
   ExternalLink, BookOpen, Copy, Check, Palette, Eye, Quote as QuoteIcon, Utensils,
-  Film, Disc, ShoppingBag, CheckCircle2
+  Film, Disc, ShoppingBag, CheckCircle2, Type, AlignLeft, AlignCenter, AlignRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
@@ -466,6 +466,266 @@ export default function DetailPanel({
               <p className="text-xs text-indigo-950 font-sans leading-relaxed font-medium">
                 {item.aiSummary}
               </p>
+            </div>
+          )}
+
+          {/* Note Style Editor */}
+          {item.type === 'note' && (
+            <div className="space-y-3 pt-4 border-t border-neutral-100">
+              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider flex items-center gap-1">
+                <Type className="w-3.5 h-3.5 text-neutral-400" />
+                Note Style
+              </span>
+              <div className="space-y-3">
+                {/* Font Family */}
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-mono text-neutral-500 uppercase">Font Family</label>
+                  <div className="flex gap-1.5">
+                    {(['serif', 'sans', 'mono', 'display'] as const).map((font) => (
+                      <button
+                        key={font}
+                        onClick={async () => {
+                          await onUpdateItem({
+                            ...item,
+                            noteStyle: { ...noteStyle, fontFamily: font }
+                          });
+                          setNoteStyle({ ...noteStyle, fontFamily: font });
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                          noteStyle.fontFamily === font
+                            ? 'bg-neutral-800 text-white border-neutral-800'
+                            : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
+                        }`}
+                        style={{ fontFamily: font === 'serif' ? 'Georgia, serif' : font === 'sans' ? 'Inter, sans-serif' : font === 'mono' ? 'JetBrains Mono, monospace' : 'Playfair Display, Georgia, serif' }}
+                      >
+                        {font.charAt(0).toUpperCase() + font.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Font Size */}
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-mono text-neutral-500 uppercase">Font Size</label>
+                  <div className="flex gap-1.5">
+                    {(['sm', 'base', 'lg', 'xl'] as const).map((size) => (
+                      <button
+                        key={size}
+                        onClick={async () => {
+                          await onUpdateItem({
+                            ...item,
+                            noteStyle: { ...noteStyle, fontSize: size }
+                          });
+                          setNoteStyle({ ...noteStyle, fontSize: size });
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                          noteStyle.fontSize === size
+                            ? 'bg-neutral-800 text-white border-neutral-800'
+                            : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
+                        }`}
+                      >
+                        {size.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Colors */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-mono text-neutral-500 uppercase">Text Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={noteStyle.color || '#121212'}
+                        onChange={async (e) => {
+                          await onUpdateItem({
+                            ...item,
+                            noteStyle: { ...noteStyle, color: e.target.value }
+                          });
+                          setNoteStyle({ ...noteStyle, color: e.target.value });
+                        }}
+                        className="w-8 h-8 rounded-lg cursor-pointer border-0"
+                      />
+                      <span className="text-xs font-mono text-neutral-400">{noteStyle.color || '#121212'}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-mono text-neutral-500 uppercase">Background</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={noteStyle.bgColor || '#FEEBC8'}
+                        onChange={async (e) => {
+                          await onUpdateItem({
+                            ...item,
+                            noteStyle: { ...noteStyle, bgColor: e.target.value }
+                          });
+                          setNoteStyle({ ...noteStyle, bgColor: e.target.value });
+                        }}
+                        className="w-8 h-8 rounded-lg cursor-pointer border-0"
+                      />
+                      <span className="text-xs font-mono text-neutral-400">{noteStyle.bgColor || '#FEEBC8'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bold/Italic toggles */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      await onUpdateItem({
+                        ...item,
+                        noteStyle: { ...noteStyle, bold: !noteStyle.bold }
+                      });
+                      setNoteStyle({ ...noteStyle, bold: !noteStyle.bold });
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                      noteStyle.bold
+                        ? 'bg-neutral-800 text-white border-neutral-800'
+                        : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
+                    }`}
+                  >
+                    B
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await onUpdateItem({
+                        ...item,
+                        noteStyle: { ...noteStyle, italic: !noteStyle.italic }
+                      });
+                      setNoteStyle({ ...noteStyle, italic: !noteStyle.italic });
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs italic border transition ${
+                      noteStyle.italic
+                        ? 'bg-neutral-800 text-white border-neutral-800'
+                        : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
+                    }`}
+                  >
+                    I
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Read/Watched Toggle */}
+          {(item.type === 'article' || item.type === 'document' || item.type === 'film' || item.type === 'video') && (
+            <div className="space-y-3 pt-4 border-t border-neutral-100">
+              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-neutral-400" />
+                Status Tracking
+              </span>
+              {(item.type === 'article' || item.type === 'document') && (
+                <button
+                  onClick={async () => {
+                    await onUpdateItem({
+                      ...item,
+                      isRead: !item.isRead,
+                      readAt: !item.isRead ? new Date().toISOString() : undefined
+                    });
+                  }}
+                  className={`w-full py-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${
+                    item.isRead
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {item.isRead ? 'Mark as Unread' : 'Mark as Read'}
+                </button>
+              )}
+              {(item.type === 'film' || item.type === 'video') && (
+                <button
+                  onClick={async () => {
+                    await onUpdateItem({
+                      ...item,
+                      isWatched: !item.isWatched,
+                      watchedAt: !item.isWatched ? new Date().toISOString() : undefined
+                    });
+                  }}
+                  className={`w-full py-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${
+                    item.isWatched
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {item.isWatched ? 'Mark as Unwatched' : 'Mark as Watched'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Film Detail Expanded View */}
+          {item.type === 'film' && (
+            <div className="space-y-4 pt-4 border-t border-neutral-100">
+              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider flex items-center gap-1">
+                <Film className="w-3.5 h-3.5 text-neutral-400" />
+                Film Details
+              </span>
+              
+              {item.moviePoster && (
+                <div className="w-full rounded-2xl overflow-hidden border border-neutral-100 bg-neutral-50">
+                  <img 
+                    src={item.moviePoster} 
+                    alt={item.title} 
+                    className="w-full object-cover max-h-[200px]" 
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 text-xs bg-neutral-50 p-3 rounded-xl border border-neutral-100">
+                {item.releaseYear && (
+                  <div>
+                    <span className="text-[9px] font-mono text-neutral-400 uppercase block">Year</span>
+                    <span className="font-semibold text-neutral-700">{item.releaseYear}</span>
+                  </div>
+                )}
+                {item.runtime && (
+                  <div>
+                    <span className="text-[9px] font-mono text-neutral-400 uppercase block">Runtime</span>
+                    <span className="font-semibold text-neutral-700">{item.runtime}</span>
+                  </div>
+                )}
+                {item.rating && (
+                  <div>
+                    <span className="text-[9px] font-mono text-neutral-400 uppercase block">Rating</span>
+                    <span className="font-semibold text-neutral-700 flex items-center gap-1">
+                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> {item.rating}
+                    </span>
+                  </div>
+                )}
+                {item.director && (
+                  <div className="col-span-2">
+                    <span className="text-[9px] font-mono text-neutral-400 uppercase block">Director</span>
+                    <span className="font-semibold text-neutral-700">{item.director}</span>
+                  </div>
+                )}
+              </div>
+
+              {item.genre && item.genre.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-[9px] font-mono text-neutral-400 uppercase">Genres</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {item.genre.map((g, i) => (
+                      <span key={i} className="text-xs font-medium bg-neutral-100 text-neutral-600 px-2 py-1 rounded-md">
+                        {g}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {item.cast && item.cast.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-[9px] font-mono text-neutral-400 uppercase">Cast</span>
+                  <div className="text-xs text-neutral-600 leading-relaxed">
+                    {item.cast.join(', ')}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

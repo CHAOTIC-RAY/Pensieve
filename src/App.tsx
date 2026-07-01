@@ -12,7 +12,8 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { 
   Sparkles, Heart, Palette, Brain, Filter, Check, Star, RefreshCw, Pin,
   Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera,
-  BookOpen, ExternalLink, LayoutGrid, List, Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy
+  BookOpen, ExternalLink, LayoutGrid, List, Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy,
+  Film, Disc, ShoppingBag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from './lib/firebase';
@@ -791,6 +792,9 @@ export default function App() {
                 { id: 'tweet', label: 'Tweets', icon: Twitter, count: items.filter(i => i.type === 'tweet').length },
                 { id: 'article', label: 'Articles', icon: FileText, count: items.filter(i => i.type === 'article').length },
                 { id: 'recipe', label: 'Recipes', icon: Utensils, count: items.filter(i => i.type === 'recipe').length },
+                { id: 'film', label: 'Films', icon: Film, count: items.filter(i => i.type === 'film').length },
+                { id: 'album', label: 'Albums', icon: Disc, count: items.filter(i => i.type === 'album').length },
+                { id: 'product', label: 'Products', icon: ShoppingBag, count: items.filter(i => i.type === 'product').length },
               ].map((cat) => {
                 const Icon = cat.icon;
                 const isActive = activeCategory === cat.id;
