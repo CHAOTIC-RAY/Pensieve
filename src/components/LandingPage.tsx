@@ -43,7 +43,7 @@ import { animateScrollTo, waitMs, easeInOutQuint } from '../lib/guidedScroll';
  */
 const LandingSidebar = ({ activeSection, onLogoClick }: { activeSection: string; onLogoClick?: () => void }) => {
   return (
-    <div className="hidden lg:flex flex-col items-center justify-between fixed left-0 top-0 bottom-0 w-24 py-10 z-50 bg-background/5 backdrop-blur-xl border-r border-border-subtle/50">
+    <div className="hidden lg:flex flex-col items-center justify-between fixed left-0 top-0 bottom-0 w-24 py-10 z-50 liquid-glass-panel border-r-0 border-r-white/20">
       <div className="flex flex-col items-center gap-12">
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
@@ -103,7 +103,7 @@ const FeaturePreview = ({ id, index }: { id: string, index: number }) => {
 
   return (
     <motion.div
-      className="relative w-full aspect-[16/10] rounded-[32px] overflow-hidden bg-[#111] border border-white/10 group shadow-2xl perspective-[1000px]"
+      className="relative w-full aspect-[16/10] rounded-[32px] overflow-hidden liquid-glass-panel group shadow-2xl perspective-[1000px]"
       whileHover={{ 
         scale: 1.05, 
         rotateY: isEven ? -5 : 5,
@@ -134,7 +134,7 @@ const FeaturePreview = ({ id, index }: { id: string, index: number }) => {
       
       {/* Overlay Info */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-        <div className="px-6 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold tracking-widest uppercase text-xs">
+        <div className="px-6 py-3 rounded-full bg-white/40 backdrop-blur-md border border-white/50 text-foreground font-bold tracking-widest uppercase text-xs">
           Live Preview
         </div>
       </div>
@@ -143,14 +143,14 @@ const FeaturePreview = ({ id, index }: { id: string, index: number }) => {
 };
 
 const VaultMockup = () => (
-  <div className="w-full h-full bg-[#0a0a0a] rounded-2xl border border-white/5 shadow-2xl overflow-hidden flex flex-col">
-    <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+  <div className="w-full h-full liquid-glass-panel shadow-2xl overflow-hidden flex flex-col">
+    <div className="px-4 py-3 border-b border-white/30 flex items-center justify-between">
       <div className="flex gap-1.5">
         <div className="w-2.5 h-2.5 rounded-full bg-red-500/20" />
         <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20" />
         <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20" />
       </div>
-      <div className="px-3 py-1 bg-white/5 rounded-md text-[10px] font-mono text-white/40">vault.local</div>
+      <div className="px-3 py-1 bg-white/50 rounded-md text-[10px] font-mono text-foreground/60">vault.local</div>
     </div>
     <div className="p-6 flex-1 grid grid-cols-3 gap-4">
       {[1, 2, 3, 4, 5, 6].map(i => (
@@ -159,14 +159,14 @@ const VaultMockup = () => (
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
-          className="aspect-square rounded-xl bg-white/[0.03] border border-white/5 p-3 flex flex-col justify-between"
+          className="aspect-square rounded-xl bg-white/40 border border-white/50 p-3 flex flex-col justify-between"
         >
           <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
             {i % 3 === 0 ? <Quote className="w-4 h-4 text-primary" /> : i % 3 === 1 ? <FileText className="w-4 h-4 text-primary" /> : <Link2 className="w-4 h-4 text-primary" />}
           </div>
           <div className="space-y-1.5">
-             <div className="h-2 w-full bg-white/10 rounded-full" />
-             <div className="h-2 w-2/3 bg-white/5 rounded-full" />
+             <div className="h-2 w-full bg-foreground/20 rounded-full" />
+             <div className="h-2 w-2/3 bg-foreground/10 rounded-full" />
           </div>
         </motion.div>
       ))}
@@ -175,7 +175,7 @@ const VaultMockup = () => (
 );
 
 const AIMockup = () => (
-  <div className="w-[85%] h-[85%] bg-[#0a0a0a] rounded-2xl border border-white/5 shadow-2xl overflow-hidden flex flex-col">
+  <div className="w-[85%] h-[85%] liquid-glass-panel shadow-2xl overflow-hidden flex flex-col">
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -183,20 +183,20 @@ const AIMockup = () => (
             <Brain className="w-5 h-5 text-amber-500" />
           </div>
           <div>
-            <div className="text-xs font-bold text-white">Private Intelligence</div>
-            <div className="text-[10px] text-white/40">Local LLM Processing</div>
+            <div className="text-xs font-bold text-foreground">Private Intelligence</div>
+            <div className="text-[10px] text-foreground/60">Local LLM Processing</div>
           </div>
         </div>
         <div className="px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[8px] font-bold uppercase tracking-widest">Active</div>
       </div>
 
       <div className="space-y-4">
-        <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-3">
+        <div className="p-4 rounded-xl bg-white/40 border border-white/50 space-y-3">
           <div className="flex gap-2">
             <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <div className="h-2 w-3/4 bg-white/10 rounded-full" />
+            <div className="h-2 w-3/4 bg-foreground/20 rounded-full" />
           </div>
-          <div className="h-2 w-1/2 bg-white/5 rounded-full ml-4" />
+          <div className="h-2 w-1/2 bg-foreground/10 rounded-full ml-4" />
           <div className="pt-2 flex flex-wrap gap-2">
             <div className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[8px] font-bold">#architecture</div>
             <div className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 text-[8px] font-bold">#minimalism</div>
@@ -212,12 +212,12 @@ const SyncMockup = () => (
      <motion.div 
        animate={{ y: [0, -10, 0] }}
        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-       className="w-32 h-56 bg-[#0a0a0a] rounded-[24px] border border-white/10 shadow-2xl p-4 flex flex-col gap-3"
+       className="w-32 h-56 liquid-glass-panel shadow-2xl p-4 flex flex-col gap-3"
      >
-       <div className="h-1 w-8 bg-white/20 rounded-full mx-auto" />
-       <div className="flex-1 rounded-xl bg-white/[0.02] border border-white/5 p-2 space-y-2">
-          <div className="h-2 w-full bg-white/10 rounded-full" />
-          <div className="h-2 w-2/3 bg-white/5 rounded-full" />
+       <div className="h-1 w-8 bg-foreground/20 rounded-full mx-auto" />
+       <div className="flex-1 rounded-xl bg-white/40 border border-white/50 p-2 space-y-2">
+          <div className="h-2 w-full bg-foreground/20 rounded-full" />
+          <div className="h-2 w-2/3 bg-foreground/10 rounded-full" />
           <div className="aspect-square rounded-lg bg-primary/10 mt-4" />
        </div>
      </motion.div>
@@ -234,13 +234,13 @@ const SyncMockup = () => (
      <motion.div 
        animate={{ y: [0, 10, 0] }}
        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-       className="w-48 h-32 bg-[#0a0a0a] rounded-[16px] border border-white/10 shadow-2xl p-4 flex flex-col gap-3"
+       className="w-48 h-32 liquid-glass-panel shadow-2xl p-4 flex flex-col gap-3"
      >
         <div className="flex items-center gap-2">
            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-           <div className="text-[8px] font-mono text-white/40">DESKTOP-CLIENT_V2</div>
+           <div className="text-[8px] font-mono text-foreground/60">DESKTOP-CLIENT_V2</div>
         </div>
-        <div className="flex-1 rounded-lg bg-white/[0.02] border border-white/5" />
+        <div className="flex-1 rounded-lg bg-white/40 border border-white/50" />
      </motion.div>
   </div>
 );

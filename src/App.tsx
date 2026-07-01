@@ -224,17 +224,30 @@ export default function App() {
     setIsSyncing(true);
     const q = query(collection(db, 'mind-items'), orderBy('createdAt', 'desc'));
     
+    // Load local items initially
+    const localItems = JSON.parse(localStorage.getItem('mymind_local_items') || '[]');
+    if (localItems.length > 0) {
+      setItems(localItems);
+    }
+    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const docsList: MindItem[] = [];
       snapshot.forEach((doc) => {
         docsList.push({ id: doc.id, ...doc.data() } as MindItem);
       });
-      setItems(docsList);
+      
+      // Merge with local items that haven't been synced (simple approach: prefer Firestore, but keep local items if they don't exist in Firestore)
+      const firestoreIds = new Set(docsList.map(i => i.id));
+      const localOnly = localItems.filter((item: MindItem) => !firestoreIds.has(item.id));
+      const mergedList = [...localOnly, ...docsList].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      setItems(mergedList);
+      localStorage.setItem('mymind_local_items', JSON.stringify(mergedList));
       setIsSyncing(false);
 
       // Keep the open detail panel updated if the selected item changes
       if (selectedItem) {
-        const updated = docsList.find(i => i.id === selectedItem.id);
+        const updated = mergedList.find(i => i.id === selectedItem.id);
         if (updated) setSelectedItem(updated);
       }
     }, (error) => {
@@ -242,12 +255,12 @@ export default function App() {
       setIsSyncing(false);
       // Fallback for permissions error: disable syncing UI
       if (String(error).includes('Missing or insufficient permissions')) {
-         console.warn("Firestore rules not deployed yet or missing permissions. Local fallback.");
+         console.warn("Firestore rules not deployed yet or missing permissions. Local fallback active.");
       }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [selectedItem]);
 
   const { results: searchedItems } = useSearch(items, searchQuery);
 
@@ -301,12 +314,23 @@ export default function App() {
     };
 
     let createdId = Date.now().toString(); // temporary local ID fallback
+    let saveFailed = false;
     try {
       const docRef = await addDoc(collection(db, 'mind-items'), docData);
       createdId = docRef.id;
     } catch (error) {
       console.error("Firestore addDoc error:", error);
-      // Fallback: we could add to local state if we wanted, but for now we just log it and proceed
+      saveFailed = true;
+    }
+
+    const fallbackItem = { ...docData, id: createdId } as MindItem;
+    if (saveFailed) {
+      // Local fallback
+      setItems(prev => {
+        const updated = [fallbackItem, ...prev];
+        localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+        return updated;
+      });
     }
 
     // Stage 2: Background processing on server
@@ -423,23 +447,37 @@ export default function App() {
 
   // Toggle favorite / pin
   const handleToggleFavorite = async (item: MindItem) => {
+    const newIsFavorite = !item.isFavorite;
     try {
       await updateDoc(doc(db, 'mind-items', item.id), {
-        isFavorite: !item.isFavorite
+        isFavorite: newIsFavorite
       });
     } catch (e) {
       console.error(e);
+      // Local fallback
+      setItems(prev => {
+        const updated = prev.map(i => i.id === item.id ? { ...i, isFavorite: newIsFavorite } : i);
+        localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+        return updated;
+      });
     }
   };
 
   // Toggle Top of Mind focus pin
   const handleToggleTopMind = async (item: MindItem) => {
+    const newIsTopMind = !item.isTopMind;
     try {
       await updateDoc(doc(db, 'mind-items', item.id), {
-        isTopMind: !item.isTopMind
+        isTopMind: newIsTopMind
       });
     } catch (e) {
       console.error(e);
+      // Local fallback
+      setItems(prev => {
+        const updated = prev.map(i => i.id === item.id ? { ...i, isTopMind: newIsTopMind } : i);
+        localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+        return updated;
+      });
     }
   };
 
@@ -447,11 +485,17 @@ export default function App() {
   const handleDeleteItem = async (item: MindItem) => {
     try {
       await deleteDoc(doc(db, 'mind-items', item.id));
-      if (selectedItem?.id === item.id) {
-        setSelectedItem(null);
-      }
     } catch (e) {
       console.error(e);
+      // Local fallback
+      setItems(prev => {
+        const updated = prev.filter(i => i.id !== item.id);
+        localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+        return updated;
+      });
+    }
+    if (selectedItem?.id === item.id) {
+      setSelectedItem(null);
     }
   };
 
@@ -462,6 +506,12 @@ export default function App() {
       await updateDoc(doc(db, 'mind-items', id), data as any);
     } catch (e) {
       console.error(e);
+      // Local fallback
+      setItems(prev => {
+        const updated = prev.map(i => i.id === updatedItem.id ? { ...i, ...updatedItem } : i);
+        localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+        return updated;
+      });
     }
   };
 

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Cormorant+Garamond:ital,wght@0,400..700;1,400..700&family=Montserrat:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -30,28 +30,49 @@
 }
 
 :root {
-  --primary: #8b5cf6;
-  --font-body: "Inter", sans-serif;
-  --font-display: "Space Grotesk", sans-serif;
-  --radius-base: 16px;
-  --blur-strength: 24px;
+  --primary: #E8B4B8; /* Soft Pink */
+  --secondary: #A8D5BA; /* Sage Green */
+  --cta: #D4AF37; /* Gold */
   
-  --bg-color: #FAF9F6;
-  --text-color: #1A1A1A;
-  --bg-card: #FFFFFF;
-  --text-card-title: #1A1A1A;
-  --text-card-desc: #555555;
-  --bg-card-footer: #FDFCFB;
-  --border-card: rgba(0, 0, 0, 0.04);
+  --font-body: "Montserrat", sans-serif;
+  --font-display: "Cormorant Garamond", serif;
+  --radius-base: 24px; /* Organic shapes */
+  --blur-strength: 32px;
   
-  --bg-modal: #F3F2EE;
-  --bg-modal-sidebar: rgba(0, 0, 0, 0.03);
-  --border-subtle: rgba(0, 0, 0, 0.05);
-  --bg-input: #FFFFFF;
-  --text-heading: #1A1A1A;
+  --bg-color: #FFF5F5; /* Warm White */
+  --text-color: #2D3436; /* Charcoal */
+  --bg-card: rgba(255, 255, 255, 0.6);
+  --text-card-title: #2D3436;
+  --text-card-desc: #4A5568;
+  --bg-card-footer: rgba(255, 255, 255, 0.4);
+  --border-card: rgba(255, 255, 255, 0.5);
   
-  --font-main: "Space Grotesk", sans-serif;
+  --bg-modal: #FFF5F5;
+  --bg-modal-sidebar: rgba(255, 255, 255, 0.6);
+  --border-subtle: rgba(45, 52, 54, 0.05);
+  --bg-input: rgba(255, 255, 255, 0.8);
+  --text-heading: #2D3436;
+  
+  --font-main: "Cormorant Garamond", serif;
   --font-secondary: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+.liquid-glass-panel {
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  border-radius: var(--radius-base);
+}
+
+.liquid-glass-panel-dark {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-base);
 }
 
 :root[data-theme="camera"] {

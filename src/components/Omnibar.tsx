@@ -61,6 +61,12 @@ export default function Omnibar({
   // Intelligent input detection as user types
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
+    
+    if (composerType === 'note') {
+      setNoteTitle(val);
+      return;
+    }
+    
     onSearchChange(val);
 
     if (composerType) return; // Don't auto-detect if already in a specific composer mode
