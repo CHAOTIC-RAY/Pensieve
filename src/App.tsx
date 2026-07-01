@@ -9,7 +9,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from './lib/firebase';
-import { DbStrategy, getDbStrategy, loadDbItems, saveDbItems } from './services/dbStrategyService';
+import { DbStrategy, getDbStrategy, loadDbItems, saveDbItems, processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured } from './services/dbStrategyService';
 import { MindItem, MindItemType } from './types';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
@@ -417,7 +417,15 @@ export default function App() {
     };
 
     const createdId = Date.now().toString(); // unique ID
-    const fallbackItem = { ...docData, id: createdId } as MindItem;
+    let fallbackItem = { ...docData, id: createdId } as MindItem;
+
+    // Upload media to storage bucket if configured and item has base64 media
+    if (dbStrategy === 'appwrite' && isStorageBucketConfigured()) {
+      const processedMediaItem = await processItemMediaForUpload(fallbackItem);
+      if (processedMediaItem.imageFileId || processedMediaItem.audioFileId) {
+        fallbackItem = processedMediaItem;
+      }
+    }
 
     // Put it in local state and active database instantly
     setItems(prev => {
@@ -432,7 +440,7 @@ export default function App() {
     // Stage 2: Background processing on client or server
     (async () => {
       try {
-        let processedItem = { ...docData, id: createdId };
+        let processedItem = { ...fallbackItem };
 
         // 2A. Scrape link/article metadata
         if ((newItem.type === 'link' || newItem.type === 'article') && newItem.url) {
@@ -577,6 +585,11 @@ export default function App() {
 
   // Delete item
   const handleDeleteItem = async (item: MindItem) => {
+    // Delete associated media from storage bucket if configured
+    if (dbStrategy === 'appwrite' && isStorageBucketConfigured()) {
+      await deleteItemMedia(item);
+    }
+
     setItems(prev => {
       const updated = prev.filter(i => i.id !== item.id);
       localStorage.setItem('pensieve_local_items', JSON.stringify(updated));

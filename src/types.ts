@@ -80,6 +80,10 @@ export interface MindItem {
   materials?: string;
   productImageUrl?: string;
   buyUrl?: string;
+
+  // Storage bucket file IDs (for Appwrite media management)
+  imageFileId?: string; // File ID in storage bucket for uploaded images
+  audioFileId?: string; // File ID in storage bucket for voice recordings
 }
 
 export interface SerendipityPrompt {

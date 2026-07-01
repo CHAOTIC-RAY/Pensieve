@@ -4,11 +4,14 @@
  */
 
 import { MindItem } from '../types';
-import { getAppwriteItems, saveAppwriteItems, isAppwriteConfigured } from '../lib/appwrite';
+import { getAppwriteItems, saveAppwriteItems, isAppwriteConfigured, processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured } from '../lib/appwrite';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export type DbStrategy = 'appwrite' | 'supabase' | 'firebase' | 'box';
+
+// Re-export storage bucket utilities for use in other components
+export { processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured };
 
 export function getDbStrategy(): DbStrategy {
   if (typeof window === 'undefined') return 'appwrite';
