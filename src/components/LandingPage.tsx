@@ -17,7 +17,9 @@ import {
   Activity,
   Layers,
   Lock,
-  Cloud
+  Cloud,
+  Mic,
+  Volume2
 } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
@@ -53,26 +55,32 @@ export default function LandingPage() {
   const omnibarScale = useTransform(smoothProgress, [0, 0.2], [1, 0.95]);
 
   // Content grid fades in
-  const gridOpacity = useTransform(smoothProgress, [0.15, 0.3], [0, 1]);
-  const gridY = useTransform(smoothProgress, [0.15, 0.3], [80, 0]);
+  const gridOpacity = useTransform(smoothProgress, [0.12, 0.25], [0, 1]);
+  const gridY = useTransform(smoothProgress, [0.12, 0.25], [80, 0]);
 
   // Additional features section fades in
-  const featuresOpacity = useTransform(smoothProgress, [0.35, 0.55], [0, 1]);
-  const featuresY = useTransform(smoothProgress, [0.35, 0.55], [80, 0]);
+  const featuresOpacity = useTransform(smoothProgress, [0.28, 0.45], [0, 1]);
+  const featuresY = useTransform(smoothProgress, [0.28, 0.45], [80, 0]);
+
+  // Voice Note section fades in
+  const voiceOpacity = useTransform(smoothProgress, [0.48, 0.65], [0, 1]);
+  const voiceY = useTransform(smoothProgress, [0.48, 0.65], [80, 0]);
 
   // Serendipity section
-  const serendipityOpacity = useTransform(smoothProgress, [0.6, 0.75], [0, 1]);
-  const serendipityScale = useTransform(smoothProgress, [0.6, 0.75], [0.95, 1]);
+  const serendipityOpacity = useTransform(smoothProgress, [0.68, 0.85], [0, 1]);
+  const serendipityScale = useTransform(smoothProgress, [0.68, 0.85], [0.95, 1]);
 
   // Change search placeholder text dynamically as user scrolls
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
     if (latest < 0.15) {
       setSearchPlaceholder("Save a note, link, or search...");
-    } else if (latest >= 0.15 && latest < 0.4) {
+    } else if (latest >= 0.15 && latest < 0.3) {
       setSearchPlaceholder("Typing: 'brutalist glassmorphic app designs'...");
-    } else if (latest >= 0.4 && latest < 0.65) {
+    } else if (latest >= 0.3 && latest < 0.48) {
       setSearchPlaceholder("Categorizing: #design #ux #glassmorphism...");
-    } else if (latest >= 0.65 && latest < 0.85) {
+    } else if (latest >= 0.48 && latest < 0.68) {
+      setSearchPlaceholder("Recording: 'Review meeting thoughts' (0:12s)...");
+    } else if (latest >= 0.68 && latest < 0.85) {
       setSearchPlaceholder("Recalling memory: 'First Spark' milestone...");
     } else {
       setSearchPlaceholder("Search your entire second brain...");
@@ -96,7 +104,7 @@ export default function LandingPage() {
   return (
     <div 
       ref={containerRef}
-      className="min-h-[500vh] bg-background text-foreground selection:bg-primary/20 selection:text-primary font-sans overflow-x-hidden"
+      className="min-h-[600vh] bg-background text-foreground selection:bg-primary/20 selection:text-primary font-sans overflow-x-hidden"
     >
       {/* Floating Sidebar (iOS / Main App style) - Fades in on scroll */}
       <motion.div 
@@ -285,7 +293,54 @@ export default function LandingPage() {
           </motion.div>
         </section>
 
-        {/* Section 4: Serendipity & Intelligence */}
+        {/* Section 4: Voice Notes & Audio Capture */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
+          <motion.div 
+            style={{ opacity: voiceOpacity, y: voiceY }}
+            className="w-full max-w-5xl flex flex-col md:flex-row items-center gap-12"
+          >
+            <div className="flex-1 space-y-6">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500">
+                <Mic className="w-6 h-6 animate-pulse" />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">Instant Voice Capture</h2>
+              <p className="text-sm text-foreground/50 leading-relaxed font-sans">
+                Speak your mind. Record brainstorming sessions or simple ideas directly from the Omnibar. Voice notes are compressed, saved as local playback cards, and ready for transcription.
+              </p>
+              <div className="flex items-center gap-2 text-xs font-mono text-foreground/40">
+                <Volume2 className="w-4 h-4" /> HTML5 MediaRecorder API Integration
+              </div>
+            </div>
+            
+            <div className="flex-1 w-full max-w-md bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                  <span className="text-xs font-mono text-red-500 font-bold uppercase">Recording Voice Note</span>
+                </div>
+                <span className="text-xs font-mono text-foreground/40">0:12 / 1:00</span>
+              </div>
+              
+              {/* Fake Audio Wave visualization */}
+              <div className="h-16 flex items-center justify-between gap-1.5 px-2">
+                {[4, 8, 12, 16, 24, 16, 12, 8, 14, 20, 28, 16, 12, 6, 10, 16, 22, 14, 8, 4].map((h, i) => (
+                  <motion.div 
+                    key={i} 
+                    className="flex-1 bg-amber-500/70 rounded-full" 
+                    style={{ height: `${h * 1.5}px` }} 
+                    animate={{ scaleY: [1, 1.3, 1] }}
+                    transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.05 }}
+                  />
+                ))}
+              </div>
+              
+              <div className="h-[1px] bg-white/10 w-full" />
+              <div className="text-xs text-foreground/50 font-sans italic">"Reviewing user interface transitions for checkpoint 3..."</div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Section 5: Serendipity & Intelligence */}
         <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
           <motion.div 
             style={{ opacity: serendipityOpacity, scale: serendipityScale }}
@@ -321,7 +376,7 @@ export default function LandingPage() {
           </motion.div>
         </section>
 
-        {/* Section 5: Call to action (Bottom Last Scroll Forge-style) */}
+        {/* Section 6: Call to action (Bottom Last Scroll Forge-style) */}
         <section className="relative h-screen flex flex-col items-center justify-center px-6 pointer-events-auto">
           <div className="w-full max-w-4xl bg-gradient-to-tr from-foreground to-neutral-900 text-background p-16 rounded-[48px] text-center shadow-3xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/20 blur-[150px] rounded-full -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-125 pointer-events-none" />

@@ -310,6 +310,21 @@ export default function App() {
         return 0;
       });
 
+  // Helper to safely update an item with Firestore / LocalStorage fallback
+  const safeUpdateItem = async (itemId: string, updates: Partial<MindItem>) => {
+    try {
+      await updateDoc(doc(db, 'mind-items', itemId), updates);
+    } catch (e) {
+      console.warn("Firestore update failed, syncing to local storage fallback:", e);
+    }
+    
+    setItems(prev => {
+      const updated = prev.map(item => item.id === itemId ? { ...item, ...updates } : item);
+      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   // Handle Item Creation with Multi-Stage Background AI parsing
   const handleItemCreated = async (newItem: Omit<MindItem, 'id' | 'createdAt'>): Promise<string> => {
     // Stage 1: Fast client-side write with "analyzing" state
@@ -331,14 +346,12 @@ export default function App() {
     }
 
     const fallbackItem = { ...docData, id: createdId } as MindItem;
-    if (saveFailed) {
-      // Local fallback
-      setItems(prev => {
-        const updated = [fallbackItem, ...prev];
-        localStorage.setItem('mymind_local_items', JSON.stringify(updated));
-        return updated;
-      });
-    }
+    // Always put it in local state immediately so it renders without delay
+    setItems(prev => {
+      const updated = [fallbackItem, ...prev];
+      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      return updated;
+    });
 
     // Stage 2: Background processing on server
     // We run this asynchronously so the card is saved instantly in UI with a thinking skeleton!
@@ -364,8 +377,8 @@ export default function App() {
               processedItem.favicon = scraped.favicon || '';
               processedItem.bodyText = scraped.bodyText || ''; // Sent to Gemini
               
-              // Partially update local Firestore for immediate visual meta-filling
-              await updateDoc(doc(db, 'mind-items', createdId), {
+              // Partially update local Firestore and state for immediate visual meta-filling
+              await safeUpdateItem(createdId, {
                 title: processedItem.title,
                 content: processedItem.content,
                 imageUrl: processedItem.imageUrl,
@@ -398,7 +411,7 @@ export default function App() {
               if (aiResult.readingTime) finalDoc.readingTime = aiResult.readingTime;
               if (aiResult.siteName) finalDoc.siteName = aiResult.siteName;
 
-              await updateDoc(doc(db, 'mind-items', createdId), finalDoc);
+              await safeUpdateItem(createdId, finalDoc);
               return; // Bypasses cloud analysis entirely
             }
           } catch (localErr) {
@@ -432,7 +445,7 @@ export default function App() {
             if (aiResult.readingTime) finalDoc.readingTime = aiResult.readingTime;
             if (aiResult.siteName) finalDoc.siteName = aiResult.siteName;
 
-            await updateDoc(doc(db, 'mind-items', createdId), finalDoc);
+            await safeUpdateItem(createdId, finalDoc);
           } else {
             throw new Error("AI analysis failed on server");
           }
@@ -441,8 +454,8 @@ export default function App() {
         }
       } catch (error) {
         console.error("Background indexing failed:", error);
-        // Fallback: clear loading state
-        await updateDoc(doc(db, 'mind-items', createdId), { 
+        // Fallback: clear loading state safely
+        await safeUpdateItem(createdId, { 
           analyzing: false,
           aiSummary: 'Saved locally (offline indexing)'
         });

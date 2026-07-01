@@ -698,6 +698,33 @@ export default function MindCard({
         </div>
       )}
 
+      {/* 12. VOICE NOTE */}
+      {item.type === 'voice' && (
+        <div className="p-5 flex flex-col gap-3.5 bg-gradient-to-tr from-amber-500/10 via-orange-500/10 to-transparent border border-amber-500/20 rounded-3xl w-full">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] uppercase tracking-widest text-amber-600 font-bold flex items-center gap-1 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-md">
+              <Play className="w-2.5 h-2.5 text-amber-500 fill-amber-500" /> Voice Note
+            </span>
+            <span className="text-[10px] font-mono text-neutral-400">
+              {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+            </span>
+          </div>
+          <div className="flex flex-col gap-2">
+            <h3 className="font-display font-semibold text-sm text-foreground line-clamp-1 leading-snug tracking-tight">
+              {item.title}
+            </h3>
+            {item.audioUrl && (
+              <audio 
+                src={item.audioUrl} 
+                controls 
+                onClick={(e) => e.stopPropagation()} 
+                className="w-full h-8 outline-none mt-2" 
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Bottom info: Tags footer */}
       {item.tags && item.tags.length > 0 && (
         <div className="px-4.5 pb-3 pt-1 flex items-center gap-1 flex-wrap overflow-hidden min-h-[28px] border-t border-neutral-50 bg-neutral-50/20 group-hover:bg-transparent">

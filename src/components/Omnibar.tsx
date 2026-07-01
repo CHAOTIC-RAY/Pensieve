@@ -6,7 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, Plus, FileText, CheckSquare, Quote, 
-  Palette, Link2, Image as ImageIcon, ArrowRight, X, Sparkles 
+  Palette, Link2, Image as ImageIcon, ArrowRight, X, Sparkles, Mic, Square 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MindItem, MindItemType } from '../types';
@@ -43,6 +43,70 @@ export default function Omnibar({
   const [detectedType, setDetectedType] = useState<{ type: MindItemType | 'topic'; value: string; label?: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Voice recording states
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    };
+  }, []);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64Audio = reader.result as string;
+          await onItemCreated({
+            type: 'voice',
+            title: `Voice Note (${new Date().toLocaleTimeString()})`,
+            content: 'Voice note recording',
+            audioUrl: base64Audio,
+            tags: ['voice', 'audio', 'note']
+          });
+        };
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      alert("Failed to access microphone. Please check permissions.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    }
+  };
 
   // Close composer when clicking outside
   useEffect(() => {
@@ -490,6 +554,23 @@ export default function Omnibar({
                       <ImageIcon className="w-3.5 h-3.5 text-rose-500" />
                       <span>Image</span>
                     </button>
+                    {isRecording ? (
+                      <button
+                        onClick={stopRecording}
+                        className="p-2 flex items-center gap-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition animate-pulse"
+                      >
+                        <Square className="w-3.5 h-3.5 text-red-600" />
+                        <span>Stop ({recordingSeconds}s)</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={startRecording}
+                        className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
+                      >
+                        <Mic className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Voice</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

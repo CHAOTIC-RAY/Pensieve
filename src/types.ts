@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type MindItemType = 'note' | 'link' | 'image' | 'quote' | 'color' | 'article' | 'video' | 'recipe' | 'document' | 'music' | 'tweet';
+export type MindItemType = 'note' | 'link' | 'image' | 'quote' | 'color' | 'article' | 'video' | 'recipe' | 'document' | 'music' | 'tweet' | 'voice';
 
 export interface MindItem {
   id: string;
@@ -23,6 +23,7 @@ export interface MindItem {
   isTopMind?: boolean; // Focus-mode pinning
   analyzing?: boolean; // True while Gemini is parsing/scraping in background
   dominantColor?: string; // Close color group (e.g. "blue", "red")
+  audioUrl?: string; // Base64 or Blob URL for recorded voice notes
   aiSummary?: string; // 1-sentence AI summary of the item
   bodyText?: string; // Temporary scraped article context
   
