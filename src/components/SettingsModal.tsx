@@ -124,21 +124,18 @@ export default function SettingsModal({
   const [activeTab, setActiveTab] = useState<
     "intelligence" | "sync" | "db" | "ui" | "profile"
   >(initialTab || "ui");
-  const [puterUser, setPuterUser] = useState<any>(null);
-
-  const fetchPuterUser = async () => {
-    if (typeof window !== "undefined" && (window as any).puter) {
-      try {
-        const user = await (window as any).puter.auth.getUser();
-        setPuterUser(user);
-      } catch (e) {
-        setPuterUser(null);
-      }
-    }
-  };
+  // Appwrite Configuration States
+  const [appwriteEndpoint, setAppwriteEndpoint] = useState("");
+  const [appwriteProjectId, setAppwriteProjectId] = useState("");
+  const [appwriteDatabaseId, setAppwriteDatabaseId] = useState("");
+  const [appwriteCollectionId, setAppwriteCollectionId] = useState("");
 
   useEffect(() => {
-    fetchPuterUser();
+    // Load Appwrite configuration
+    setAppwriteEndpoint(localStorage.getItem("pensieve_appwrite_endpoint") || "");
+    setAppwriteProjectId(localStorage.getItem("pensieve_appwrite_projectId") || "");
+    setAppwriteDatabaseId(localStorage.getItem("pensieve_appwrite_databaseId") || "");
+    setAppwriteCollectionId(localStorage.getItem("pensieve_appwrite_collectionId") || "");
   }, []);
   const [supabaseUrl, setSupabaseUrl] = useState("");
   const [supabaseKey, setSupabaseKey] = useState("");
@@ -1064,24 +1061,11 @@ export default function SettingsModal({
           <Cloud className="w-3.5 h-3.5 text-orange-400" />
           Cloud API
         </button>
-        <button
-          onClick={() => handleStrategyChange("puter")}
-          className={`flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl text-xs font-semibold transition-all ${
-            aiStrategy === "puter"
-              ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
-              : "text-foreground/60 hover:text-foreground"
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
-          Puter.js AI
-        </button>
       </div>
       <p className="text-[10px] text-foreground/50 leading-relaxed px-1">
         {aiStrategy === "local"
           ? "Using on-device WebGPU shaders for private, offline intelligence. Your data never leaves this browser."
-          : aiStrategy === "puter"
-            ? "Using Puter.js's integrated free and fast cloud-hosted models for instant indexing and tagging."
-            : "Routing requests to high-performance cloud models via secure API keys for deeper reasoning and vision."}
+          : "Routing requests to high-performance cloud models via secure API keys for deeper reasoning and vision."}
       </p>
     </section>
   );
@@ -1726,16 +1710,16 @@ export default function SettingsModal({
               <span className="text-[10px] font-mono font-bold text-emerald-600 uppercase tracking-widest">Active Connection</span>
             </div>
             <h3 className="text-lg font-display font-bold text-text-heading">
-              {dbStrategy === 'puter' ? 'Puter Cloud Storage' : dbStrategy === 'supabase' ? 'Supabase Relational' : dbStrategy === 'box' ? 'Box Storage' : 'Firebase Firestore'}
+              {dbStrategy === 'appwrite' ? 'Appwrite Cloud Storage' : dbStrategy === 'supabase' ? 'Supabase Relational' : dbStrategy === 'box' ? 'Box Storage' : 'Firebase Firestore'}
             </h3>
             <p className="text-[10px] text-foreground/50 font-medium">
-              Synchronizing with {dbStrategy === 'puter' ? 'Puter.js Global Edge' : dbStrategy === 'supabase' ? 'Supabase PostgreSQL' : dbStrategy === 'box' ? 'Box API' : 'Google Firebase'}
+              Synchronizing with {dbStrategy === 'appwrite' ? 'Appwrite Database' : dbStrategy === 'supabase' ? 'Supabase PostgreSQL' : dbStrategy === 'box' ? 'Box API' : 'Google Firebase'}
             </p>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-border-subtle flex items-center justify-center">
-            {dbStrategy === 'puter' ? <Sparkles className="w-6 h-6 text-indigo-400" /> : 
-             dbStrategy === 'supabase' ? <Database className="w-6 h-6 text-emerald-400" /> : 
-             dbStrategy === 'box' ? <Database className="w-6 h-6 text-blue-400" /> : 
+            {dbStrategy === 'appwrite' ? <Database className="w-6 h-6 text-pink-400" /> :
+             dbStrategy === 'supabase' ? <Database className="w-6 h-6 text-emerald-400" /> :
+             dbStrategy === 'box' ? <Database className="w-6 h-6 text-blue-400" /> :
              <Aperture className="w-6 h-6 text-orange-400" />}
           </div>
         </div>
@@ -1746,8 +1730,7 @@ export default function SettingsModal({
           </h3>
           <p className="text-xs text-foreground/70 mt-1 leading-relaxed">
             Configure external cloud databases to sync and persist your
-            thoughts. By default, your mind is backed up to a secure built-in
-            Puter.js storage.
+            thoughts. Connect your own Appwrite instance for secure, self-hosted storage.
           </p>
         </div>
 
@@ -1756,21 +1739,21 @@ export default function SettingsModal({
           <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
             Storage Strategy Selector
           </label>
-          <div className="grid grid-cols-4 p-1 bg-foreground/5 rounded-2xl border border-border-subtle">
+          <div className="grid grid-cols-3 p-1 bg-foreground/5 rounded-2xl border border-border-subtle">
             <button
               onClick={() => {
-                setDbStrategy("puter");
-                setDbStrategyState("puter");
+                setDbStrategy("appwrite");
+                setDbStrategyState("appwrite");
                 window.dispatchEvent(new Event('app-settings-updated'));
               }}
               className={`flex items-center justify-center gap-1.5 py-2.5 px-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
-                dbStrategy === "puter"
+                dbStrategy === "appwrite"
                   ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
                   : "text-foreground/60 hover:text-foreground"
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              Puter.js
+              <Database className="w-3.5 h-3.5 text-pink-400" />
+              Appwrite
             </button>
             <button
               onClick={() => {
@@ -1802,55 +1785,118 @@ export default function SettingsModal({
               <Aperture className="w-3.5 h-3.5 text-orange-400" />
               Firebase
             </button>
-            <button
-              onClick={() => {
-                setDbStrategy("box");
-                setDbStrategyState("box");
-                window.dispatchEvent(new Event('app-settings-updated'));
-              }}
-              className={`flex items-center justify-center gap-1.5 py-2.5 px-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
-                dbStrategy === "box"
-                  ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
-                  : "text-foreground/60 hover:text-foreground"
-              }`}
-            >
-              <Database className="w-3.5 h-3.5 text-blue-400" />
-              Box
-            </button>
           </div>
           <p className="text-[10px] text-foreground/50 leading-relaxed px-1">
-            {dbStrategy === "puter"
-              ? "Puter.js Strategy: Fast, secure client-side cloud NoSQL sync & storage. No configuration required, uses your browser session via Puter.js."
-              : dbStrategy === "supabase" 
+            {dbStrategy === "appwrite"
+              ? "Appwrite Strategy: Connect to your own Appwrite backend for secure database syncing. Requires manual configuration."
+              : dbStrategy === "supabase"
               ? "Supabase Strategy: Sync your personal mind items to a secure, relational Supabase database table."
               : "Firebase Strategy: Sync your personal mind items to your own Firebase Firestore collection."}
           </p>
         </section>
 
-        {/* Puter Info Section */}
-        <section className={`space-y-4 pt-6 border-t border-border-subtle transition-all duration-300 ${dbStrategy !== "puter" ? "opacity-35 pointer-events-none grayscale" : ""}`}>
+        {/* Appwrite Connection Section */}
+        <section className={`space-y-4 pt-6 border-t border-border-subtle transition-all duration-300 ${dbStrategy !== "appwrite" ? "opacity-35 pointer-events-none grayscale" : ""}`}>
           <div className="flex items-center gap-2 text-sm font-semibold text-text-heading select-none">
-            <Sparkles className="w-4 h-4 text-indigo-400" />
-            Puter.js Cloud Status
+            <Database className="w-4 h-4 text-pink-400" />
+            Appwrite Configuration
           </div>
-          <div className="bg-foreground/[0.02] border border-border-subtle/80 p-5 rounded-2xl space-y-3">
-             <div className="flex items-center justify-between text-[11px]">
-               <span className="text-foreground/60">Node Connection</span>
-               <span className="text-emerald-500 font-bold uppercase tracking-tighter">Active (Global Edge)</span>
-             </div>
-             <div className="flex items-center justify-between text-[11px]">
-               <span className="text-foreground/60">Storage Engine</span>
-               <span className="text-foreground font-medium">Puter Key-Value Store</span>
-             </div>
-             <div className="flex items-center justify-between text-[11px]">
-               <span className="text-foreground/60">Sync Frequency</span>
-               <span className="text-foreground font-medium">Real-time Delta Sync</span>
-             </div>
-             <div className="pt-2">
-               <p className="text-[10px] text-foreground/40 leading-normal">
-                 Puter.js provides zero-config cloud storage. Your data is automatically partitioned and synced across your devices using Puter's secure infrastructure.
-               </p>
-             </div>
+          <div className="space-y-3 bg-foreground/[0.02] border border-border-subtle/80 p-5 rounded-2xl">
+            <p className="text-[11px] text-foreground/60 leading-normal mb-1">
+              Connect to your Appwrite backend for secure cloud storage. You'll need to create a database and collection in your Appwrite console first.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">Endpoint URL</label>
+                <input
+                  type="text"
+                  value={appwriteEndpoint}
+                  onChange={(e) => {
+                    setAppwriteEndpoint(e.target.value);
+                    localStorage.setItem('pensieve_appwrite_endpoint', e.target.value);
+                  }}
+                  placeholder="https://cloud.appwrite.io/v1"
+                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">Project ID</label>
+                <input
+                  type="text"
+                  value={appwriteProjectId}
+                  onChange={(e) => {
+                    setAppwriteProjectId(e.target.value);
+                    localStorage.setItem('pensieve_appwrite_projectId', e.target.value);
+                  }}
+                  placeholder="your-project-id"
+                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">Database ID</label>
+                <input
+                  type="text"
+                  value={appwriteDatabaseId}
+                  onChange={(e) => {
+                    setAppwriteDatabaseId(e.target.value);
+                    localStorage.setItem('pensieve_appwrite_databaseId', e.target.value);
+                  }}
+                  placeholder="pensieve-db"
+                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">Collection ID</label>
+                <input
+                  type="text"
+                  value={appwriteCollectionId}
+                  onChange={(e) => {
+                    setAppwriteCollectionId(e.target.value);
+                    localStorage.setItem('pensieve_appwrite_collectionId', e.target.value);
+                  }}
+                  placeholder="mind-items"
+                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Setup Guide */}
+            <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-2">
+              <h4 className="text-xs font-bold text-primary flex items-center gap-1.5">
+                <ExternalLink className="w-3.5 h-3.5" />
+                Quick Setup Guide
+              </h4>
+              <ol className="text-[10px] text-foreground/70 leading-relaxed space-y-1 list-decimal list-inside">
+                <li>Create an account at <span className="text-primary font-medium">appwrite.io</span> or self-host Appwrite</li>
+                <li>Create a new project in your Appwrite console</li>
+                <li>Create a database (e.g., "pensieve-db")</li>
+                <li>Create a collection with these attributes:
+                  <ul className="ml-4 mt-1 space-y-0.5">
+                    <li><code className="bg-foreground/5 px-1 rounded">items</code> (string, large)</li>
+                    <li><code className="bg-foreground/5 px-1 rounded">user_id</code> (string)</li>
+                    <li><code className="bg-foreground/5 px-1 rounded">updated_at</code> (string)</li>
+                  </ul>
+                </li>
+                <li>Set collection permissions to allow document creation/updates</li>
+                <li>Copy the endpoint, project ID, database ID, and collection ID into the fields above</li>
+              </ol>
+            </div>
+
+            <button
+              onClick={() => {
+                setAppwriteEndpoint("");
+                setAppwriteProjectId("");
+                setAppwriteDatabaseId("");
+                setAppwriteCollectionId("");
+                localStorage.removeItem('pensieve_appwrite_endpoint');
+                localStorage.removeItem('pensieve_appwrite_projectId');
+                localStorage.removeItem('pensieve_appwrite_databaseId');
+                localStorage.removeItem('pensieve_appwrite_collectionId');
+              }}
+              className="text-[10px] text-rose-500 hover:underline mt-2 flex items-center gap-1"
+            >
+              <Trash2 className="w-3 h-3" /> Clear Appwrite Configuration
+            </button>
           </div>
         </section>
 
@@ -1867,37 +1913,37 @@ export default function SettingsModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">API Key</label>
-                <input 
-                  type="password" 
-                  value={firebaseApiKey} 
-                  onChange={(e) => { 
-                    setFirebaseApiKey(e.target.value); 
-                    localStorage.setItem('pensieve_firebase_apiKey', e.target.value); 
-                  }} 
-                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors" 
+                <input
+                  type="password"
+                  value={firebaseApiKey}
+                  onChange={(e) => {
+                    setFirebaseApiKey(e.target.value);
+                    localStorage.setItem('pensieve_firebase_apiKey', e.target.value);
+                  }}
+                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
                 />
               </div>
               <div>
                 <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">Project ID</label>
-                <input 
-                  type="text" 
-                  value={firebaseProjectId} 
-                  onChange={(e) => { 
-                    setFirebaseProjectId(e.target.value); 
-                    localStorage.setItem('pensieve_firebase_projectId', e.target.value); 
-                  }} 
-                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors" 
+                <input
+                  type="text"
+                  value={firebaseProjectId}
+                  onChange={(e) => {
+                    setFirebaseProjectId(e.target.value);
+                    localStorage.setItem('pensieve_firebase_projectId', e.target.value);
+                  }}
+                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
                 />
               </div>
               <div>
                 <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">Auth Domain</label>
-                <input 
-                  type="text" 
-                  value={firebaseAuthDomain} 
-                  onChange={(e) => { 
-                    setFirebaseAuthDomain(e.target.value); 
-                    localStorage.setItem('pensieve_firebase_authDomain', e.target.value); 
-                  }} 
+                <input
+                  type="text"
+                  value={firebaseAuthDomain}
+                  onChange={(e) => {
+                    setFirebaseAuthDomain(e.target.value);
+                    localStorage.setItem('pensieve_firebase_authDomain', e.target.value);
+                  }}
                   className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors" 
                 />
               </div>
@@ -2806,34 +2852,6 @@ export default function SettingsModal({
                 </button>
 
                 <div className="mt-auto pt-4 border-t border-border-subtle hidden md:block">
-                  <div className="mb-4 space-y-1">
-                    <span className="text-[10px] text-foreground/40 font-mono block">Puter Account</span>
-                    {puterUser ? (
-                      <div className="space-y-2">
-                        <div className="text-xs font-medium text-foreground truncate">{puterUser.email || puterUser.username}</div>
-                        <button
-                          onClick={async () => {
-                            await (window as any).puter?.auth?.signOut();
-                            await fetchPuterUser();
-                          }}
-                          className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-foreground/10 text-foreground hover:bg-foreground/20 transition"
-                        >
-                          Logout Puter
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={async () => {
-                          await (window as any).puter?.auth?.signIn();
-                          // Puter signIn might be a popup, we might need a small delay or polling if it doesn't return a promise
-                          setTimeout(fetchPuterUser, 2000);
-                        }}
-                        className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition"
-                      >
-                        Login to Puter
-                      </button>
-                    )}
-                  </div>
                   <span className="text-[10px] text-foreground/40 font-mono block">
                     Sidebar Position:
                   </span>

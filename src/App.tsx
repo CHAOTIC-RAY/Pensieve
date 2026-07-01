@@ -6,15 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { 
-  Sparkles, Heart, Palette, Brain, Filter, Check, Star, RefreshCw, Pin,
-  Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera,
-  BookOpen, ExternalLink, LayoutGrid, List, Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy,
-  Film, Disc, ShoppingBag
-} from 'lucide-react';
+import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from './lib/firebase';
-import { isPuterAvailable, getPuterItems, savePuterItems, chatWithPuterAi } from './lib/puter';
 import { DbStrategy, getDbStrategy, loadDbItems, saveDbItems } from './services/dbStrategyService';
 import { MindItem, MindItemType } from './types';
 import LandingPage from './components/LandingPage';
@@ -154,20 +148,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    const checkPuter = async () => {
-      if (typeof window !== 'undefined' && window.puter) {
-        try {
-          const signedIn = await window.puter.auth.isSignedIn();
-          setIsPuterLoggedIn(signedIn);
-        } catch (e) {
-          console.warn("Puter auth check failed:", e);
-        }
-      }
-    };
-    checkPuter();
-  }, []);
-
   const [items, setItems] = useState<MindItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all'); // 'all', 'favorites', MindItemType
@@ -234,7 +214,6 @@ export default function App() {
   };
   const [isSerendipityOpen, setIsSerendipityOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
-  const [isPuterLoggedIn, setIsPuterLoggedIn] = useState(false);
   const [isMobileToolbarOpen, setIsMobileToolbarOpen] = useState<'filters' | 'organize' | 'layout' | null>(null);
 
   // Layout & Sorting (Rearranging) States
@@ -450,7 +429,7 @@ export default function App() {
       return updated;
     });
 
-    // Stage 2: Background processing on client / Puter AI / Server
+    // Stage 2: Background processing on client or server
     (async () => {
       try {
         let processedItem = { ...docData, id: createdId };
@@ -463,7 +442,7 @@ export default function App() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ url: newItem.url })
             });
-            
+
             if (scrapeResponse.ok) {
               const scraped = await scrapeResponse.json();
               if (scraped.success) {
@@ -473,7 +452,7 @@ export default function App() {
                 processedItem.siteName = scraped.siteName || '';
                 processedItem.favicon = scraped.favicon || '';
                 processedItem.bodyText = scraped.bodyText || '';
-                
+
                 await safeUpdateItem(createdId, {
                   title: processedItem.title,
                   content: processedItem.content,
@@ -488,73 +467,7 @@ export default function App() {
           }
         }
 
-        // 2B. Puter AI Strategy (Explicit choice)
-        if (aiStrategy === 'puter' && isPuterAvailable()) {
-          console.log('[Pensieve Puter AI] Running explicit Puter.js cloud AI reasoning strategy...');
-          try {
-            const aiPrompt = `Analyze this item and return a strict, parsable JSON object with: 
-            {
-              "title": "A short descriptive title",
-              "category": "${processedItem.type}", // ONLY change if it's currently "note" and you find a better specific fit. If it's image, link, quote, color, article, video, recipe, document, music, tweet, voice, film, album, or product, KEEP IT.
-              "tags": ["3-5 short tags"],
-              "aiSummary": "One clean explanatory sentence explaining what this is",
-              "dominantColor": "grey" // red, orange, yellow, green, blue, purple, pink, black, white, grey
-            }
-            
-            CRITICAL: If the current type is "image", "color", "voice", "film", "album", or "product", DO NOT change the category.
-            
-            Item details:
-            Type: "${processedItem.type}"
-            Title: "${processedItem.title || ''}"
-            Content: "${processedItem.content || ''}"
-            Url: "${processedItem.url || 'none'}"
-            Image: "${processedItem.imageUrl || 'none'}"`;
-
-            const aiResponse1 = await window.puter.ai.chat(aiPrompt);
-            let aiText1 = '';
-            if (typeof aiResponse1 === 'string') {
-              aiText1 = aiResponse1;
-            } else if (aiResponse1 && typeof aiResponse1 === 'object') {
-              if (typeof aiResponse1.message === 'string') {
-                aiText1 = aiResponse1.message;
-              } else {
-                aiText1 = JSON.stringify(aiResponse1.message || aiResponse1);
-              }
-            }
-            let parsed;
-            try {
-              const cleanJson = aiText1.replace(/```json/gi, '').replace(/```/g, '').trim();
-              parsed = JSON.parse(cleanJson);
-            } catch {
-              parsed = {
-                title: processedItem.title || "Reflected Insight",
-                category: processedItem.type,
-                tags: ["mind", processedItem.type],
-                aiSummary: aiText1.length > 150 ? aiText1.slice(0, 150) + "..." : aiText1,
-                dominantColor: "grey"
-              };
-            }
-
-            const finalDoc = {
-              title: parsed.title || processedItem.title,
-              content: processedItem.content,
-              type: parsed.category || processedItem.type,
-              tags: Array.from(new Set([...(docData.tags), ...(parsed.tags || [])])),
-              aiTags: parsed.tags || [],
-              manualTags: docData.manualTags || [],
-              aiSummary: parsed.aiSummary || 'Analyzed via Puter Cloud AI.',
-              dominantColor: parsed.dominantColor || 'grey',
-              analyzing: false
-            };
-
-            await safeUpdateItem(createdId, finalDoc);
-            return;
-          } catch (puterAiErr) {
-            console.warn('[Pensieve Puter AI] Puter AI Strategy failed. Trying fallbacks...', puterAiErr);
-          }
-        }
-
-        // 2C. Local WebGPU AI analysis
+        // 2B. Local WebGPU AI analysis
         if (aiStrategy === 'local' && isLocalAiEnabled()) {
           console.log('[Pensieve Local AI] Initiating on-device WebGPU model...');
           try {
@@ -584,70 +497,39 @@ export default function App() {
           }
         }
 
-        // 2D. Fallback to Puter AI if available or server-side Gemini
-        if (isPuterAvailable()) {
-          console.log('[Pensieve Puter AI] Running Puter.js alternative free cloud AI...');
-          try {
-            const aiPrompt = `Analyze this item and return a strict, parsable JSON object with: 
-            {
-              "title": "A short descriptive title",
-              "category": "${processedItem.type}", // ONLY change if it's currently "note" and you find a better specific fit. If it's image, link, quote, color, article, video, recipe, document, music, tweet, voice, film, album, or product, KEEP IT.
-              "tags": ["3-5 short tags"],
-              "aiSummary": "One clean explanatory sentence explaining what this is",
-              "dominantColor": "grey" // red, orange, yellow, green, blue, purple, pink, black, white, grey
-            }
-            
-            CRITICAL: If the current type is "image", "color", "voice", "film", "album", or "product", DO NOT change the category.
-            
-            Item details:
-            Type: "${processedItem.type}"
-            Title: "${processedItem.title || ''}"
-            Content: "${processedItem.content || ''}"
-            Url: "${processedItem.url || 'none'}"
-            Image: "${processedItem.imageUrl || 'none'}"`;
+        // 2C. Server-side Gemini API fallback
+        try {
+          const analyzeResponse = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item: processedItem })
+          });
 
-            const aiResponse2 = await window.puter.ai.chat(aiPrompt);
-            let aiText2 = '';
-            if (typeof aiResponse2 === 'string') {
-              aiText2 = aiResponse2;
-            } else if (aiResponse2 && typeof aiResponse2 === 'object') {
-              if (typeof aiResponse2.message === 'string') {
-                aiText2 = aiResponse2.message;
-              } else {
-                aiText2 = JSON.stringify(aiResponse2.message || aiResponse2);
-              }
-            }
-            let parsed;
-            try {
-              const cleanJson = aiText2.replace(/```json/gi, '').replace(/```/g, '').trim();
-              parsed = JSON.parse(cleanJson);
-            } catch {
-              parsed = {
-                title: processedItem.title || "Reflected Insight",
-                category: processedItem.type,
-                tags: ["mind", processedItem.type],
-                aiSummary: aiText2.length > 150 ? aiText2.slice(0, 150) + "..." : aiText2,
-                dominantColor: "grey"
-              };
-            }
+          if (analyzeResponse.ok) {
+            const aiResult = await analyzeResponse.json();
+            if (aiResult.success) {
+              const finalDoc = {
+                title: aiResult.title || processedItem.title,
+                content: aiResult.content || processedItem.content,
+                type: aiResult.category || processedItem.type,
+                tags: Array.from(new Set([...(docData.tags), ...(aiResult.tags || [])])),
+                aiTags: aiResult.tags || [],
+                manualTags: docData.manualTags || [],
+                aiSummary: aiResult.aiSummary || '',
+                dominantColor: aiResult.dominantColor || 'grey',
+                analyzing: false
+              } as any;
 
-            const finalDoc = {
-              title: parsed.title || processedItem.title,
-              content: processedItem.content,
-              type: parsed.category || processedItem.type,
-              tags: Array.from(new Set([...(docData.tags), ...(parsed.tags || [])])),
-              aiTags: parsed.tags || [],
-              manualTags: docData.manualTags || [],
-              aiSummary: parsed.aiSummary || 'Analyzed via Puter Cloud AI.',
-              dominantColor: parsed.dominantColor || 'grey',
-              analyzing: false
-            };
+              if (aiResult.author) finalDoc.author = aiResult.author;
+              if (aiResult.readingTime) finalDoc.readingTime = aiResult.readingTime;
+              if (aiResult.siteName) finalDoc.siteName = aiResult.siteName;
 
-            await safeUpdateItem(createdId, finalDoc);
-            return;
-          } catch (puterAiErr) {
-            console.warn('[Pensieve Puter AI] Final Puter AI fallback failed.', puterAiErr);
+              await safeUpdateItem(createdId, finalDoc);
+              return;
+            }
           }
+        } catch (serverErr) {
+          console.warn('[Pensieve] Server AI analysis failed.', serverErr);
         }
 
         // Final fallback: Ensure item is saved even if all AI analysis fails
@@ -655,44 +537,9 @@ export default function App() {
           analyzing: false,
           aiSummary: 'Not analyzed (AI unavailable).'
         });
-        return;
-
-        // 2D. Server-side Gemini API fallback
-        const analyzeResponse = await fetch('/api/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ item: processedItem })
-        });
-
-        if (analyzeResponse.ok) {
-          const aiResult = await analyzeResponse.json();
-          if (aiResult.success) {
-            const finalDoc = {
-              title: aiResult.title || processedItem.title,
-              content: aiResult.content || processedItem.content,
-              type: aiResult.category || processedItem.type,
-              tags: Array.from(new Set([...(docData.tags), ...(aiResult.tags || [])])),
-              aiTags: aiResult.tags || [],
-              manualTags: docData.manualTags || [],
-              aiSummary: aiResult.aiSummary || '',
-              dominantColor: aiResult.dominantColor || 'grey',
-              analyzing: false
-            } as any;
-
-            if (aiResult.author) finalDoc.author = aiResult.author;
-            if (aiResult.readingTime) finalDoc.readingTime = aiResult.readingTime;
-            if (aiResult.siteName) finalDoc.siteName = aiResult.siteName;
-
-            await safeUpdateItem(createdId, finalDoc);
-          } else {
-            throw new Error("AI analysis failed on server");
-          }
-        } else {
-          throw new Error("Analysis request failed");
-        }
       } catch (error) {
         console.error("Background indexing failed:", error);
-        await safeUpdateItem(createdId, { 
+        await safeUpdateItem(createdId, {
           analyzing: false,
           aiSummary: 'Saved locally (offline indexing)'
         });
@@ -1482,32 +1329,6 @@ export default function App() {
             onDeleteItem={handleDeleteItem}
             onSetVibeFilter={(type, val, label) => setVibeFilter({ type, value: val, label })}
           />
-        )}
-      </AnimatePresence>
-
-      {/* Puter Login Notification */}
-      <AnimatePresence>
-        {!isPuterLoggedIn && dbStrategy === 'puter' && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[5000] w-[90vw] max-w-sm bg-card-bg border border-primary/30 p-4 rounded-2xl shadow-2xl backdrop-blur-md flex items-center gap-4"
-          >
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-foreground">Sign in to Puter.js</p>
-              <p className="text-[10px] text-foreground/50 leading-tight mt-0.5">Connect your account for persistent cloud memory sync.</p>
-            </div>
-            <button
-              onClick={() => window.puter.auth.signIn()}
-              className="px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg shadow-lg active:scale-95 transition-all"
-            >
-              Login
-            </button>
-          </motion.div>
         )}
       </AnimatePresence>
 

@@ -301,13 +301,13 @@ const THEMES = [
       'Cognitive Weaver', 'Synthesized Scholar'
     ],
     descriptions: [
-      'Let the alternative free Puter AI analyze 3 new items.',
+      'Let the alternative free cloud AI analyze 3 new items.',
       'Prompt the AI to tag an image.',
       'Generate a deep conceptual analysis of your bookmarks.',
       'Let the AI classify a note as a recipe.',
       'Have 10 items fully summarized by AI.',
       'Toggle local AI on and off to compare processing times.',
-      'Generate a custom tags list using the Puter AI backend.',
+      'Generate a custom tags list using the AI backend.',
       'Ask the AI to create a haiku from your thoughts.',
       'Use the Local AI with WebGPU enabled.',
       'Run a semantic classification on an imported tweet.'

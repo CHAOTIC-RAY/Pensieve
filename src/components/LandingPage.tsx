@@ -6,27 +6,7 @@ import {
   useSpring,
   useMotionValueEvent
 } from 'motion/react';
-import { 
-  ArrowRight, 
-  Search,
-  Sparkles,
-  Heart,
-  Palette,
-  Compass,
-  Trophy,
-  Activity,
-  Lock,
-  Cloud,
-  Mic,
-  Volume2,
-  LogIn,
-  Github,
-  Play,
-  Check,
-  CheckCircle2,
-  Quote as QuoteIcon,
-  FileText
-} from 'lucide-react';
+import { ArrowRight, Search, Sparkles, Heart, Palette, Compass, Trophy, Activity, Lock, Cloud, Mic, Volume2, LogIn, Github, Play, Check, CircleCheck as CheckCircle2, Quote as QuoteIcon, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import SparkleCursor from './SparkleCursor';
@@ -407,7 +387,7 @@ export default function LandingPage() {
                   <Cloud className="w-5 h-5" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground">Multi-Cloud Sync Engine</h3>
-                <p className="text-xs text-foreground/50 leading-relaxed font-sans">Seamless bi-directional delta synchronization to Firebase Firestore and Puter NoSQL. Gracefully falls back to offline storage on loss of signal.</p>
+                <p className="text-xs text-foreground/50 leading-relaxed font-sans">Seamless bi-directional delta synchronization to Appwrite, Firebase Firestore, or Supabase. Gracefully falls back to offline storage on loss of signal.</p>
               </div>
 
               <div className="p-6 rounded-3xl border border-black/5 bg-white/60 backdrop-blur-md space-y-4">

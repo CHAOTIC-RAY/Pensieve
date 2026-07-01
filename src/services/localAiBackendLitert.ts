@@ -32,12 +32,12 @@ export function setLocalAiEnabled(enabled: boolean): void {
   localStorage.setItem(LOCAL_AI_ENABLED_KEY, enabled ? 'true' : 'false');
 }
 
-export type AiStrategy = 'local' | 'api_key' | 'puter';
+export type AiStrategy = 'local' | 'api_key';
 
 export function getAiStrategy(): AiStrategy {
   if (typeof window === 'undefined') return 'api_key';
   const val = localStorage.getItem('pensieve_ai_strategy');
-  if (val === 'local' || val === 'api_key' || val === 'puter') return val;
+  if (val === 'local' || val === 'api_key') return val;
   return isLocalAiEnabled() ? 'local' : 'api_key';
 }
 

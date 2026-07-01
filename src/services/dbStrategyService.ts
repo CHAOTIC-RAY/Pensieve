@@ -4,19 +4,19 @@
  */
 
 import { MindItem } from '../types';
-import { getPuterItems, savePuterItems } from '../lib/puter';
+import { getAppwriteItems, saveAppwriteItems, isAppwriteConfigured } from '../lib/appwrite';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-export type DbStrategy = 'puter' | 'supabase' | 'firebase' | 'box';
+export type DbStrategy = 'appwrite' | 'supabase' | 'firebase' | 'box';
 
 export function getDbStrategy(): DbStrategy {
-  if (typeof window === 'undefined') return 'puter';
+  if (typeof window === 'undefined') return 'appwrite';
   const val = localStorage.getItem('pensieve_db_strategy');
-  if (val === 'puter' || val === 'supabase' || val === 'firebase' || val === 'box') {
+  if (val === 'appwrite' || val === 'supabase' || val === 'firebase' || val === 'box') {
     return val;
   }
-  return 'puter';
+  return 'appwrite';
 }
 
 export function setDbStrategy(strategy: DbStrategy): void {
@@ -49,7 +49,7 @@ async function fetchFromFirebase(userId: string): Promise<MindItem[] | null> {
 async function saveToFirebase(userId: string, items: MindItem[]): Promise<boolean> {
   try {
     const docRef = doc(db, 'pensieve_users', userId);
-    await setDoc(docRef, { 
+    await setDoc(docRef, {
       items,
       updated_at: new Date().toISOString()
     }, { merge: true });
@@ -140,7 +140,7 @@ async function saveToSupabase(userId: string, items: MindItem[]): Promise<boolea
  */
 export async function loadDbItems(userId: string, strategy: DbStrategy): Promise<MindItem[]> {
   const localFallback = JSON.parse(localStorage.getItem('pensieve_local_items') || '[]');
-  
+
   if (!userId) {
     return localFallback;
   }
@@ -156,9 +156,9 @@ export async function loadDbItems(userId: string, strategy: DbStrategy): Promise
       // TODO: Implement Box fetch
       console.warn('[Box] Fetch not yet implemented.');
     } else {
-      // Puter strategy
-      const puterItems = await getPuterItems(userId);
-      if (puterItems && puterItems.length > 0) return puterItems;
+      // Appwrite strategy (default)
+      const appwriteItems = await getAppwriteItems(userId);
+      if (appwriteItems && appwriteItems.length > 0) return appwriteItems;
     }
   } catch (e) {
     console.warn(`[DB Strategy Service] Loading failed for ${strategy}, utilizing local fallback.`, e);
@@ -192,8 +192,8 @@ export async function saveDbItems(userId: string, items: MindItem[], strategy: D
       console.warn('[Box] Save not yet implemented.');
       return false;
     } else {
-      // Puter strategy
-      return await savePuterItems(userId, items);
+      // Appwrite strategy (default)
+      return await saveAppwriteItems(userId, items);
     }
   } catch (e) {
     console.error(`[DB Strategy Service] Save failed for ${strategy}`, e);
