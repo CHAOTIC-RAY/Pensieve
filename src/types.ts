@@ -3,7 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type MindItemType = 'note' | 'link' | 'image' | 'quote' | 'color' | 'article' | 'video' | 'recipe' | 'document' | 'music' | 'tweet' | 'voice';
+export type MindItemType = 'note' | 'link' | 'image' | 'quote' | 'color' | 'article' | 'video' | 'recipe' | 'document' | 'music' | 'tweet' | 'voice' | 'film' | 'album' | 'product';
+
+export interface NoteStyle {
+  fontFamily?: 'serif' | 'sans' | 'mono' | 'display';
+  fontSize?: 'sm' | 'base' | 'lg' | 'xl';
+  color?: string; // hex
+  bgColor?: string; // hex
+  bold?: boolean;
+  italic?: boolean;
+}
 
 export interface MindItem {
   id: string;
@@ -26,7 +35,16 @@ export interface MindItem {
   audioUrl?: string; // Base64 or Blob URL for recorded voice notes
   aiSummary?: string; // 1-sentence AI summary of the item
   bodyText?: string; // Temporary scraped article context
-  
+
+  // Status tracking
+  isRead?: boolean; // For articles, books
+  isWatched?: boolean; // For films, videos
+  readAt?: string; // ISO date when marked read
+  watchedAt?: string; // ISO date when marked watched
+
+  // Note styling
+  noteStyle?: NoteStyle;
+
   // Extra parsed metadata
   readingTime?: number; // In minutes, for articles
   siteName?: string; // e.g. "Medium", "YouTube", "Spotify"
@@ -39,6 +57,29 @@ export interface MindItem {
   steps?: string[]; // For recipes
   fileSize?: string; // For PDFs/documents
   pageCount?: number; // For PDFs/documents
+
+  // Film metadata
+  moviePoster?: string; // Poster image URL or generated gradient key
+  rating?: string; // e.g. "8.3/10" or "PG-13"
+  runtime?: string; // e.g. "148 min"
+  genre?: string[]; // e.g. ["Sci-Fi", "Thriller"]
+  releaseYear?: number;
+  director?: string;
+  cast?: string[];
+
+  // Album metadata
+  albumArtUrl?: string;
+  trackCount?: number;
+  albumYear?: number;
+  albumLabel?: string;
+
+  // Product metadata
+  price?: string;
+  currency?: string; // e.g. "USD", "EUR"
+  brand?: string;
+  materials?: string;
+  productImageUrl?: string;
+  buyUrl?: string;
 }
 
 export interface SerendipityPrompt {

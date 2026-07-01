@@ -5,11 +5,25 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Search, Plus, FileText, CheckSquare, Quote, 
-  Palette, Link2, Image as ImageIcon, ArrowRight, X, Sparkles, Mic, Square 
+  Search, FileText, CheckSquare, Quote, 
+  Palette, Link2, Image as ImageIcon, ArrowRight, X, Sparkles, Mic, Square,
+  Film, Disc, ShoppingBag, Hash, Github, Slash
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MindItem, MindItemType } from '../types';
+
+// Slash command definitions
+const SLASH_COMMANDS = [
+  { cmd: '/note', label: 'Note', desc: 'Create a text note', icon: FileText, color: 'text-blue-500', type: 'note' as MindItemType },
+  { cmd: '/film', label: 'Film', desc: 'Save a movie card', icon: Film, color: 'text-purple-500', type: 'film' as MindItemType },
+  { cmd: '/album', label: 'Album', desc: 'Save an album card', icon: Disc, color: 'text-indigo-500', type: 'album' as MindItemType },
+  { cmd: '/quote', label: 'Quote', desc: 'Save a quote', icon: Quote, color: 'text-amber-500', type: 'quote' as MindItemType },
+  { cmd: '/link', label: 'Link', desc: 'Bookmark a URL', icon: Link2, color: 'text-teal-500', type: 'link' as MindItemType },
+  { cmd: '/color', label: 'Color', desc: 'Save a hex color swatch', icon: Palette, color: 'text-rose-500', type: 'color' as MindItemType },
+  { cmd: '/todo', label: 'Todo', desc: 'Create a checklist', icon: CheckSquare, color: 'text-emerald-500', type: 'note' as MindItemType },
+  { cmd: '/product', label: 'Product', desc: 'Save a product card', icon: ShoppingBag, color: 'text-orange-500', type: 'product' as MindItemType },
+  { cmd: '/tag', label: 'Tag', desc: 'Search by tag', icon: Hash, color: 'text-neutral-500', type: null },
+];
 
 interface OmnibarProps {
   searchQuery: string;
@@ -28,6 +42,23 @@ export default function Omnibar({
 }: OmnibarProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [composerType, setComposerType] = useState<MindItemType | null>(null);
+  const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const [slashFilter, setSlashFilter] = useState('');
+  const [slashSelectedIdx, setSlashSelectedIdx] = useState(0);
+  // Film composer state
+  const [filmTitle, setFilmTitle] = useState('');
+  const [filmYear, setFilmYear] = useState('');
+  const [filmGenre, setFilmGenre] = useState('');
+  const [filmDirector, setFilmDirector] = useState('');
+  const [filmRating, setFilmRating] = useState('');
+  const [filmRuntime, setFilmRuntime] = useState('');
+  // Album composer state
+  const [albumArtist, setAlbumArtist] = useState('');
+  const [albumYear, setAlbumYear] = useState('');
+  // Product composer state
+  const [productPrice, setProductPrice] = useState('');
+  const [productBrand, setProductBrand] = useState('');
+  const [productBuyUrl, setProductBuyUrl] = useState('');
   
   // Composer form states
   const [noteTitle, setNoteTitle] = useState('');
@@ -122,6 +153,20 @@ export default function Omnibar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [noteBody, urlLink, quoteBody, imageFile, checklistItems]);
 
+  // Slash command filtering
+  const filteredSlashCmds = slashFilter
+    ? SLASH_COMMANDS.filter(c => c.cmd.includes(slashFilter.toLowerCase()) || c.label.toLowerCase().includes(slashFilter.slice(1).toLowerCase()))
+    : SLASH_COMMANDS;
+
+  const handleSlashSelect = (cmd: typeof SLASH_COMMANDS[0]) => {
+    setShowSlashMenu(false);
+    setSlashFilter('');
+    onSearchChange('');
+    if (cmd.type) {
+      setComposerType(cmd.type);
+    }
+  };
+
   // Intelligent input detection as user types
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -132,6 +177,17 @@ export default function Omnibar({
     }
     
     onSearchChange(val);
+
+    // Slash command detection
+    if (val.startsWith('/')) {
+      setShowSlashMenu(true);
+      setSlashFilter(val);
+      setSlashSelectedIdx(0);
+      return;
+    } else {
+      setShowSlashMenu(false);
+      setSlashFilter('');
+    }
 
     if (composerType) return; // Don't auto-detect if already in a specific composer mode
 
@@ -156,13 +212,28 @@ export default function Omnibar({
       return;
     }
 
-    // 4. Topic/Hashtag detection
+    // 3. Auto quote detection: text wrapped in "" or “”
+    const quoteRegex = /^["“‘].{10,}["”’]$/;
+    if (quoteRegex.test(cleanVal)) {
+      setDetectedType({ type: 'quote', value: cleanVal, label: 'Save as Quote' });
+      return;
+    }
+
+    // 4. Film title detection: title ending with (YYYY) pattern e.g. "Inception (2010)"
+    const filmRegex = /^(.+)\s*\((\d{4})\)\s*$/;
+    const filmMatch = filmRegex.exec(cleanVal);
+    if (filmMatch) {
+      setDetectedType({ type: 'film' as any, value: filmMatch[1].trim(), label: `Save as Film · ${filmMatch[2]}` });
+      return;
+    }
+
+    // 5. Topic/Hashtag detection
     if (cleanVal.startsWith('#') && cleanVal.length > 1 && !cleanVal.includes(' ')) {
       setDetectedType({ type: 'topic', value: cleanVal, label: `Search tag: ${cleanVal.slice(1)}` });
       return;
     }
 
-    // 5. Intelligent "Note" detection (if starts with capital or is long sentence)
+    // 6. Intelligent "Note" detection (if starts with capital or is long sentence)
     if (cleanVal.length > 30 || (cleanVal.length > 10 && /^[A-Z]/.test(cleanVal))) {
       setDetectedType({ type: 'note', value: cleanVal, label: 'Create new note' });
       return;
@@ -210,12 +281,19 @@ export default function Omnibar({
           tags: ['link', 'bookmark']
         };
       } else if (detectedType.type === 'quote') {
-        const body = detectedType.value.replace(/^["“]|["”]$/g, '');
+        const body = detectedType.value.replace(/^["\u201c\u2018]|["\u201d\u2019]$/g, '');
         newItem = {
           type: 'quote',
           title: 'A Beautiful Quote',
           content: body,
           tags: ['quote', 'inspiration']
+        };
+      } else if ((detectedType.type as any) === 'film') {
+        newItem = {
+          type: 'film',
+          title: detectedType.value,
+          content: '',
+          tags: ['film', 'movie', detectedType.value.toLowerCase()]
         };
       } else if (detectedType.type === 'note') {
         newItem = {
@@ -301,6 +379,32 @@ export default function Omnibar({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Handle slash menu navigation
+    if (showSlashMenu) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSlashSelectedIdx(i => Math.min(i + 1, filteredSlashCmds.length - 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSlashSelectedIdx(i => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (filteredSlashCmds[slashSelectedIdx]) {
+          handleSlashSelect(filteredSlashCmds[slashSelectedIdx]);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        setShowSlashMenu(false);
+        setSlashFilter('');
+        onSearchChange('');
+        return;
+      }
+    }
     if (e.key === 'Enter') {
       if (detectedType) {
         handleCreateItem();
@@ -377,6 +481,46 @@ export default function Omnibar({
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
+      {/* Slash Command Palette */}
+      <AnimatePresence>
+        {showSlashMenu && filteredSlashCmds.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.97 }}
+            className="absolute bottom-full mb-2 left-4 right-4 bg-white/98 backdrop-blur-xl border border-black/8 rounded-2xl shadow-2xl overflow-hidden z-50"
+          >
+            <div className="px-4 py-2 border-b border-neutral-100 flex items-center gap-2">
+              <Slash className="w-3.5 h-3.5 text-neutral-400" />
+              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider">Commands</span>
+            </div>
+            <div className="py-1.5 max-h-64 overflow-y-auto">
+              {filteredSlashCmds.map((cmd, idx) => {
+                const Icon = cmd.icon;
+                return (
+                  <button
+                    key={cmd.cmd}
+                    className={`w-full px-4 py-2.5 text-left flex items-center gap-3 transition-colors ${
+                      idx === slashSelectedIdx ? 'bg-neutral-50' : 'hover:bg-neutral-50'
+                    }`}
+                    onClick={() => handleSlashSelect(cmd)}
+                    onMouseEnter={() => setSlashSelectedIdx(idx)}
+                  >
+                    <div className={`w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0 ${cmd.color}`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-semibold text-neutral-800">{cmd.label}</span>
+                      <span className="text-[10px] text-neutral-400 font-sans">{cmd.desc}</span>
+                    </div>
+                    <span className="ml-auto text-[9px] font-mono text-neutral-300 shrink-0">{cmd.cmd}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Animated Glow Backdrop */}
       <motion.div
         animate={isFocused ? {
@@ -507,8 +651,11 @@ export default function Omnibar({
               {/* Type selector toolbar */}
               {!composerType && (
                 <div className="flex items-center justify-between px-4 py-3 gap-2 flex-wrap">
-                  <span className="text-[11px] font-mono text-neutral-400 tracking-wider uppercase">Quick Add</span>
-                  <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] font-mono text-neutral-400 tracking-wider uppercase">Quick Add</span>
+                    <span className="text-[9px] font-mono text-neutral-300 ml-2 hidden sm:inline">· type / for commands</span>
+                  </div>
+                  <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                     <button
                       onClick={() => setComposerType('note')}
                       className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
@@ -534,6 +681,20 @@ export default function Omnibar({
                       <span>Quote</span>
                     </button>
                     <button
+                      onClick={() => setComposerType('film')}
+                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
+                    >
+                      <Film className="w-3.5 h-3.5 text-purple-500" />
+                      <span>Film</span>
+                    </button>
+                    <button
+                      onClick={() => setComposerType('album')}
+                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
+                    >
+                      <Disc className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Album</span>
+                    </button>
+                    <button
                       onClick={() => setComposerType('color')}
                       className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
                     >
@@ -544,7 +705,7 @@ export default function Omnibar({
                       onClick={() => setComposerType('link')}
                       className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
                     >
-                      <Link2 className="w-3.5 h-3.5 text-indigo-500" />
+                      <Link2 className="w-3.5 h-3.5 text-teal-500" />
                       <span>Link</span>
                     </button>
                     <button
@@ -816,6 +977,131 @@ export default function Omnibar({
                       >
                         <Sparkles className="w-3.5 h-3.5" />
                         Analyze and Save
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Film Composer */}
+                {composerType === 'film' && (
+                  <div className="space-y-3 pt-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        autoFocus
+                        type="text"
+                        placeholder="Movie title..."
+                        className="col-span-2 w-full text-sm bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:border-primary text-neutral-800 placeholder-neutral-400"
+                        value={filmTitle}
+                        onChange={(e) => setFilmTitle(e.target.value)}
+                      />
+                      <input type="text" placeholder="Year (e.g. 2010)" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={filmYear} onChange={e => setFilmYear(e.target.value)} />
+                      <input type="text" placeholder="Runtime (e.g. 148 min)" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={filmRuntime} onChange={e => setFilmRuntime(e.target.value)} />
+                      <input type="text" placeholder="Director" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={filmDirector} onChange={e => setFilmDirector(e.target.value)} />
+                      <input type="text" placeholder="Genre (e.g. Sci-Fi)" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={filmGenre} onChange={e => setFilmGenre(e.target.value)} />
+                      <input type="text" placeholder="Rating (e.g. 8.3/10)" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700 col-span-2" value={filmRating} onChange={e => setFilmRating(e.target.value)} />
+                    </div>
+                    <div className="flex justify-between items-center pt-1">
+                      <button onClick={resetComposer} className="text-xs text-neutral-500 hover:text-neutral-800">Cancel</button>
+                      <button
+                        onClick={async () => {
+                          if (!filmTitle.trim()) return;
+                          await onItemCreated({
+                            type: 'film',
+                            title: filmTitle.trim(),
+                            content: '',
+                            releaseYear: filmYear ? parseInt(filmYear) : undefined,
+                            runtime: filmRuntime || undefined,
+                            director: filmDirector || undefined,
+                            genre: filmGenre ? filmGenre.split(',').map(g => g.trim()) : undefined,
+                            rating: filmRating || undefined,
+                            tags: ['film', 'movie', filmTitle.toLowerCase(), ...( filmGenre ? [filmGenre.toLowerCase()] : [])]
+                          });
+                          setFilmTitle(''); setFilmYear(''); setFilmGenre(''); setFilmDirector(''); setFilmRating(''); setFilmRuntime('');
+                          resetComposer();
+                        }}
+                        className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
+                      >
+                        <Film className="w-3.5 h-3.5" /> Save Film
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Album Composer */}
+                {composerType === 'album' && (
+                  <div className="space-y-3 pt-2">
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder="Album title..."
+                      className="w-full text-sm bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:border-primary text-neutral-800 placeholder-neutral-400"
+                      value={noteTitle}
+                      onChange={e => setNoteTitle(e.target.value)}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="text" placeholder="Artist / Band" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={albumArtist} onChange={e => setAlbumArtist(e.target.value)} />
+                      <input type="text" placeholder="Year" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={albumYear} onChange={e => setAlbumYear(e.target.value)} />
+                    </div>
+                    <div className="flex justify-between items-center pt-1">
+                      <button onClick={resetComposer} className="text-xs text-neutral-500 hover:text-neutral-800">Cancel</button>
+                      <button
+                        onClick={async () => {
+                          if (!noteTitle.trim()) return;
+                          await onItemCreated({
+                            type: 'album',
+                            title: noteTitle.trim(),
+                            content: '',
+                            author: albumArtist || undefined,
+                            albumYear: albumYear ? parseInt(albumYear) : undefined,
+                            tags: ['album', 'music', noteTitle.toLowerCase(), ...(albumArtist ? [albumArtist.toLowerCase()] : [])]
+                          });
+                          setNoteTitle(''); setAlbumArtist(''); setAlbumYear('');
+                          resetComposer();
+                        }}
+                        className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
+                      >
+                        <Disc className="w-3.5 h-3.5" /> Save Album
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Product Composer */}
+                {composerType === 'product' && (
+                  <div className="space-y-3 pt-2">
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder="Product name..."
+                      className="w-full text-sm bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:border-primary text-neutral-800 placeholder-neutral-400"
+                      value={noteTitle}
+                      onChange={e => setNoteTitle(e.target.value)}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="text" placeholder="Brand" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={productBrand} onChange={e => setProductBrand(e.target.value)} />
+                      <input type="text" placeholder="Price (e.g. 29.99)" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={productPrice} onChange={e => setProductPrice(e.target.value)} />
+                      <input type="text" placeholder="Buy URL (optional)" className="col-span-2 text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={productBuyUrl} onChange={e => setProductBuyUrl(e.target.value)} />
+                    </div>
+                    <div className="flex justify-between items-center pt-1">
+                      <button onClick={resetComposer} className="text-xs text-neutral-500 hover:text-neutral-800">Cancel</button>
+                      <button
+                        onClick={async () => {
+                          if (!noteTitle.trim()) return;
+                          await onItemCreated({
+                            type: 'product',
+                            title: noteTitle.trim(),
+                            content: '',
+                            brand: productBrand || undefined,
+                            price: productPrice || undefined,
+                            buyUrl: productBuyUrl || undefined,
+                            tags: ['product', ...(productBrand ? [productBrand.toLowerCase()] : [])]
+                          });
+                          setNoteTitle(''); setProductBrand(''); setProductPrice(''); setProductBuyUrl('');
+                          resetComposer();
+                        }}
+                        className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5" /> Save Product
                       </button>
                     </div>
                   </div>

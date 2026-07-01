@@ -1056,6 +1056,7 @@ export default function App() {
                         handleToggleTopMind(item);
                       }}
                       onUpdateChecklist={handleUpdateChecklist}
+                      onUpdateItem={handleUpdateItem}
                     />
                   </motion.div>
                 ))}
@@ -1140,6 +1141,7 @@ export default function App() {
                                 handleToggleTopMind(item);
                               }}
                               onUpdateChecklist={handleUpdateChecklist}
+                              onUpdateItem={handleUpdateItem}
                             />
                             
                             {/* Fast Organize Actions Overlay */}

@@ -6,11 +6,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Calendar, Star, Sparkles, Plus, Trash2, 
-  ExternalLink, BookOpen, Copy, Check, Palette, Eye, Quote as QuoteIcon, Utensils
+  ExternalLink, BookOpen, Copy, Check, Palette, Eye, Quote as QuoteIcon, Utensils,
+  Film, Disc, ShoppingBag, CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
-import { MindItem } from '../types';
+import { MindItem, NoteStyle } from '../types';
 
 interface DetailPanelProps {
   item: MindItem | null;
@@ -96,6 +97,7 @@ export default function DetailPanel({
   const [tags, setTags] = useState<string[]>([]);
   const [copiedHarmonic, setCopiedHarmonic] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [noteStyle, setNoteStyle] = useState<NoteStyle>({});
 
   useEffect(() => {
     if (item) {
@@ -103,6 +105,7 @@ export default function DetailPanel({
       setContent(item.content);
       setAuthor(item.author || '');
       setTags(item.tags || []);
+      setNoteStyle(item.noteStyle || {});
       setIsReaderOpen(false);
       setIsEditing(false);
     }
@@ -300,22 +303,22 @@ export default function DetailPanel({
                   </div>
                 )}
 
-                <div className="flex gap-2">
-                  <button 
-                    onClick={handleSaveChanges}
-                    className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
-                  >
-                    Save Changes
-                  </button>
-                  <button 
-                    onClick={() => setIsEditing(false)}
-                    className="text-neutral-500 hover:text-neutral-800 text-xs font-medium px-3"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
+<div className="flex gap-2">
+                   <button 
+                     onClick={handleSaveChanges}
+                     className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
+                   >
+                     Save Changes
+                   </button>
+                   <button 
+                     onClick={() => setIsEditing(false)}
+                     className="text-neutral-500 hover:text-neutral-800 text-xs font-medium px-3"
+                   >
+                     Cancel
+                   </button>
+                 </div>
+               </div>
+             ) : null;
               <div className="space-y-3.5">
                 <div className="flex items-start justify-between gap-4">
                   <h2 className="font-display font-semibold text-lg text-neutral-800 tracking-tight leading-snug">
