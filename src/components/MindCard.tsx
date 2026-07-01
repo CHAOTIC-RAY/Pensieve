@@ -222,17 +222,25 @@ export default function MindCard({
     <>
       <motion.div
         id={`mind-card-${item.id}`}
-        layoutId={`card-container-${item.id}`}
         onClick={onClick}
         onContextMenu={handleRightClick}
-        className="group relative break-inside-avoid mb-6 w-full bg-card-bg border border-card-border rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-md hover:border-foreground/20 transition-all duration-300 flex flex-col text-foreground"
+        className="group relative break-inside-avoid mb-6 w-full cursor-pointer transition-all duration-500 flex flex-col text-foreground"
         whileHover={{ y: -4 }}
       >
+        {/* Animated glow effects visible on hover, matching key tags/colors */}
+        <div className="absolute -inset-[3px] bg-gradient-to-r from-primary via-[#a855f7] to-[#8b5cf6] rounded-[26px] opacity-0 group-hover:opacity-75 transition-all duration-500 blur-[8px] z-0 animate-gradient pointer-events-none" />
+        <div className="absolute -inset-[6px] bg-gradient-to-r from-primary via-[#a855f7] to-[#8b5cf6] rounded-[28px] opacity-0 group-hover:opacity-40 transition-all duration-500 blur-[18px] z-0 animate-gradient pointer-events-none" />
+        
+        {/* Actual Card Body with overflow-hidden */}
+        <div 
+          style={{ WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}
+          className="w-full h-full bg-card-bg border border-card-border rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:border-foreground/20 transition-all duration-300 flex flex-col text-foreground z-10 relative isolation-isolate"
+        >
         {/* Top action rail - only visible on hover */}
-        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1.5 z-10">
+        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1.5 z-20">
           {onToggleTopMind && (
             <button
-              onClick={onToggleTopMind}
+              onClick={(e) => { e?.stopPropagation(); onToggleTopMind(e); }}
               title={item.isTopMind ? 'Remove from Top of Mind' : 'Set as Top of Mind'}
               className={`p-1.5 rounded-full backdrop-blur-md border shadow-sm hover:scale-105 transition cursor-pointer ${
                 item.isTopMind 
@@ -244,7 +252,7 @@ export default function MindCard({
             </button>
           )}
           <button
-            onClick={onToggleFavorite}
+            onClick={(e) => { e?.stopPropagation(); onToggleFavorite(e); }}
             title={item.isFavorite ? 'Remove favorite' : 'Add to favorites'}
             className={`p-1.5 rounded-full backdrop-blur-md border shadow-sm hover:scale-105 transition cursor-pointer ${
               item.isFavorite 
@@ -255,7 +263,7 @@ export default function MindCard({
             <Heart className={`w-3.5 h-3.5 ${item.isFavorite ? 'fill-rose-500' : ''}`} />
           </button>
           <button
-            onClick={onDelete}
+            onClick={(e) => { e?.stopPropagation(); onDelete(e); }}
             title="Delete item"
             className="p-1.5 rounded-full bg-card-bg/90 text-foreground/50 hover:text-red-500 border border-border-subtle shadow-sm hover:scale-105 transition cursor-pointer hover:bg-card-bg"
           >
@@ -336,32 +344,44 @@ export default function MindCard({
         {/* 3. NOTES & CHECKLISTS — with custom noteStyle */}
         {item.type === 'note' && (
           <div 
-            className="p-6 flex flex-col gap-2.5 h-full transition-colors duration-300"
+            className="flex flex-col h-full transition-colors duration-300"
             style={{
               backgroundColor: item.noteStyle?.bgColor || '#FEEBC8',
               color: item.noteStyle?.color || '#121212',
             }}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] uppercase tracking-widest font-bold opacity-40">
-                {isChecklist ? 'List' : 'Note'}
-              </span>
-              <span className="text-[10px] font-mono opacity-40">
-                {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-              </span>
-            </div>
+            {/* Fallback image if categorized as note but has an image URL */}
+            {item.imageUrl && (
+              <div className="w-full h-32 overflow-hidden bg-black/5 border-b border-black/5 relative">
+                <img 
+                  src={item.imageUrl} 
+                  alt={item.title} 
+                  className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all" 
+                />
+              </div>
+            )}
+            <div className="p-6 flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] uppercase tracking-widest font-bold opacity-40">
+                  {isChecklist ? 'List' : 'Note'}
+                </span>
+                <span className="text-[10px] font-mono opacity-40">
+                  {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </span>
+              </div>
 
-            <h3 
-              className="font-semibold tracking-tight leading-snug"
-              style={getNoteStyles({ ...item.noteStyle, fontSize: 'base', bold: true })}
-            >
-              {item.title}
-            </h3>
+              <h3 
+                className="font-semibold tracking-tight leading-snug"
+                style={getNoteStyles({ ...item.noteStyle, fontSize: 'base', bold: true })}
+              >
+                {item.title}
+              </h3>
 
-            <div className="text-sm font-sans leading-relaxed break-words opacity-75" style={getNoteStyles(item.noteStyle)}>
-              {isChecklist ? renderChecklist() : (
-                <p className="line-clamp-6 whitespace-pre-wrap">{item.content}</p>
-              )}
+              <div className="text-sm font-sans leading-relaxed break-words opacity-75" style={getNoteStyles(item.noteStyle)}>
+                {isChecklist ? renderChecklist() : (
+                  <p className="line-clamp-6 whitespace-pre-wrap">{item.content}</p>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -494,7 +514,6 @@ export default function MindCard({
                 alt={item.title} 
                 className="w-full object-cover max-h-[360px] transition-transform duration-500 group-hover:scale-102"
                 loading="lazy"
-                referrerPolicy="no-referrer"
               />
             </div>
             <div className="p-4 flex flex-col gap-1.5 bg-card-bg border-t border-card-border">
@@ -526,7 +545,6 @@ export default function MindCard({
                   alt={item.title} 
                   className="w-full h-full object-cover opacity-85 transition-transform duration-500 group-hover/video:scale-102 group-hover/video:opacity-75"
                   loading="lazy"
-                  referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-lg group-hover/video:scale-110 transition duration-300">
@@ -594,7 +612,7 @@ export default function MindCard({
             <div className="flex items-center gap-3.5">
               {item.imageUrl ? (
                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-neutral-800 relative group/music flex-shrink-0 shadow-md">
-                  <img src={item.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/music:opacity-100 flex items-center justify-center transition duration-200">
                     <Play className="w-4 h-4 text-white fill-white" />
                   </div>
@@ -646,7 +664,7 @@ export default function MindCard({
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-9 h-9 rounded-full bg-neutral-200 border border-black/5 overflow-hidden flex-shrink-0 flex items-center justify-center">
                   {item.authorAvatar ? (
-                    <img src={item.authorAvatar} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={item.authorAvatar} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <Twitter className="w-4 h-4 text-[#1D9BF0] fill-[#1D9BF0]" />
                   )}
@@ -1004,14 +1022,24 @@ export default function MindCard({
         )}
 
         {item.analyzing && (
-          <div className="absolute inset-0 bg-card-bg/75 backdrop-blur-[2.5px] flex flex-col items-center justify-center gap-3 z-20 pointer-events-auto cursor-wait">
+          <div 
+            className="absolute inset-0 bg-card-bg/75 backdrop-blur-[2.5px] flex flex-col items-center justify-center gap-3 z-20 pointer-events-auto cursor-wait"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onClick) onClick();
+            }}
+          >
             <LogoDrawing className="w-11 h-11" color="text-primary" />
-            <span className="text-[10px] font-mono font-bold text-foreground/85 uppercase tracking-widest animate-pulse">
-              AI is organizing...
-            </span>
+            <div className="text-center px-4">
+              <span className="text-[10px] font-mono font-bold text-foreground/85 uppercase tracking-widest animate-pulse block">
+                AI is organizing...
+              </span>
+              <span className="text-[9px] text-neutral-400 font-sans mt-1">Click to open anyway</span>
+            </div>
           </div>
         )}
-      </motion.div>
+      </div>
+    </motion.div>
 
       {/* RIGHT-CLICK CONTEXT MENU */}
       <AnimatePresence>

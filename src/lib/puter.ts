@@ -51,7 +51,7 @@ export async function getPuterItems(userId: string): Promise<MindItem[]> {
 
   // Fallback to local storage if Puter is not available or empty
   try {
-    const local = localStorage.getItem('mymind_local_items');
+    const local = localStorage.getItem('pensieve_local_items');
     if (local) {
       return JSON.parse(local);
     }
@@ -70,7 +70,7 @@ export async function savePuterItems(userId: string, items: MindItem[]): Promise
 
   // Sync to local storage first for instant responsiveness
   try {
-    localStorage.setItem('mymind_local_items', JSON.stringify(items));
+    localStorage.setItem('pensieve_local_items', JSON.stringify(items));
   } catch (e) {
     console.error("[Pensieve Puter] Failed to write to local storage", e);
   }

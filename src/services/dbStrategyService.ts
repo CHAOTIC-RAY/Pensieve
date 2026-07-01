@@ -4,16 +4,16 @@
  */
 
 import { MindItem } from '../types';
-import { getPuterItems, savePuterItems, isPuterAvailable } from '../lib/puter';
+import { getPuterItems, savePuterItems } from '../lib/puter';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-export type DbStrategy = 'puter' | 'supabase' | 'firebase';
+export type DbStrategy = 'puter' | 'supabase' | 'firebase' | 'box';
 
 export function getDbStrategy(): DbStrategy {
   if (typeof window === 'undefined') return 'puter';
   const val = localStorage.getItem('pensieve_db_strategy');
-  if (val === 'puter' || val === 'supabase' || val === 'firebase') {
+  if (val === 'puter' || val === 'supabase' || val === 'firebase' || val === 'box') {
     return val;
   }
   return 'puter';
@@ -25,11 +25,48 @@ export function setDbStrategy(strategy: DbStrategy): void {
 }
 
 /**
+ * Fetch items from Firebase Firestore
+ */
+async function fetchFromFirebase(userId: string): Promise<MindItem[] | null> {
+  try {
+    const docRef = doc(db, 'pensieve_users', userId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data && data.items && Array.isArray(data.items)) {
+        return data.items;
+      }
+    }
+  } catch (error) {
+    console.error('[Firebase Firestore] Error fetching from Firebase:', error);
+  }
+  return null;
+}
+
+/**
+ * Save items to Firebase Firestore
+ */
+async function saveToFirebase(userId: string, items: MindItem[]): Promise<boolean> {
+  try {
+    const docRef = doc(db, 'pensieve_users', userId);
+    await setDoc(docRef, { 
+      items,
+      updated_at: new Date().toISOString()
+    }, { merge: true });
+    console.log(`[Firebase Firestore] Successfully saved ${items.length} items to Firestore.`);
+    return true;
+  } catch (error) {
+    console.error('[Firebase Firestore] Error saving to Firebase:', error);
+    return false;
+  }
+}
+
+/**
  * Fetch items from Supabase via REST API
  */
 async function fetchFromSupabase(userId: string): Promise<MindItem[] | null> {
-  const url = localStorage.getItem('mymind_supabase_url');
-  const key = localStorage.getItem('mymind_supabase_key');
+  const url = localStorage.getItem('pensieve_supabase_url');
+  const key = localStorage.getItem('pensieve_supabase_key');
   if (!url || !key) return null;
 
   try {
@@ -63,8 +100,8 @@ async function fetchFromSupabase(userId: string): Promise<MindItem[] | null> {
  * Save items to Supabase via REST API (UPSERT)
  */
 async function saveToSupabase(userId: string, items: MindItem[]): Promise<boolean> {
-  const url = localStorage.getItem('mymind_supabase_url');
-  const key = localStorage.getItem('mymind_supabase_key');
+  const url = localStorage.getItem('pensieve_supabase_url');
+  const key = localStorage.getItem('pensieve_supabase_key');
   if (!url || !key) return false;
 
   try {
@@ -99,44 +136,10 @@ async function saveToSupabase(userId: string, items: MindItem[]): Promise<boolea
 }
 
 /**
- * Fetch items from Firebase Firestore config collection
- */
-async function fetchFromFirebase(userId: string): Promise<MindItem[] | null> {
-  try {
-    const docRef = doc(db, 'users', userId, 'config', 'mind_items');
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      if (data && Array.isArray(data.items)) {
-        return data.items;
-      }
-    }
-  } catch (error) {
-    console.error('[Firebase Firestore] Error fetching from Firestore:', error);
-  }
-  return null;
-}
-
-/**
- * Save items to Firebase Firestore config collection
- */
-async function saveToFirebase(userId: string, items: MindItem[]): Promise<boolean> {
-  try {
-    const docRef = doc(db, 'users', userId, 'config', 'mind_items');
-    await setDoc(docRef, { items, updated_at: new Date().toISOString() }, { merge: true });
-    console.log(`[Firebase Firestore] Successfully saved ${items.length} items to Firestore.`);
-    return true;
-  } catch (error) {
-    console.error('[Firebase Firestore] Error saving to Firestore:', error);
-  }
-  return false;
-}
-
-/**
  * Loads mind items based on active strategy
  */
 export async function loadDbItems(userId: string, strategy: DbStrategy): Promise<MindItem[]> {
-  const localFallback = JSON.parse(localStorage.getItem('mymind_local_items') || '[]');
+  const localFallback = JSON.parse(localStorage.getItem('pensieve_local_items') || '[]');
   
   if (!userId) {
     return localFallback;
@@ -149,6 +152,9 @@ export async function loadDbItems(userId: string, strategy: DbStrategy): Promise
     } else if (strategy === 'supabase') {
       const sbItems = await fetchFromSupabase(userId);
       if (sbItems) return sbItems;
+    } else if (strategy === 'box') {
+      // TODO: Implement Box fetch
+      console.warn('[Box] Fetch not yet implemented.');
     } else {
       // Puter strategy
       const puterItems = await getPuterItems(userId);
@@ -167,7 +173,7 @@ export async function loadDbItems(userId: string, strategy: DbStrategy): Promise
 export async function saveDbItems(userId: string, items: MindItem[], strategy: DbStrategy): Promise<boolean> {
   // Always save to localStorage first for offline safety
   try {
-    localStorage.setItem('mymind_local_items', JSON.stringify(items));
+    localStorage.setItem('pensieve_local_items', JSON.stringify(items));
   } catch (e) {
     console.error('[DB Strategy Service] Local fallback saving failed:', e);
   }
@@ -181,6 +187,10 @@ export async function saveDbItems(userId: string, items: MindItem[], strategy: D
       return await saveToFirebase(userId, items);
     } else if (strategy === 'supabase') {
       return await saveToSupabase(userId, items);
+    } else if (strategy === 'box') {
+      // TODO: Implement Box save
+      console.warn('[Box] Save not yet implemented.');
+      return false;
     } else {
       // Puter strategy
       return await savePuterItems(userId, items);

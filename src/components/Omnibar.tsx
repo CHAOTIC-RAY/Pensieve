@@ -433,6 +433,14 @@ export default function Omnibar({
         return;
       }
     }
+
+    // Ctrl+Enter to save
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleCreateItem();
+      return;
+    }
+
     if (e.key === 'Enter') {
       if (detectedType) {
         handleCreateItem();
@@ -442,6 +450,12 @@ export default function Omnibar({
         setNoteBody(searchQuery);
         setNoteTitle('');
       }
+    }
+
+    // Arrow key navigation placeholder (move between sections)
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      // Placeholder for section navigation
+      console.log('Navigate sections:', e.key);
     }
   };
 
@@ -503,7 +517,7 @@ export default function Omnibar({
 
   return (
     <div 
-      id="mymind-omnibar-container"
+      id="pensieve-omnibar-container"
       ref={containerRef}
       className="sticky top-0 md:top-auto md:relative w-full max-w-2xl mx-auto z-40 px-4 md:px-4 mt-1 md:mt-4 pt-1 pb-2 md:pt-0 md:pb-2 bg-background md:bg-transparent transition-colors duration-300"
       onDragOver={handleDragOver}
@@ -567,7 +581,7 @@ export default function Omnibar({
       />
 
       <div 
-        id="mymind-omnibar-box"
+        id="pensieve-omnibar-box"
         className={`bg-card-bg/95 backdrop-blur-md border transition-all duration-300 overflow-hidden ${
           isFocused 
             ? 'border-foreground/20 rounded-3xl shadow-premium-hover ring-4 ring-primary/10 md:shadow-lg' 
@@ -579,7 +593,7 @@ export default function Omnibar({
           <Search className="w-5 h-5 text-foreground/40 shrink-0" />
           
           <input
-            id="mymind-omnibar-input"
+            id="pensieve-omnibar-input"
             type="text"
             autoFocus
             className="w-full text-[15px] font-sans outline-none placeholder-foreground/40 text-foreground bg-transparent tracking-tight"
@@ -629,7 +643,7 @@ export default function Omnibar({
           </AnimatePresence>
 
           <button
-            id="mymind-serendipity-trigger"
+            id="pensieve-serendipity-trigger"
             onClick={onTriggerSerendipity}
             title="Serendipity: remember something forgotten"
             className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-500 hover:text-amber-600 transition flex items-center gap-1 text-xs font-medium border border-amber-100 bg-amber-50/30 shrink-0"
@@ -995,7 +1009,6 @@ export default function Omnibar({
                         src={imagePreview} 
                         alt="Upload preview" 
                         className="max-h-[220px] object-contain"
-                        referrerPolicy="no-referrer"
                       />
                       <button
                         onClick={() => {

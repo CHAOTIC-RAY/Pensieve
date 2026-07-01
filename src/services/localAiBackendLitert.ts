@@ -145,7 +145,7 @@ export async function initLocalAiModel(
  */
 export async function generateLocalAiResponse(
   prompt: string,
-  systemPrompt: string = 'You are Pensieve, a private, intelligent, and secure second-brain assistant. You help users manage their digital memory, notes, and inspirations. You have access to a summary of their current saved items to provide contextual answers. Be concise, insightful, and always prioritize privacy.',
+  systemPrompt: string = 'You are pensieve, a private, intelligent, and secure second-brain assistant. You help users manage their digital memory, notes, and inspirations. You have access to a summary of their current saved items to provide contextual answers. Be concise, insightful, and always prioritize privacy.',
   context?: string
 ): Promise<string> {
   if (!activeEngine) {

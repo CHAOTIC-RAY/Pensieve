@@ -345,7 +345,6 @@ export default function AchievementsModal({ isOpen, onClose, achievements }: Ach
                               src={selectedAch.image}
                               alt={selectedAch.title}
                               className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
-                              referrerPolicy="no-referrer"
                             />
                           ) : (
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-950/80 gap-3">

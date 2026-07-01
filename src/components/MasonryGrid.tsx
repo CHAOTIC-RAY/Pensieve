@@ -62,7 +62,7 @@ export default function MasonryGrid({
   if (items.length === 0) {
     return (
       <div 
-        id="mymind-empty-state"
+        id="pensieve-empty-state"
         className="w-full flex flex-col items-center justify-center py-12 md:py-20 px-4 text-center max-w-md mx-auto"
       >
         <motion.div

@@ -145,12 +145,13 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
           rotateX,
           rotateY,
           transformStyle: "preserve-3d",
+          WebkitMaskImage: '-webkit-radial-gradient(white, black)', // Fix for Safari/Chrome overflow-hidden on rounded corners with 3D
         }}
         className={`relative w-64 h-96 rounded-[24px] cursor-pointer overflow-hidden transition-all duration-300 ${
           unlocked 
             ? `${config.cardFrame}` 
             : 'bg-neutral-900/90 p-[6px] border border-neutral-800/80 opacity-40 grayscale-[90%]'
-        } shadow-[0_25px_60px_rgba(0,0,0,0.5)] hover:scale-[1.02]`}
+        } shadow-[0_25px_60px_rgba(0,0,0,0.5)] hover:scale-[1.02] isolation-isolate`}
       >
         {/* Holographic Sheen/Foil layer */}
         {unlocked && (
@@ -219,7 +220,6 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
                 src={achievement.image} 
                 alt={achievement.title} 
                 className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none transition-transform duration-700 group-hover:scale-105"
-                referrerPolicy="no-referrer"
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-950/80 gap-2">

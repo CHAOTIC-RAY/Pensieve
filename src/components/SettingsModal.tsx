@@ -124,6 +124,22 @@ export default function SettingsModal({
   const [activeTab, setActiveTab] = useState<
     "intelligence" | "sync" | "db" | "ui" | "profile"
   >(initialTab || "ui");
+  const [puterUser, setPuterUser] = useState<any>(null);
+
+  const fetchPuterUser = async () => {
+    if (typeof window !== "undefined" && (window as any).puter) {
+      try {
+        const user = await (window as any).puter.auth.getUser();
+        setPuterUser(user);
+      } catch (e) {
+        setPuterUser(null);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchPuterUser();
+  }, []);
   const [supabaseUrl, setSupabaseUrl] = useState("");
   const [supabaseKey, setSupabaseKey] = useState("");
   const [openAiKey, setOpenAiKey] = useState("");
@@ -210,57 +226,57 @@ export default function SettingsModal({
   useEffect(() => {
     if (isOpen) {
       // Load user profile
-      setProfileName(localStorage.getItem("mymind_profile_name") || "Ray Dark");
+      setProfileName(localStorage.getItem("pensieve_profile_name") || "Ray Dark");
       setProfileEmail(
-        localStorage.getItem("mymind_profile_email") ||
+        localStorage.getItem("pensieve_profile_email") ||
           "2003Ray.Dark@gmail.com",
       );
       setProfileGradient(
-        localStorage.getItem("mymind_profile_avatar_gradient") ||
+        localStorage.getItem("pensieve_profile_avatar_gradient") ||
           "from-orange-200 to-rose-200",
       );
 
       // Load general connection keys
-      setSupabaseUrl(localStorage.getItem("mymind_supabase_url") || "");
-      setSupabaseKey(localStorage.getItem("mymind_supabase_key") || "");
-      setOpenAiKey(localStorage.getItem("mymind_openai_key") || "");
-      setGeminiKey(localStorage.getItem("mymind_gemini_key") || "");
+      setSupabaseUrl(localStorage.getItem("pensieve_supabase_url") || "");
+      setSupabaseKey(localStorage.getItem("pensieve_supabase_key") || "");
+      setOpenAiKey(localStorage.getItem("pensieve_openai_key") || "");
+      setGeminiKey(localStorage.getItem("pensieve_gemini_key") || "");
       setLocalLmUrl(
-        localStorage.getItem("mymind_local_lm_url") ||
+        localStorage.getItem("pensieve_local_lm_url") ||
           "http://localhost:1234/v1",
       );
 
       // Load custom Firebase keys
-      setFirebaseApiKey(localStorage.getItem("mymind_firebase_apiKey") || "");
+      setFirebaseApiKey(localStorage.getItem("pensieve_firebase_apiKey") || "");
       setFirebaseAuthDomain(
-        localStorage.getItem("mymind_firebase_authDomain") || "",
+        localStorage.getItem("pensieve_firebase_authDomain") || "",
       );
       setFirebaseProjectId(
-        localStorage.getItem("mymind_firebase_projectId") || "",
+        localStorage.getItem("pensieve_firebase_projectId") || "",
       );
       setFirebaseStorageBucket(
-        localStorage.getItem("mymind_firebase_storageBucket") || "",
+        localStorage.getItem("pensieve_firebase_storageBucket") || "",
       );
       setFirebaseMessagingSenderId(
-        localStorage.getItem("mymind_firebase_messagingSenderId") || "",
+        localStorage.getItem("pensieve_firebase_messagingSenderId") || "",
       );
-      setFirebaseAppId(localStorage.getItem("mymind_firebase_appId") || "");
+      setFirebaseAppId(localStorage.getItem("pensieve_firebase_appId") || "");
       setFirebaseDatabaseId(
-        localStorage.getItem("mymind_firebase_firestoreDatabaseId") || "",
+        localStorage.getItem("pensieve_firebase_firestoreDatabaseId") || "",
       );
 
       // Load specific LM Studio & BYOK settings
       const storedProvider =
-        (localStorage.getItem("mymind_api_provider") as any) || "lmstudio";
-      const storedBaseUrl = localStorage.getItem("mymind_api_base_url") || "";
-      const storedToken = localStorage.getItem("mymind_api_token") || "";
+        (localStorage.getItem("pensieve_api_provider") as any) || "lmstudio";
+      const storedBaseUrl = localStorage.getItem("pensieve_api_base_url") || "";
+      const storedToken = localStorage.getItem("pensieve_api_token") || "";
       const storedModel =
-        localStorage.getItem("mymind_selected_model") ||
+        localStorage.getItem("pensieve_selected_model") ||
         "zai-org/glm-4.6v-flash";
       const storedCustomModel =
-        localStorage.getItem("mymind_custom_model_name") || "";
+        localStorage.getItem("pensieve_custom_model_name") || "";
       const storedSpeculative =
-        localStorage.getItem("mymind_speculative_decoding") === "true";
+        localStorage.getItem("pensieve_speculative_decoding") === "true";
 
       setApiProvider(storedProvider);
       setApiBaseUrl(storedBaseUrl);
@@ -273,38 +289,73 @@ export default function SettingsModal({
 
   const handleSupabaseUrlChange = (val: string) => {
     setSupabaseUrl(val);
-    localStorage.setItem("mymind_supabase_url", val);
+    localStorage.setItem("pensieve_supabase_url", val);
   };
 
   const handleSupabaseKeyChange = (val: string) => {
     setSupabaseKey(val);
-    localStorage.setItem("mymind_supabase_key", val);
+    localStorage.setItem("pensieve_supabase_key", val);
   };
 
   const handleOpenAiKeyChange = (val: string) => {
     setOpenAiKey(val);
-    localStorage.setItem("mymind_openai_key", val);
+    localStorage.setItem("pensieve_openai_key", val);
   };
 
   const handleGeminiKeyChange = (val: string) => {
     setGeminiKey(val);
-    localStorage.setItem("mymind_gemini_key", val);
+    localStorage.setItem("pensieve_gemini_key", val);
   };
 
   const handleLocalLmUrlChange = (val: string) => {
     setLocalLmUrl(val);
-    localStorage.setItem("mymind_local_lm_url", val);
+    localStorage.setItem("pensieve_local_lm_url", val);
+  };
+
+  const handleFirebaseApiKeyChange = (val: string) => {
+    setFirebaseApiKey(val);
+    localStorage.setItem("pensieve_firebase_apiKey", val);
+  };
+
+  const handleFirebaseAuthDomainChange = (val: string) => {
+    setFirebaseAuthDomain(val);
+    localStorage.setItem("pensieve_firebase_authDomain", val);
+  };
+
+  const handleFirebaseProjectIdChange = (val: string) => {
+    setFirebaseProjectId(val);
+    localStorage.setItem("pensieve_firebase_projectId", val);
+  };
+
+  const handleFirebaseStorageBucketChange = (val: string) => {
+    setFirebaseStorageBucket(val);
+    localStorage.setItem("pensieve_firebase_storageBucket", val);
+  };
+
+  const handleFirebaseMessagingSenderIdChange = (val: string) => {
+    setFirebaseMessagingSenderId(val);
+    localStorage.setItem("pensieve_firebase_messagingSenderId", val);
+  };
+
+  const handleFirebaseAppIdChange = (val: string) => {
+    setFirebaseAppId(val);
+    localStorage.setItem("pensieve_firebase_appId", val);
+  };
+
+  const handleFirebaseDatabaseIdChange = (val: string) => {
+    setFirebaseDatabaseId(val);
+    localStorage.setItem("pensieve_firebase_firestoreDatabaseId", val);
   };
 
   const handleProfileNameChange = (val: string) => {
     setProfileName(val);
-    localStorage.setItem("mymind_profile_name", val);
+    localStorage.setItem("pensieve_profile_name", val);
     window.dispatchEvent(new Event("app-settings-updated"));
   };
 
   const handleProfileEmailChange = (val: string) => {
     setProfileEmail(val);
-    localStorage.setItem("mymind_profile_email", val);
+    localStorage.setItem("pensieve_profile_email", val);
     window.dispatchEvent(new Event("app-settings-updated"));
   };
 
@@ -329,43 +380,8 @@ export default function SettingsModal({
 
   const handleProfileGradientChange = (val: string) => {
     setProfileGradient(val);
-    localStorage.setItem("mymind_profile_avatar_gradient", val);
+    localStorage.setItem("pensieve_profile_avatar_gradient", val);
     window.dispatchEvent(new Event("app-settings-updated"));
-  };
-
-  const handleFirebaseApiKeyChange = (val: string) => {
-    setFirebaseApiKey(val);
-    localStorage.setItem("mymind_firebase_apiKey", val);
-  };
-
-  const handleFirebaseAuthDomainChange = (val: string) => {
-    setFirebaseAuthDomain(val);
-    localStorage.setItem("mymind_firebase_authDomain", val);
-  };
-
-  const handleFirebaseProjectIdChange = (val: string) => {
-    setFirebaseProjectId(val);
-    localStorage.setItem("mymind_firebase_projectId", val);
-  };
-
-  const handleFirebaseStorageBucketChange = (val: string) => {
-    setFirebaseStorageBucket(val);
-    localStorage.setItem("mymind_firebase_storageBucket", val);
-  };
-
-  const handleFirebaseMessagingSenderIdChange = (val: string) => {
-    setFirebaseMessagingSenderId(val);
-    localStorage.setItem("mymind_firebase_messagingSenderId", val);
-  };
-
-  const handleFirebaseAppIdChange = (val: string) => {
-    setFirebaseAppId(val);
-    localStorage.setItem("mymind_firebase_appId", val);
-  };
-
-  const handleFirebaseDatabaseIdChange = (val: string) => {
-    setFirebaseDatabaseId(val);
-    localStorage.setItem("mymind_firebase_firestoreDatabaseId", val);
   };
 
   const handleClearFirebaseCustom = () => {
@@ -376,13 +392,13 @@ export default function SettingsModal({
     setFirebaseMessagingSenderId("");
     setFirebaseAppId("");
     setFirebaseDatabaseId("");
-    localStorage.removeItem("mymind_firebase_apiKey");
-    localStorage.removeItem("mymind_firebase_authDomain");
-    localStorage.removeItem("mymind_firebase_projectId");
-    localStorage.removeItem("mymind_firebase_storageBucket");
-    localStorage.removeItem("mymind_firebase_messagingSenderId");
-    localStorage.removeItem("mymind_firebase_appId");
-    localStorage.removeItem("mymind_firebase_firestoreDatabaseId");
+    localStorage.removeItem("pensieve_firebase_apiKey");
+    localStorage.removeItem("pensieve_firebase_authDomain");
+    localStorage.removeItem("pensieve_firebase_projectId");
+    localStorage.removeItem("pensieve_firebase_storageBucket");
+    localStorage.removeItem("pensieve_firebase_messagingSenderId");
+    localStorage.removeItem("pensieve_firebase_appId");
+    localStorage.removeItem("pensieve_firebase_firestoreDatabaseId");
     triggerToast("Cleared custom Firebase. Using default backend database.");
   };
 
@@ -446,13 +462,13 @@ export default function SettingsModal({
       setApiTestMessage("Connection successful! Settings saved.");
 
       // Save all current settings to localStorage
-      localStorage.setItem("mymind_api_provider", apiProvider);
-      localStorage.setItem("mymind_api_base_url", apiBaseUrl);
-      localStorage.setItem("mymind_api_token", apiToken);
-      localStorage.setItem("mymind_selected_model", selectedModel);
-      localStorage.setItem("mymind_custom_model_name", customModelName);
+      localStorage.setItem("pensieve_api_provider", apiProvider);
+      localStorage.setItem("pensieve_api_base_url", apiBaseUrl);
+      localStorage.setItem("pensieve_api_token", apiToken);
+      localStorage.setItem("pensieve_selected_model", selectedModel);
+      localStorage.setItem("pensieve_custom_model_name", customModelName);
       localStorage.setItem(
-        "mymind_speculative_decoding",
+        "pensieve_speculative_decoding",
         speculativeDecoding ? "true" : "false",
       );
 
@@ -623,13 +639,14 @@ export default function SettingsModal({
 
     // Get Initials for Avatar
     const getInitials = (name: string) => {
+      if (!name) return "?";
       const parts = name.trim().split(/\s+/);
       if (parts.length === 0 || parts[0] === "") return "?";
       if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      return (parts[0][0] + (parts[parts.length - 1] ? parts[parts.length - 1][0] : "")).toUpperCase();
     };
 
-    const initials = getInitials(profileName);
+    const initials = getInitials(profileName || "");
 
     const handleSignOut = async () => {
       try {
@@ -1700,10 +1717,29 @@ export default function SettingsModal({
   );
 
   const renderDatabasesContent = () => {
-    const isFirebaseCustomized = !!(firebaseProjectId && firebaseApiKey);
-
     return (
       <div className="space-y-8 max-h-[60vh] overflow-y-auto pr-2 text-foreground scrollbar-thin scrollbar-thumb-foreground/10">
+        <div className="p-5 bg-primary/5 rounded-3xl border border-primary/10 flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-mono font-bold text-emerald-600 uppercase tracking-widest">Active Connection</span>
+            </div>
+            <h3 className="text-lg font-display font-bold text-text-heading">
+              {dbStrategy === 'puter' ? 'Puter Cloud Storage' : dbStrategy === 'supabase' ? 'Supabase Relational' : dbStrategy === 'box' ? 'Box Storage' : 'Firebase Firestore'}
+            </h3>
+            <p className="text-[10px] text-foreground/50 font-medium">
+              Synchronizing with {dbStrategy === 'puter' ? 'Puter.js Global Edge' : dbStrategy === 'supabase' ? 'Supabase PostgreSQL' : dbStrategy === 'box' ? 'Box API' : 'Google Firebase'}
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-border-subtle flex items-center justify-center">
+            {dbStrategy === 'puter' ? <Sparkles className="w-6 h-6 text-indigo-400" /> : 
+             dbStrategy === 'supabase' ? <Database className="w-6 h-6 text-emerald-400" /> : 
+             dbStrategy === 'box' ? <Database className="w-6 h-6 text-blue-400" /> : 
+             <Aperture className="w-6 h-6 text-orange-400" />}
+          </div>
+        </div>
+
         <div>
           <h3 className="text-sm font-semibold text-text-heading">
             Database &amp; Storage Connections
@@ -1711,16 +1747,16 @@ export default function SettingsModal({
           <p className="text-xs text-foreground/70 mt-1 leading-relaxed">
             Configure external cloud databases to sync and persist your
             thoughts. By default, your mind is backed up to a secure built-in
-            Firebase Firestore instance.
+            Puter.js storage.
           </p>
         </div>
 
         {/* Database & Storage Connection Strategy Selector */}
         <section className="space-y-3 p-4 bg-foreground/[0.02] border border-border-subtle/85 rounded-2xl">
           <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
-            Active Sync &amp; Storage Strategy
+            Storage Strategy Selector
           </label>
-          <div className="grid grid-cols-3 p-1 bg-foreground/5 rounded-2xl border border-border-subtle">
+          <div className="grid grid-cols-4 p-1 bg-foreground/5 rounded-2xl border border-border-subtle">
             <button
               onClick={() => {
                 setDbStrategy("puter");
@@ -1763,162 +1799,131 @@ export default function SettingsModal({
                   : "text-foreground/60 hover:text-foreground"
               }`}
             >
-              <Cloud className="w-3.5 h-3.5 text-orange-400" />
+              <Aperture className="w-3.5 h-3.5 text-orange-400" />
               Firebase
+            </button>
+            <button
+              onClick={() => {
+                setDbStrategy("box");
+                setDbStrategyState("box");
+                window.dispatchEvent(new Event('app-settings-updated'));
+              }}
+              className={`flex items-center justify-center gap-1.5 py-2.5 px-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                dbStrategy === "box"
+                  ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
+                  : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              <Database className="w-3.5 h-3.5 text-blue-400" />
+              Box
             </button>
           </div>
           <p className="text-[10px] text-foreground/50 leading-relaxed px-1">
             {dbStrategy === "puter"
-              ? "Puter.js Strategy: Fast, secure client-side cloud NoSQL sync & storage. Default and recommended."
-              : dbStrategy === "supabase"
-                ? "Supabase Strategy: Sync your personal mind items to a secure, relational Supabase database table."
-                : "Firebase Strategy: Persist and load real-time mind cards inside your custom Firestore connection."}
+              ? "Puter.js Strategy: Fast, secure client-side cloud NoSQL sync & storage. No configuration required, uses your browser session via Puter.js."
+              : dbStrategy === "supabase" 
+              ? "Supabase Strategy: Sync your personal mind items to a secure, relational Supabase database table."
+              : "Firebase Strategy: Sync your personal mind items to your own Firebase Firestore collection."}
           </p>
         </section>
 
-        {/* Custom Firebase Section */}
-        <section className={`space-y-4 transition-all duration-300 ${dbStrategy !== "firebase" ? "opacity-35 pointer-events-none grayscale" : ""}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-semibold text-text-heading select-none">
-              <Cloud className="w-4 h-4 text-orange-400" />
-              Custom Firebase Integration
-            </div>
-            {isFirebaseCustomized && (
-              <span className="text-[9px] font-bold font-mono px-2 py-0.5 bg-orange-500/10 text-orange-500 border border-orange-500/20 rounded-full animate-pulse">
-                Custom Active
-              </span>
-            )}
+        {/* Puter Info Section */}
+        <section className={`space-y-4 pt-6 border-t border-border-subtle transition-all duration-300 ${dbStrategy !== "puter" ? "opacity-35 pointer-events-none grayscale" : ""}`}>
+          <div className="flex items-center gap-2 text-sm font-semibold text-text-heading select-none">
+            <Sparkles className="w-4 h-4 text-indigo-400" />
+            Puter.js Cloud Status
           </div>
-
-          <div className="space-y-4 bg-foreground/[0.02] border border-border-subtle/80 p-5 rounded-2xl">
-            <p className="text-[11px] text-foreground/60 leading-normal mb-1">
-              Connect your own Firebase Firestore database. Your on-screen
-              updates will be securely synced in real-time.
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="block text-[9px] font-mono uppercase tracking-wider text-foreground/60">
-                  Project ID *
-                </label>
-                <input
-                  type="text"
-                  value={firebaseProjectId}
-                  onChange={(e) =>
-                    handleFirebaseProjectIdChange(e.target.value)
-                  }
-                  placeholder="your-firebase-project-id"
-                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-[9px] font-mono uppercase tracking-wider text-foreground/60">
-                  API Key *
-                </label>
-                <input
-                  type="password"
-                  value={firebaseApiKey}
-                  onChange={(e) => handleFirebaseApiKeyChange(e.target.value)}
-                  placeholder="AIzaSy..."
-                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="block text-[9px] font-mono uppercase tracking-wider text-foreground/60">
-                  Auth Domain (optional)
-                </label>
-                <input
-                  type="text"
-                  value={firebaseAuthDomain}
-                  onChange={(e) =>
-                    handleFirebaseAuthDomainChange(e.target.value)
-                  }
-                  placeholder="your-app.firebaseapp.com"
-                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-[9px] font-mono uppercase tracking-wider text-foreground/60">
-                  Storage Bucket (optional)
-                </label>
-                <input
-                  type="text"
-                  value={firebaseStorageBucket}
-                  onChange={(e) =>
-                    handleFirebaseStorageBucketChange(e.target.value)
-                  }
-                  placeholder="your-app.firebasestorage.app"
-                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1 sm:col-span-1">
-                <label className="block text-[9px] font-mono uppercase tracking-wider text-foreground/60">
-                  Messaging Sender ID
-                </label>
-                <input
-                  type="text"
-                  value={firebaseMessagingSenderId}
-                  onChange={(e) =>
-                    handleFirebaseMessagingSenderIdChange(e.target.value)
-                  }
-                  placeholder="591622610805"
-                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
-                />
-              </div>
-
-              <div className="space-y-1 sm:col-span-1">
-                <label className="block text-[9px] font-mono uppercase tracking-wider text-foreground/60">
-                  App ID
-                </label>
-                <input
-                  type="text"
-                  value={firebaseAppId}
-                  onChange={(e) => handleFirebaseAppIdChange(e.target.value)}
-                  placeholder="1:591622610805:web:..."
-                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
-                />
-              </div>
-
-              <div className="space-y-1 sm:col-span-1">
-                <label className="block text-[9px] font-mono uppercase tracking-wider text-foreground/60">
-                  Database ID
-                </label>
-                <input
-                  type="text"
-                  value={firebaseDatabaseId}
-                  onChange={(e) =>
-                    handleFirebaseDatabaseIdChange(e.target.value)
-                  }
-                  placeholder="(default)"
-                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
-                />
-              </div>
-            </div>
-
-            {isFirebaseCustomized && (
-              <div className="flex justify-end pt-1">
-                <button
-                  type="button"
-                  onClick={handleClearFirebaseCustom}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-rose-500 font-semibold border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 rounded-xl transition cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Reset to Default Firebase Instance
-                </button>
-              </div>
-            )}
+          <div className="bg-foreground/[0.02] border border-border-subtle/80 p-5 rounded-2xl space-y-3">
+             <div className="flex items-center justify-between text-[11px]">
+               <span className="text-foreground/60">Node Connection</span>
+               <span className="text-emerald-500 font-bold uppercase tracking-tighter">Active (Global Edge)</span>
+             </div>
+             <div className="flex items-center justify-between text-[11px]">
+               <span className="text-foreground/60">Storage Engine</span>
+               <span className="text-foreground font-medium">Puter Key-Value Store</span>
+             </div>
+             <div className="flex items-center justify-between text-[11px]">
+               <span className="text-foreground/60">Sync Frequency</span>
+               <span className="text-foreground font-medium">Real-time Delta Sync</span>
+             </div>
+             <div className="pt-2">
+               <p className="text-[10px] text-foreground/40 leading-normal">
+                 Puter.js provides zero-config cloud storage. Your data is automatically partitioned and synced across your devices using Puter's secure infrastructure.
+               </p>
+             </div>
           </div>
         </section>
 
-        {/* Database Section */}
+        {/* Firebase Connection Section */}
+        <section className={`space-y-4 pt-6 border-t border-border-subtle transition-all duration-300 ${dbStrategy !== "firebase" ? "opacity-35 pointer-events-none grayscale" : ""}`}>
+          <div className="flex items-center gap-2 text-sm font-semibold text-text-heading select-none">
+            <Aperture className="w-4 h-4 text-orange-400" />
+            Custom Firebase Connection
+          </div>
+          <div className="space-y-3 bg-foreground/[0.02] border border-border-subtle/80 p-5 rounded-2xl">
+            <p className="text-[11px] text-foreground/60 leading-normal mb-1">
+              Connect your own Firebase project for cloud Firestore syncing.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">API Key</label>
+                <input 
+                  type="password" 
+                  value={firebaseApiKey} 
+                  onChange={(e) => { 
+                    setFirebaseApiKey(e.target.value); 
+                    localStorage.setItem('pensieve_firebase_apiKey', e.target.value); 
+                  }} 
+                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors" 
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">Project ID</label>
+                <input 
+                  type="text" 
+                  value={firebaseProjectId} 
+                  onChange={(e) => { 
+                    setFirebaseProjectId(e.target.value); 
+                    localStorage.setItem('pensieve_firebase_projectId', e.target.value); 
+                  }} 
+                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors" 
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">Auth Domain</label>
+                <input 
+                  type="text" 
+                  value={firebaseAuthDomain} 
+                  onChange={(e) => { 
+                    setFirebaseAuthDomain(e.target.value); 
+                    localStorage.setItem('pensieve_firebase_authDomain', e.target.value); 
+                  }} 
+                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors" 
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">App ID</label>
+                <input 
+                  type="text" 
+                  value={firebaseAppId} 
+                  onChange={(e) => { 
+                    setFirebaseAppId(e.target.value); 
+                    localStorage.setItem('pensieve_firebase_appId', e.target.value); 
+                  }} 
+                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors" 
+                />
+              </div>
+            </div>
+            <button 
+              onClick={handleClearFirebaseCustom}
+              className="text-[10px] text-rose-500 hover:underline mt-2 flex items-center gap-1"
+            >
+              <Trash2 className="w-3 h-3" /> Clear Custom Firebase
+            </button>
+          </div>
+        </section>
+
+        {/* Supabase Connection Section */}
         <section className={`space-y-4 pt-6 border-t border-border-subtle transition-all duration-300 ${dbStrategy !== "supabase" ? "opacity-35 pointer-events-none grayscale" : ""}`}>
           <div className="flex items-center gap-2 text-sm font-semibold text-text-heading select-none">
             <Database className="w-4 h-4 text-emerald-400" />
@@ -1977,7 +1982,7 @@ export default function SettingsModal({
     return (
       <div className="space-y-8 text-foreground">
         {/* 1. Light/Dark Mode Toggle (Prominent, Full-Width) */}
-        <section className="space-y-2">
+        <section className="space-y-4">
           <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
             Appearance Mode
           </label>
@@ -2003,6 +2008,32 @@ export default function SettingsModal({
             >
               <Moon className="w-4 h-4" />
               Dark
+            </button>
+          </div>
+
+          <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60 pt-4">
+            Card Density
+          </label>
+          <div className="grid grid-cols-2 p-1 bg-foreground/5 rounded-2xl border border-border-subtle">
+            <button
+              onClick={() => handleUpdateSingleSetting("cardStyle", "comfortable")}
+              className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
+                userSettings.cardStyle === "comfortable"
+                  ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
+                  : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              Comfortable
+            </button>
+            <button
+              onClick={() => handleUpdateSingleSetting("cardStyle", "compact")}
+              className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
+                userSettings.cardStyle === "compact"
+                  ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
+                  : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              Compact
             </button>
           </div>
         </section>
@@ -2775,6 +2806,34 @@ export default function SettingsModal({
                 </button>
 
                 <div className="mt-auto pt-4 border-t border-border-subtle hidden md:block">
+                  <div className="mb-4 space-y-1">
+                    <span className="text-[10px] text-foreground/40 font-mono block">Puter Account</span>
+                    {puterUser ? (
+                      <div className="space-y-2">
+                        <div className="text-xs font-medium text-foreground truncate">{puterUser.email || puterUser.username}</div>
+                        <button
+                          onClick={async () => {
+                            await (window as any).puter?.auth?.signOut();
+                            await fetchPuterUser();
+                          }}
+                          className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-foreground/10 text-foreground hover:bg-foreground/20 transition"
+                        >
+                          Logout Puter
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          await (window as any).puter?.auth?.signIn();
+                          // Puter signIn might be a popup, we might need a small delay or polling if it doesn't return a promise
+                          setTimeout(fetchPuterUser, 2000);
+                        }}
+                        className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                      >
+                        Login to Puter
+                      </button>
+                    )}
+                  </div>
                   <span className="text-[10px] text-foreground/40 font-mono block">
                     Sidebar Position:
                   </span>

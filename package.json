@@ -12,10 +12,12 @@
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
+    "@google/generative-ai": "^0.24.1",
     "@litert-lm/core": "^0.13.1",
     "@mlc-ai/web-llm": "^0.2.84",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
+    "box-node-sdk": "^10.12.0",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "firebase": "^12.15.0",

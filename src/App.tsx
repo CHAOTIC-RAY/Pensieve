@@ -4,9 +4,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy 
-} from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { 
@@ -16,7 +13,7 @@ import {
   Film, Disc, ShoppingBag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { db, auth, handleFirestoreError, OperationType } from './lib/firebase';
+import { auth } from './lib/firebase';
 import { isPuterAvailable, getPuterItems, savePuterItems, chatWithPuterAi } from './lib/puter';
 import { DbStrategy, getDbStrategy, loadDbItems, saveDbItems } from './services/dbStrategyService';
 import { MindItem, MindItemType } from './types';
@@ -52,6 +49,28 @@ import SettingsModal from './components/SettingsModal';
 import { useAchievements } from './hooks/useAchievements';
 import AchievementsModal from './components/AchievementsModal';
 import AchievementToast from './components/AchievementToast';
+
+const GalaxyBackground = () => {
+  return (
+    <div className="galaxy-background">
+      <div className="water-shimmer" />
+      {Array.from({ length: 60 }).map((_, i) => (
+        <div
+          key={i}
+          className="galaxy-star"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            width: `${Math.random() * 2 + 1}px`,
+            height: `${Math.random() * 2 + 1}px`,
+            '--duration': `${Math.random() * 6 + 4}s`,
+            animationDelay: `${Math.random() * 5}s`
+          } as any}
+        />
+      ))}
+    </div>
+  );
+};
 
 const COLOR_FILTERS = [
   { name: 'red', class: 'bg-rose-500 border-rose-600' },
@@ -135,6 +154,20 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const checkPuter = async () => {
+      if (typeof window !== 'undefined' && window.puter) {
+        try {
+          const signedIn = await window.puter.auth.isSignedIn();
+          setIsPuterLoggedIn(signedIn);
+        } catch (e) {
+          console.warn("Puter auth check failed:", e);
+        }
+      }
+    };
+    checkPuter();
+  }, []);
+
   const [items, setItems] = useState<MindItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all'); // 'all', 'favorites', MindItemType
@@ -201,6 +234,8 @@ export default function App() {
   };
   const [isSerendipityOpen, setIsSerendipityOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
+  const [isPuterLoggedIn, setIsPuterLoggedIn] = useState(false);
+  const [isMobileToolbarOpen, setIsMobileToolbarOpen] = useState<'filters' | 'organize' | 'layout' | null>(null);
 
   // Layout & Sorting (Rearranging) States
   const [viewType, setViewType] = useState<'grid' | 'list' | 'kanban'>('grid');
@@ -225,8 +260,8 @@ export default function App() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   // User Profile States
-  const [profileName, setProfileName] = useState(() => localStorage.getItem('mymind_profile_name') || 'Ray Dark');
-  const [profileGradient, setProfileGradient] = useState(() => localStorage.getItem('mymind_profile_avatar_gradient') || 'from-orange-200 to-rose-200');
+  const [profileName, setProfileName] = useState(() => localStorage.getItem('pensieve_profile_name') || 'Ray Dark');
+  const [profileGradient, setProfileGradient] = useState(() => localStorage.getItem('pensieve_profile_avatar_gradient') || 'from-orange-200 to-rose-200');
 
   // Persistent Theme Studio settings
   const [userSettings, setUserSettings] = useState<UserSettings>(() => {
@@ -251,8 +286,8 @@ export default function App() {
         if (JSON.stringify(prev) === JSON.stringify(newSettings)) return prev;
         return newSettings;
       });
-      setProfileName(localStorage.getItem('mymind_profile_name') || 'Ray Dark');
-      setProfileGradient(localStorage.getItem('mymind_profile_avatar_gradient') || 'from-orange-200 to-rose-200');
+      setProfileName(localStorage.getItem('pensieve_profile_name') || 'Ray Dark');
+      setProfileGradient(localStorage.getItem('pensieve_profile_avatar_gradient') || 'from-orange-200 to-rose-200');
     };
     window.addEventListener('app-settings-updated', handleSettingsUpdated);
     return () => {
@@ -292,7 +327,7 @@ export default function App() {
 
   // Real-time Cloud database/storage strategy sync
   useEffect(() => {
-    const localItems = JSON.parse(localStorage.getItem('mymind_local_items') || '[]');
+    const localItems = JSON.parse(localStorage.getItem('pensieve_local_items') || '[]');
     
     if (!user) {
       if (localItems.length > 0) {
@@ -317,7 +352,7 @@ export default function App() {
           );
 
           setItems(merged);
-          localStorage.setItem('mymind_local_items', JSON.stringify(merged));
+          localStorage.setItem('pensieve_local_items', JSON.stringify(merged));
           
           // If there were local-only unsynced items, persist them to the active strategy
           if (localOnly.length > 0) {
@@ -384,7 +419,7 @@ export default function App() {
   const safeUpdateItem = async (itemId: string, updates: Partial<MindItem>) => {
     setItems(prev => {
       const updated = prev.map(item => item.id === itemId ? { ...item, ...updates } : item);
-      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -408,7 +443,7 @@ export default function App() {
     // Put it in local state and active database instantly
     setItems(prev => {
       const updated = [fallbackItem, ...prev];
-      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -460,29 +495,42 @@ export default function App() {
             const aiPrompt = `Analyze this item and return a strict, parsable JSON object with: 
             {
               "title": "A short descriptive title",
-              "category": "note", // note, link, image, quote, color, article, video, recipe, document, music, tweet, voice, film, album, or product
+              "category": "${processedItem.type}", // ONLY change if it's currently "note" and you find a better specific fit. If it's image, link, quote, color, article, video, recipe, document, music, tweet, voice, film, album, or product, KEEP IT.
               "tags": ["3-5 short tags"],
               "aiSummary": "One clean explanatory sentence explaining what this is",
               "dominantColor": "grey" // red, orange, yellow, green, blue, purple, pink, black, white, grey
             }
             
+            CRITICAL: If the current type is "image", "color", "voice", "film", "album", or "product", DO NOT change the category.
+            
             Item details:
             Type: "${processedItem.type}"
             Title: "${processedItem.title || ''}"
             Content: "${processedItem.content || ''}"
-            Url: "${processedItem.url || 'none'}"`;
+            Url: "${processedItem.url || 'none'}"
+            Image: "${processedItem.imageUrl || 'none'}"`;
 
-            const aiText = await window.puter.ai.chat(aiPrompt);
+            const aiResponse1 = await window.puter.ai.chat(aiPrompt);
+            let aiText1 = '';
+            if (typeof aiResponse1 === 'string') {
+              aiText1 = aiResponse1;
+            } else if (aiResponse1 && typeof aiResponse1 === 'object') {
+              if (typeof aiResponse1.message === 'string') {
+                aiText1 = aiResponse1.message;
+              } else {
+                aiText1 = JSON.stringify(aiResponse1.message || aiResponse1);
+              }
+            }
             let parsed;
             try {
-              const cleanJson = aiText.replace(/```json/gi, '').replace(/```/g, '').trim();
+              const cleanJson = aiText1.replace(/```json/gi, '').replace(/```/g, '').trim();
               parsed = JSON.parse(cleanJson);
             } catch {
               parsed = {
                 title: processedItem.title || "Reflected Insight",
                 category: processedItem.type,
                 tags: ["mind", processedItem.type],
-                aiSummary: aiText.length > 150 ? aiText.slice(0, 150) + "..." : aiText,
+                aiSummary: aiText1.length > 150 ? aiText1.slice(0, 150) + "..." : aiText1,
                 dominantColor: "grey"
               };
             }
@@ -543,29 +591,42 @@ export default function App() {
             const aiPrompt = `Analyze this item and return a strict, parsable JSON object with: 
             {
               "title": "A short descriptive title",
-              "category": "note", // note, link, image, quote, color, article, video, recipe, document, music, tweet, voice, film, album, or product
+              "category": "${processedItem.type}", // ONLY change if it's currently "note" and you find a better specific fit. If it's image, link, quote, color, article, video, recipe, document, music, tweet, voice, film, album, or product, KEEP IT.
               "tags": ["3-5 short tags"],
               "aiSummary": "One clean explanatory sentence explaining what this is",
               "dominantColor": "grey" // red, orange, yellow, green, blue, purple, pink, black, white, grey
             }
             
+            CRITICAL: If the current type is "image", "color", "voice", "film", "album", or "product", DO NOT change the category.
+            
             Item details:
             Type: "${processedItem.type}"
             Title: "${processedItem.title || ''}"
             Content: "${processedItem.content || ''}"
-            Url: "${processedItem.url || 'none'}"`;
+            Url: "${processedItem.url || 'none'}"
+            Image: "${processedItem.imageUrl || 'none'}"`;
 
-            const aiText = await window.puter.ai.chat(aiPrompt);
+            const aiResponse2 = await window.puter.ai.chat(aiPrompt);
+            let aiText2 = '';
+            if (typeof aiResponse2 === 'string') {
+              aiText2 = aiResponse2;
+            } else if (aiResponse2 && typeof aiResponse2 === 'object') {
+              if (typeof aiResponse2.message === 'string') {
+                aiText2 = aiResponse2.message;
+              } else {
+                aiText2 = JSON.stringify(aiResponse2.message || aiResponse2);
+              }
+            }
             let parsed;
             try {
-              const cleanJson = aiText.replace(/```json/gi, '').replace(/```/g, '').trim();
+              const cleanJson = aiText2.replace(/```json/gi, '').replace(/```/g, '').trim();
               parsed = JSON.parse(cleanJson);
             } catch {
               parsed = {
                 title: processedItem.title || "Reflected Insight",
                 category: processedItem.type,
                 tags: ["mind", processedItem.type],
-                aiSummary: aiText.length > 150 ? aiText.slice(0, 150) + "..." : aiText,
+                aiSummary: aiText2.length > 150 ? aiText2.slice(0, 150) + "..." : aiText2,
                 dominantColor: "grey"
               };
             }
@@ -585,9 +646,16 @@ export default function App() {
             await safeUpdateItem(createdId, finalDoc);
             return;
           } catch (puterAiErr) {
-            console.warn('[Pensieve Puter AI] Failed, falling back to server-side Gemini:', puterAiErr);
+            console.warn('[Pensieve Puter AI] Final Puter AI fallback failed.', puterAiErr);
           }
         }
+
+        // Final fallback: Ensure item is saved even if all AI analysis fails
+        await safeUpdateItem(createdId, {
+          analyzing: false,
+          aiSummary: 'Not analyzed (AI unavailable).'
+        });
+        return;
 
         // 2D. Server-side Gemini API fallback
         const analyzeResponse = await fetch('/api/analyze', {
@@ -639,7 +707,7 @@ export default function App() {
     const newIsFavorite = !item.isFavorite;
     setItems(prev => {
       const updated = prev.map(i => i.id === item.id ? { ...i, isFavorite: newIsFavorite } : i);
-      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -652,7 +720,7 @@ export default function App() {
     const newIsTopMind = !item.isTopMind;
     setItems(prev => {
       const updated = prev.map(i => i.id === item.id ? { ...i, isTopMind: newIsTopMind } : i);
-      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -664,7 +732,7 @@ export default function App() {
   const handleDeleteItem = async (item: MindItem) => {
     setItems(prev => {
       const updated = prev.filter(i => i.id !== item.id);
-      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -679,7 +747,7 @@ export default function App() {
   const handleUpdateItem = async (updatedItem: MindItem) => {
     setItems(prev => {
       const updated = prev.map(i => i.id === updatedItem.id ? { ...i, ...updatedItem } : i);
-      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -691,7 +759,7 @@ export default function App() {
   const handleUpdateChecklist = async (item: MindItem, updatedContent: string) => {
     setItems(prev => {
       const updated = prev.map(i => i.id === item.id ? { ...i, content: updatedContent } : i);
-      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -708,7 +776,8 @@ export default function App() {
   }
 
   return user ? (
-    <div id="mymind-workspace" className="min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-foreground selection:text-background transition-colors duration-300 relative">
+    <div id="pensieve-workspace" className="min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-foreground selection:text-background transition-colors duration-300 relative">
+        <GalaxyBackground />
         {/* Editorial Ambient Spot Blurs */}
         <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden opacity-40 dark:opacity-25">
           {/* Main Dark Grey ambient shadow */}
@@ -726,7 +795,7 @@ export default function App() {
       <header className="flex md:hidden items-center justify-between px-4 py-3 bg-card-bg/50 backdrop-blur-md border-b border-border-subtle/40 shrink-0 z-40 select-none">
         <div className="flex items-center gap-2">
           <Logo className="w-6 h-6" />
-          <span className="text-sm font-semibold tracking-tight font-display text-foreground">Pensieve</span>
+          <span className="text-sm font-semibold tracking-tight font-display text-foreground">pensieve</span>
         </div>
         
         <div className="flex items-center gap-2.5">
@@ -784,13 +853,15 @@ export default function App() {
         {/* Floating Logo - Top Left */}
         <div className="hidden md:flex flex-col items-center fixed top-6 left-6 z-40 select-none pointer-events-none">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-11 h-11 flex items-center justify-center pointer-events-auto cursor-pointer"
+            <div className="w-11 h-11 flex items-center justify-center p-2 pointer-events-auto cursor-pointer"
                  onClick={() => handleCategoryChange('all')}>
-              <Logo className="w-full h-full" />
+              <Logo className="w-full h-full" glow={false} />
             </div>
-            <span className="text-[10px] font-bold tracking-[0.25em] text-foreground/45 font-display uppercase [writing-mode:vertical-lr] rotate-180 py-1 select-none">
-              Pensieve
-            </span>
+            <div className="flex flex-col items-center text-[9px] font-bold text-foreground/45 font-mono my-4 uppercase gap-1.5 select-none">
+              {Array.from("PENSIEVE").map((char, i) => (
+                <span key={i} className="leading-none font-display">{char}</span>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -933,160 +1004,176 @@ export default function App() {
             localAiEnabled={localAiEnabled}
           />
 
-        {/* Filter, Organise, and View Toolbar */}
-        <div className="w-full max-w-4xl px-6 md:px-4 mt-2 md:mt-6 space-y-2 md:space-y-4">
+        {/* Mobile Toolbar Toggles */}
+        <div className="md:hidden w-full max-w-4xl px-6 mt-4 mb-1 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <button 
+            onClick={() => setIsMobileToolbarOpen(isMobileToolbarOpen === 'filters' ? null : 'filters')}
+            className={`flex items-center gap-2 px-3 py-1.5 bg-card-bg border rounded-xl text-[9px] font-mono uppercase tracking-widest transition-all duration-300 shrink-0 ${
+              isMobileToolbarOpen === 'filters' ? 'border-primary text-primary shadow-sm' : 'border-border-subtle text-foreground/50'
+            }`}
+          >
+            <Filter className="w-3 h-3" />
+            Filters
+          </button>
+          <button 
+            onClick={() => setIsMobileToolbarOpen(isMobileToolbarOpen === 'organize' ? null : 'organize')}
+            className={`flex items-center gap-2 px-3 py-1.5 bg-card-bg border rounded-xl text-[9px] font-mono uppercase tracking-widest transition-all duration-300 shrink-0 ${
+              isMobileToolbarOpen === 'organize' ? 'border-primary text-primary shadow-sm' : 'border-border-subtle text-foreground/50'
+            }`}
+          >
+            <ArrowUpDown className="w-3 h-3" />
+            Organize
+          </button>
+          <button 
+            onClick={() => setIsMobileToolbarOpen(isMobileToolbarOpen === 'layout' ? null : 'layout')}
+            className={`flex items-center gap-2 px-3 py-1.5 bg-card-bg border rounded-xl text-[9px] font-mono uppercase tracking-widest transition-all duration-300 shrink-0 ${
+              isMobileToolbarOpen === 'layout' ? 'border-primary text-primary shadow-sm' : 'border-border-subtle text-foreground/50'
+            }`}
+          >
+            <LayoutGrid className="w-3 h-3" />
+            Layout
+          </button>
+        </div>
+
+        {/* Collapsible Sections */}
+        <div className="w-full max-w-4xl px-6 md:px-4 mt-2 md:mt-6">
           
           {/* Category / Content Type Filter Tags */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] md:text-[10px] font-mono uppercase text-foreground/45 tracking-wider font-bold">
-              Filter by Type:
-            </span>
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full px-1 py-1.5 md:py-2.5">
-              {[
-                { id: 'all', label: 'All', icon: Aperture, count: items.length },
-                { id: 'favorites', label: 'Favorites', icon: Heart, count: items.filter(i => i.isFavorite).length },
-                { id: 'note', label: 'Notes', icon: BookOpen, count: items.filter(i => i.type === 'note').length },
-                { id: 'link', label: 'Bookmarks', icon: ExternalLink, count: items.filter(i => i.type === 'link').length },
-                { id: 'image', label: 'Images', icon: Camera, count: items.filter(i => i.type === 'image').length },
-                { id: 'quote', label: 'Quotes', icon: Quote, count: items.filter(i => i.type === 'quote').length },
-                { id: 'video', label: 'Videos', icon: Tv, count: items.filter(i => i.type === 'video').length },
-                { id: 'music', label: 'Music', icon: Music, count: items.filter(i => i.type === 'music').length },
-                { id: 'tweet', label: 'Tweets', icon: Twitter, count: items.filter(i => i.type === 'tweet').length },
-                { id: 'article', label: 'Articles', icon: FileText, count: items.filter(i => i.type === 'article').length },
-                { id: 'recipe', label: 'Recipes', icon: Utensils, count: items.filter(i => i.type === 'recipe').length },
-                { id: 'film', label: 'Films', icon: Film, count: items.filter(i => i.type === 'film').length },
-                { id: 'album', label: 'Albums', icon: Disc, count: items.filter(i => i.type === 'album').length },
-                { id: 'product', label: 'Products', icon: ShoppingBag, count: items.filter(i => i.type === 'product').length },
-              ].map((cat) => {
-                const Icon = cat.icon;
-                const isActive = activeCategory === cat.id;
-                
-                // Keep 'all' and 'favorites' always visible. Hide others if they have 0 count to avoid clutter.
-                if (cat.count === 0 && cat.id !== 'all' && cat.id !== 'favorites') return null;
-                
-                return (
+          <div className={`transition-all duration-500 origin-top overflow-hidden md:overflow-visible ${
+            isMobileToolbarOpen === 'filters' ? 'max-h-[400px] opacity-100 py-2' : 'max-h-0 opacity-0 md:max-h-none md:opacity-100'
+          }`}>
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] md:text-[10px] font-mono uppercase text-foreground/45 tracking-wider font-bold">
+                Filter by Type:
+              </span>
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full px-1 py-1.5 md:py-2.5">
+                {[
+                  { id: 'all', label: 'All', icon: Aperture, count: items.length },
+                  { id: 'favorites', label: 'Favorites', icon: Heart, count: items.filter(i => i.isFavorite).length },
+                  { id: 'note', label: 'Notes', icon: BookOpen, count: items.filter(i => i.type === 'note').length },
+                  { id: 'link', label: 'Bookmarks', icon: ExternalLink, count: items.filter(i => i.type === 'link').length },
+                  { id: 'image', label: 'Images', icon: Camera, count: items.filter(i => i.type === 'image').length },
+                  { id: 'quote', label: 'Quotes', icon: Quote, count: items.filter(i => i.type === 'quote').length },
+                  { id: 'video', label: 'Videos', icon: Tv, count: items.filter(i => i.type === 'video').length },
+                  { id: 'music', label: 'Music', icon: Music, count: items.filter(i => i.type === 'music').length },
+                  { id: 'tweet', label: 'Tweets', icon: Twitter, count: items.filter(i => i.type === 'tweet').length },
+                  { id: 'article', label: 'Articles', icon: FileText, count: items.filter(i => i.type === 'article').length },
+                  { id: 'recipe', label: 'Recipes', icon: Utensils, count: items.filter(i => i.type === 'recipe').length },
+                  { id: 'film', label: 'Films', icon: Film, count: items.filter(i => i.type === 'film').length },
+                  { id: 'album', label: 'Albums', icon: Disc, count: items.filter(i => i.type === 'album').length },
+                  { id: 'product', label: 'Products', icon: ShoppingBag, count: items.filter(i => i.type === 'product').length },
+                ].map((cat) => {
+                  const Icon = cat.icon;
+                  const isActive = activeCategory === cat.id;
+                  if (cat.count === 0 && cat.id !== 'all' && cat.id !== 'favorites') return null;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => handleCategoryChange(cat.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-all border shrink-0 ${
+                        isActive
+                          ? 'bg-primary text-white border-primary shadow-sm scale-105 font-semibold'
+                          : 'bg-card-bg border-border-subtle text-foreground/75 hover:bg-foreground/5 hover:text-foreground'
+                      }`}
+                    >
+                      <Icon className={`w-3.5 h-3.5 ${isActive ? 'fill-current' : ''}`} />
+                      <span>{cat.label}</span>
+                      <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-foreground/5 text-foreground/50'}`}>
+                        {cat.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Color filter rail */}
+            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar w-full px-1 py-2 mt-2">
+              <span className="text-[10px] font-mono uppercase text-foreground/45 tracking-wider font-bold flex items-center gap-1.5 shrink-0">
+                <Filter className="w-3.5 h-3.5" /> Color:
+              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                {COLOR_FILTERS.map((col) => (
                   <button
-                    key={cat.id}
-                    onClick={() => handleCategoryChange(cat.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-all border shrink-0 ${
-                      isActive
-                        ? 'bg-primary text-white border-primary shadow-sm scale-105 font-semibold'
-                        : 'bg-card-bg border-border-subtle text-foreground/75 hover:bg-foreground/5 hover:text-foreground'
+                    key={col.name}
+                    onClick={() => {
+                      if (activeColorFilter === col.name) {
+                        setActiveColorFilter(null);
+                      } else {
+                        setActiveColorFilter(col.name);
+                      }
+                    }}
+                    className={`w-6 h-6 rounded-full border cursor-pointer hover:scale-110 transition flex items-center justify-center relative ${col.class} ${
+                      activeColorFilter === col.name ? 'scale-115 ring-2 ring-primary/40 border-primary' : 'border-border-subtle opacity-80 hover:opacity-100'
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'fill-current' : ''}`} />
-                    <span>{cat.label}</span>
-                    <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-foreground/5 text-foreground/50'}`}>
-                      {cat.count}
-                    </span>
+                    {activeColorFilter === col.name && (
+                      <Check className={`w-3.5 h-3.5 stroke-[3] ${col.name === 'white' || col.name === 'yellow' ? 'text-black' : 'text-white'}`} />
+                    )}
                   </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Color filter rail */}
-          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar w-full px-1 py-2">
-            <span className="text-[10px] font-mono uppercase text-foreground/45 tracking-wider font-bold flex items-center gap-1.5 shrink-0">
-              <Filter className="w-3.5 h-3.5" /> Filter by Color:
-            </span>
-            <div className="flex items-center gap-2 shrink-0">
-              {COLOR_FILTERS.map((col) => (
-                <button
-                  key={col.name}
-                  onClick={() => {
-                    if (activeColorFilter === col.name) {
-                      setActiveColorFilter(null);
-                    } else {
-                      setActiveColorFilter(col.name);
-                    }
-                  }}
-                  title={`Filter for items matching ${col.name}`}
-                  className={`w-6 h-6 rounded-full border cursor-pointer hover:scale-110 transition flex items-center justify-center relative ${col.class} ${
-                    activeColorFilter === col.name ? 'scale-115 ring-2 ring-primary/40 border-primary' : 'border-border-subtle opacity-80 hover:opacity-100'
-                  }`}
-                >
-                  {activeColorFilter === col.name && (
-                    <Check className={`w-3.5 h-3.5 stroke-[3] ${col.name === 'white' || col.name === 'yellow' ? 'text-black' : 'text-white'}`} />
-                  )}
-                </button>
-              ))}
-              {activeColorFilter && (
-                <button
-                  onClick={() => setActiveColorFilter(null)}
-                  className="text-[10px] font-sans font-bold text-primary hover:underline ml-2 uppercase tracking-tight"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Organize & View Controls Row */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-border-subtle/50">
-            {/* Sort/Rearrange dropdown */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[10px] font-mono uppercase text-foreground/45 tracking-wider font-bold flex items-center gap-1.5">
-                <ArrowUpDown className="w-3.5 h-3.5" /> Organize:
-              </span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-card-bg border border-border-subtle hover:border-foreground/20 rounded-xl px-2.5 py-1.5 text-xs text-foreground font-medium focus:outline-none cursor-pointer transition"
-              >
-                <option value="newest">Rearrange: Newest First</option>
-                <option value="oldest">Rearrange: Oldest First</option>
-                <option value="alphabetical">Rearrange: Alphabetical (A-Z)</option>
-                <option value="type">Rearrange: Group by Type</option>
-              </select>
-            </div>
-
-            {/* View Type selection */}
-            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-              <span className="text-[10px] font-mono uppercase text-foreground/45 tracking-wider font-bold flex items-center gap-1.5">
-                <SlidersHorizontal className="w-3.5 h-3.5" /> Layout:
-              </span>
-              <div className="flex bg-card-bg/50 border border-border-subtle p-0.5 rounded-xl gap-0.5 shadow-sm">
-                <button
-                  onClick={() => setViewType('grid')}
-                  title="Masonry Grid View"
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all flex items-center gap-1.5 ${
-                    viewType === 'grid'
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'text-foreground/60 hover:text-foreground hover:bg-foreground/5'
-                  }`}
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  <span>Grid</span>
-                </button>
-                <button
-                  onClick={() => setViewType('list')}
-                  title="Elegant List View"
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all flex items-center gap-1.5 ${
-                    viewType === 'list'
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'text-foreground/60 hover:text-foreground hover:bg-foreground/5'
-                  }`}
-                >
-                  <List className="w-3.5 h-3.5" />
-                  <span>List</span>
-                </button>
-                <button
-                  onClick={() => setViewType('kanban')}
-                  title="Kanban Board View"
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all flex items-center gap-1.5 ${
-                    viewType === 'kanban'
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'text-foreground/60 hover:text-foreground hover:bg-foreground/5'
-                  }`}
-                >
-                  <Columns className="w-3.5 h-3.5" />
-                  <span>Kanban</span>
-                </button>
+                ))}
               </div>
             </div>
           </div>
 
+          <div className={`transition-all duration-500 origin-top overflow-hidden md:overflow-visible ${
+            isMobileToolbarOpen === 'organize' || isMobileToolbarOpen === 'layout' ? 'max-h-[400px] opacity-100 py-2 border-t border-border-subtle/50 mt-2' : 'max-h-0 opacity-0 md:max-h-none md:opacity-100 md:border-t-0 md:mt-0'
+          }`}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              {/* Sort/Rearrange dropdown */}
+              <div className={`flex items-center gap-2 shrink-0 transition-all duration-500 ${isMobileToolbarOpen === 'layout' && 'hidden md:flex'}`}>
+                <span className="text-[10px] font-mono uppercase text-foreground/45 tracking-wider font-bold flex items-center gap-1.5">
+                  <ArrowUpDown className="w-3.5 h-3.5" /> Organize:
+                </span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-card-bg border border-border-subtle hover:border-foreground/20 rounded-xl px-2.5 py-1.5 text-xs text-foreground font-medium focus:outline-none cursor-pointer transition"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="alphabetical">Alphabetical</option>
+                  <option value="type">By Type</option>
+                </select>
+              </div>
+
+              {/* View Type selection */}
+              <div className={`flex items-center gap-2 self-end sm:self-auto shrink-0 transition-all duration-500 ${isMobileToolbarOpen === 'organize' && 'hidden md:flex'}`}>
+                <span className="text-[10px] font-mono uppercase text-foreground/45 tracking-wider font-bold flex items-center gap-1.5">
+                  <LayoutGrid className="w-3.5 h-3.5" /> Layout:
+                </span>
+                <div className="flex bg-card-bg/50 border border-border-subtle p-0.5 rounded-xl gap-0.5 shadow-sm">
+                  <button
+                    onClick={() => setViewType('grid')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all flex items-center gap-1.5 ${
+                      viewType === 'grid' ? 'bg-primary text-white shadow-sm' : 'text-foreground/60 hover:text-foreground'
+                    }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span className="hidden xs:inline">Grid</span>
+                  </button>
+                  <button
+                    onClick={() => setViewType('list')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all flex items-center gap-1.5 ${
+                      viewType === 'list' ? 'bg-primary text-white shadow-sm' : 'text-foreground/60 hover:text-foreground'
+                    }`}
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    <span className="hidden xs:inline">List</span>
+                  </button>
+                  <button
+                    onClick={() => setViewType('kanban')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all flex items-center gap-1.5 ${
+                      viewType === 'kanban' ? 'bg-primary text-white shadow-sm' : 'text-foreground/60 hover:text-foreground'
+                    }`}
+                  >
+                    <Columns className="w-3.5 h-3.5" />
+                    <span className="hidden xs:inline">Kanban</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Same Vibe Active Banner */}
@@ -1189,7 +1276,7 @@ export default function App() {
         {viewType === 'list' && (
           <div className="w-full max-w-2xl mx-auto px-6 md:px-8 mt-6 md:mt-12 pb-32 md:pb-24 space-y-6">
             {sortedItems.length === 0 ? (
-              <div id="mymind-empty-state" className="w-full text-center py-20 bg-card-bg/40 border border-border-subtle rounded-3xl text-neutral-400 font-mono text-xs">
+              <div id="pensieve-empty-state" className="w-full text-center py-20 bg-card-bg/40 border border-border-subtle rounded-3xl text-neutral-400 font-mono text-xs">
                 No items match your active filters.
               </div>
             ) : (
@@ -1385,15 +1472,42 @@ export default function App() {
       </nav>
 
       {/* Dynamic Inspector Drawer sliding panel */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {selectedItem && (
           <DetailPanel 
+            key={selectedItem.id}
             item={selectedItem}
             onClose={() => setSelectedItem(null)}
             onUpdateItem={handleUpdateItem}
             onDeleteItem={handleDeleteItem}
             onSetVibeFilter={(type, val, label) => setVibeFilter({ type, value: val, label })}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Puter Login Notification */}
+      <AnimatePresence>
+        {!isPuterLoggedIn && dbStrategy === 'puter' && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[5000] w-[90vw] max-w-sm bg-card-bg border border-primary/30 p-4 rounded-2xl shadow-2xl backdrop-blur-md flex items-center gap-4"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-foreground">Sign in to Puter.js</p>
+              <p className="text-[10px] text-foreground/50 leading-tight mt-0.5">Connect your account for persistent cloud memory sync.</p>
+            </div>
+            <button
+              onClick={() => window.puter.auth.signIn()}
+              className="px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg shadow-lg active:scale-95 transition-all"
+            >
+              Login
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
 

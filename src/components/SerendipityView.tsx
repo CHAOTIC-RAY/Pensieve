@@ -91,7 +91,7 @@ export default function SerendipityView({
 
   return (
     <AnimatePresence>
-      <div id="mymind-serendipity-overlay" className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+      <div id="pensieve-serendipity-overlay" className="fixed inset-0 z-[70] flex items-center justify-center p-4">
         {/* Ambient background blur */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -169,7 +169,7 @@ export default function SerendipityView({
                 {(randomItem.type === 'link' || randomItem.type === 'article') && (
                   <div className="flex gap-4">
                     {randomItem.imageUrl && (
-                      <img src={randomItem.imageUrl} alt="" className="w-16 h-16 rounded-xl object-cover border border-neutral-100 shrink-0" referrerPolicy="no-referrer" />
+                      <img src={randomItem.imageUrl} alt="" className="w-16 h-16 rounded-xl object-cover border border-neutral-100 shrink-0" />
                     )}
                     <div className="space-y-1 overflow-hidden">
                       <span className="text-[9px] font-mono text-indigo-600 uppercase font-bold">{randomItem.siteName}</span>
@@ -181,7 +181,7 @@ export default function SerendipityView({
 
                 {randomItem.type === 'image' && randomItem.imageUrl && (
                   <div className="flex gap-4">
-                    <img src={randomItem.imageUrl} alt="" className="w-20 h-16 rounded-xl object-cover border border-neutral-100 shrink-0" referrerPolicy="no-referrer" />
+                    <img src={randomItem.imageUrl} alt="" className="w-20 h-16 rounded-xl object-cover border border-neutral-100 shrink-0" />
                     <div className="space-y-1">
                       <h4 className="font-display font-semibold text-sm text-neutral-800 leading-tight">{randomItem.title}</h4>
                       <p className="text-xs text-neutral-400 leading-relaxed line-clamp-2">{randomItem.content}</p>

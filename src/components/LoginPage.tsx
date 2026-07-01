@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, 
   Mail, 
@@ -7,14 +7,23 @@ import {
   Eye, 
   EyeOff,
   LogIn,
-  Chrome
+  Chrome,
+  UserCircle,
+  UserPlus
 } from 'lucide-react';
 import { auth } from '../lib/firebase';
-import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
+import { 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signInAnonymously 
+} from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,113 +39,158 @@ export default function LoginPage() {
       navigate('/');
     } catch (err: any) {
       console.error("Error signing in with Google:", err);
-      setError(err.message || "Failed to sign in with Google. Check your network or browser settings.");
+      setError(err.message || "Failed to sign in with Google.");
       setIsLoading(false);
     }
   };
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleAnonymousSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await signInAnonymously(auth);
+      navigate('/');
+    } catch (err: any) {
+      console.error("Error signing in anonymously:", err);
+      setError("Anonymous sign-in failed. Ensure this method is enabled in Firebase Console.");
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      if (isSignUp) {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
       navigate('/');
     } catch (err: any) {
-      console.error("Error signing in with email:", err);
-      setError("Email sign-in failed. Ensure this method is enabled in Firebase Console.");
+      console.error("Error with email auth:", err);
+      if (isSignUp) {
+        setError("Sign up failed. Ensure email/password is enabled.");
+      } else {
+        setError("Sign in failed. Check your credentials.");
+      }
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-800 via-purple-900 to-slate-900 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Animated Gradient Background Elements */}
+      <div className="absolute inset-0 bg-white" />
+      <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-purple-100/50 blur-[120px] rounded-full animate-pulse" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] bg-primary/10 blur-[150px] rounded-full animate-[pulse_8s_infinite_alternate]" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-tr from-purple-50/40 via-white to-primary/5 opacity-80" />
+
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md relative z-10"
       >
         {/* Back Button */}
         <button
           onClick={() => navigate('/landing')}
-          className="mb-6 flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+          className="mb-8 flex items-center gap-2 text-neutral-400 hover:text-neutral-600 transition-colors group"
         >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="text-sm">Back to Landing</span>
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-xs font-mono uppercase tracking-widest">Back to Landing</span>
         </button>
 
         {/* Login Card */}
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-white font-display">Welcome Back</h1>
-            <p className="text-white/60 text-sm">Sign in to access your second brain</p>
+        <div className="bg-white/80 backdrop-blur-3xl border border-black/[0.05] rounded-[32px] p-8 md:p-10 shadow-2xl shadow-purple-200/50 space-y-8">
+          <div className="text-center space-y-3">
+            <h1 className="text-4xl font-black text-neutral-900 font-display tracking-tight">
+              {isSignUp ? 'Create Account' : 'Welcome Back'}
+            </h1>
+            <p className="text-neutral-500 text-sm font-sans max-w-[240px] mx-auto leading-relaxed">
+              {isSignUp 
+                ? 'Join the collective intelligence and start mapping your mind.' 
+                : 'Sign in to access your sovereign memory vault.'}
+            </p>
           </div>
 
           {error && (
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-200 text-xs text-center"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-3 bg-red-500/5 border border-red-500/10 rounded-2xl text-red-500 text-[11px] text-center font-mono"
             >
               {error}
             </motion.div>
           )}
 
-          {/* Google Sign In Button */}
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={isLoading}
-            className="w-full py-4 bg-white text-slate-900 rounded-2xl font-semibold hover:bg-white/90 transition-all flex items-center justify-center gap-3 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Chrome className="w-5 h-5" />
-            <span>Continue with Google</span>
-          </button>
+          <div className="space-y-4">
+            {/* Google Sign In Button */}
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+              className="w-full py-4 bg-[#0c0d12] text-white rounded-2xl font-bold hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-xl disabled:opacity-50"
+            >
+              <Chrome className="w-5 h-5" />
+              <span className="text-sm">Continue with Google</span>
+            </button>
 
-          <div className="relative">
+            {/* Anonymous Sign In Button */}
+            <button
+              onClick={handleAnonymousSignIn}
+              disabled={isLoading}
+              className="w-full py-4 bg-white border border-black/[0.05] text-neutral-700 rounded-2xl font-bold hover:bg-neutral-50 transition-all flex items-center justify-center gap-3 shadow-sm disabled:opacity-50"
+            >
+              <UserCircle className="w-5 h-5 text-neutral-400" />
+              <span className="text-sm">Continue as Guest</span>
+            </button>
+          </div>
+
+          <div className="relative py-2">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/20"></div>
+              <div className="w-full border-t border-neutral-100"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-transparent text-white/60">or</span>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-4 bg-white/80 text-neutral-300 font-mono uppercase tracking-[0.2em]">or</span>
             </div>
           </div>
 
           {/* Email/Password Form */}
-          <form onSubmit={handleEmailSignIn} className="space-y-4">
+          <form onSubmit={handleEmailAuth} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">Email</label>
+              <label className="text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-widest ml-1">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder="name@example.com"
                   required
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:border-white/30 focus:ring-2 focus:ring-white/10 transition-all outline-none"
+                  className="w-full pl-12 pr-4 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl text-neutral-900 placeholder:text-neutral-300 focus:border-primary/30 focus:bg-white transition-all outline-none text-sm"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">Password</label>
+              <label className="text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-widest ml-1">Password</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full pl-12 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:border-white/30 focus:ring-2 focus:ring-white/10 transition-all outline-none"
+                  className="w-full pl-12 pr-12 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl text-neutral-900 placeholder:text-neutral-300 focus:border-primary/30 focus:bg-white transition-all outline-none text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 hover:text-neutral-500 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
@@ -144,20 +198,30 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-primary text-white rounded-2xl font-bold hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-2xl shadow-primary/20 disabled:opacity-50"
             >
-              <LogIn className="w-5 h-5" />
-              <span>{isLoading ? 'Signing in...' : 'Sign In'}</span>
+              {isSignUp ? <UserPlus className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+              <span>{isLoading ? (isSignUp ? 'Creating...' : 'Signing in...') : (isSignUp ? 'Create Account' : 'Sign In')}</span>
             </button>
           </form>
 
-          <p className="text-center text-white/50 text-xs">
-            Don't have an account?{' '}
-            <button className="text-white/80 hover:text-white underline">
-              Sign up
+          <div className="text-center pt-2">
+            <button 
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-neutral-400 hover:text-neutral-600 text-xs font-sans transition-colors"
+            >
+              {isSignUp ? (
+                <>Already have an account? <span className="text-primary font-bold">Sign In</span></>
+              ) : (
+                <>Don't have an account? <span className="text-primary font-bold">Sign Up</span></>
+              )}
             </button>
-          </p>
+          </div>
         </div>
+        
+        <p className="text-center mt-8 text-[10px] font-mono text-neutral-300 uppercase tracking-[0.3em]">
+          End-to-End Encrypted Session
+        </p>
       </motion.div>
     </div>
   );

@@ -6,7 +6,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -19,12 +19,12 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 // Helper to check for Gemini API key
-function getGeminiClient(): GoogleGenAI | null {
+function getGeminiClient(): GoogleGenerativeAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey.trim() === "") {
     return null;
   }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenerativeAI(apiKey);
 }
 
 // Scrape Webpage Metadata Helper
@@ -628,38 +628,29 @@ app.post("/api/analyze", async (req, res) => {
 
     // Call Gemini using the GenAI SDK
     let responseText = "";
+    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     if (item.type === "image" && base64Data && mimeType) {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text:
-                  prompt +
-                  "\nIMPORTANT: Respond ONLY with a valid JSON block, no markdown enclosing blocks (like ```json). Just the raw JSON.",
-              },
-              {
-                inlineData: {
-                  mimeType: mimeType,
-                  data: base64Data,
-                },
-              },
-            ],
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: mimeType,
+            data: base64Data,
           },
-        ],
-      });
-      responseText = response.text || "";
+        },
+        {
+          text:
+            prompt +
+            "\nIMPORTANT: Respond ONLY with a valid JSON block, no markdown enclosing blocks (like ```json). Just the raw JSON.",
+        },
+      ]);
+      responseText = result.response.text();
     } else {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents:
-          prompt +
+      const result = await model.generateContent(
+        prompt +
           "\nIMPORTANT: Respond ONLY with a valid JSON block, no markdown enclosing blocks (like ```json). Just the raw JSON.",
-      });
-      responseText = response.text || "";
+      );
+      responseText = result.response.text();
     }
 
     // Clean up responseText if it's wrapped in markdown codeblocks

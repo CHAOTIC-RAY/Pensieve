@@ -170,32 +170,33 @@ export default function DetailPanel({
     setTimeout(() => setCopiedHarmonic(null), 1500);
   };
 
+  if (!item) return null;
+
   return (
     <>
-      {/* Sliding detail drawer overlay */}
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 bg-neutral-950/20 dark:bg-neutral-950/50 backdrop-blur-[4px] z-40 cursor-pointer animate-fade-in"
-        />
-      </AnimatePresence>
-
+      {/* Sliding detail drawer backdrop — rendered alongside the drawer */}
       <motion.div
-        id="mymind-detail-drawer"
-        initial={{ x: '100%' }}
-        animate={{ x: 0 }}
-        exit={{ x: '100%' }}
-        transition={{ type: 'spring', damping: 30, stiffness: 250 }}
-        className="fixed top-0 right-0 h-full w-full max-w-lg bg-card-bg shadow-[0_0_50px_rgba(0,0,0,0.12)] z-50 flex flex-col border-l border-border-subtle/70 relative before:absolute before:inset-0 before:bg-[radial-gradient(#80808007_1.2px,transparent_1.2px)] before:[background-size:20px_20px] before:pointer-events-none overflow-hidden"
-      >
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-neutral-950/40 dark:bg-neutral-950/70 backdrop-blur-[8px] z-[100000] cursor-pointer"
+      />
+
+      <div className="fixed inset-0 z-[100010] flex items-center justify-center p-4">
+        <motion.div
+          id="pensieve-detail-modal"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="w-full max-w-2xl max-h-[90vh] bg-modal-bg shadow-2xl flex flex-col rounded-3xl border border-border-subtle relative overflow-hidden"
+        >
         {/* Editorial Top Border Accents */}
         <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-80" />
 
         {/* Drawer Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle/40 bg-card-bg/95 backdrop-blur-sm z-10">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle/40 bg-modal-bg z-10">
           <div className="flex items-center gap-3">
             <span className="text-[10px] font-mono uppercase tracking-widest text-foreground/50 flex items-center gap-1.5">
               <Bookmark className="w-3.5 h-3.5 text-indigo-400" />
@@ -240,7 +241,6 @@ export default function DetailPanel({
                     src={item.imageUrl} 
                     alt={item.title} 
                     className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700" 
-                    referrerPolicy="no-referrer"
                   />
                 </div>
                 
@@ -942,6 +942,7 @@ export default function DetailPanel({
           </span>
         </div>
       </motion.div>
+    </div>
 
       {/* FULL READER MODE OVERLAY FOR ARTICLES */}
       <AnimatePresence>
@@ -976,7 +977,7 @@ export default function DetailPanel({
               {/* Cover image in reader mode */}
               {item.imageUrl && (
                 <div className="w-full max-h-[350px] rounded-3xl overflow-hidden mb-10 shadow-lg border border-neutral-100 bg-neutral-50">
-                  <img src={item.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
                 </div>
               )}
 

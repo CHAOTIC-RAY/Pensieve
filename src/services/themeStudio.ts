@@ -12,6 +12,7 @@ export type UserSettings = {
   // Layout & Effects
   borderRadius: number;                   // Global corner radius in px (0–48)
   blurStrength: number;                   // Backdrop blur in px (0–100)
+  cardStyle: 'comfortable' | 'compact';   // Card density style
   backgroundImage?: string;               // Base64 or URL for custom wallpaper
 
   // Accessibility
@@ -154,6 +155,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   fontCombo: 'editorial',
   borderRadius: 16,
   blurStrength: 24,
+  cardStyle: 'comfortable',
   backgroundImage: '',
   reduceMotion: false,
   hideImages: false,

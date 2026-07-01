@@ -1,5 +1,5 @@
 {
-  "name": "Pensieve",
+  "name": "pensieve",
   "description": "A private digital sanctuary for your thoughts, bookmarks, quotes, images, and tasks.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
