@@ -4,18 +4,20 @@ import {
   useScroll, 
   useTransform, 
   useSpring,
+  useMotionValueEvent
 } from 'motion/react';
 import { 
   ArrowRight, 
   Search,
   Sparkles,
-  Play,
   Heart,
   Palette,
-  FileText,
-  Link2,
   Compass,
-  Trophy
+  Trophy,
+  Activity,
+  Layers,
+  Lock,
+  Cloud
 } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
@@ -25,31 +27,57 @@ export default function LandingPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [email, setEmail] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
+  const [searchPlaceholder, setSearchPlaceholder] = useState("Save a note, link, or search...");
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end end'],
   });
 
-  // Smooth scroll progress
   const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
 
-  // Animations based on scroll
-  // Hero section fades out slightly as you scroll down
-  const heroOpacity = useTransform(smoothProgress, [0, 0.2], [1, 0]);
-  const heroScale = useTransform(smoothProgress, [0, 0.2], [1, 0.9]);
-  
-  // Omnibar animates up and pins or just floats
-  const omnibarY = useTransform(smoothProgress, [0, 0.2, 0.4], [0, -100, -150]);
+  // Sidebar transition: visible as we scroll past the hero
+  const sidebarOpacity = useTransform(smoothProgress, [0.05, 0.15], [0, 1]);
+  const sidebarX = useTransform(smoothProgress, [0.05, 0.15], [-50, 0]);
+
+  // Center Hero Logo fades out
+  const centerLogoOpacity = useTransform(smoothProgress, [0, 0.1], [1, 0]);
+  const centerLogoScale = useTransform(smoothProgress, [0, 0.1], [1, 0.8]);
+
+  // Hero text transitions (fades out and moves up)
+  const heroOpacity = useTransform(smoothProgress, [0, 0.15], [1, 0]);
+  const heroY = useTransform(smoothProgress, [0, 0.15], [0, -50]);
+
+  // Omnibar positions: starts in the center, moves to the top on scroll
+  const omnibarY = useTransform(smoothProgress, [0, 0.2], [40, -180]);
   const omnibarScale = useTransform(smoothProgress, [0, 0.2], [1, 0.95]);
 
-  // Grid fades in
-  const gridOpacity = useTransform(smoothProgress, [0.1, 0.3], [0, 1]);
-  const gridY = useTransform(smoothProgress, [0.1, 0.3], [100, 0]);
+  // Content grid fades in
+  const gridOpacity = useTransform(smoothProgress, [0.15, 0.3], [0, 1]);
+  const gridY = useTransform(smoothProgress, [0.15, 0.3], [80, 0]);
+
+  // Additional features section fades in
+  const featuresOpacity = useTransform(smoothProgress, [0.35, 0.55], [0, 1]);
+  const featuresY = useTransform(smoothProgress, [0.35, 0.55], [80, 0]);
 
   // Serendipity section
-  const serendipityOpacity = useTransform(smoothProgress, [0.4, 0.6], [0, 1]);
-  const serendipityScale = useTransform(smoothProgress, [0.4, 0.6], [0.9, 1]);
+  const serendipityOpacity = useTransform(smoothProgress, [0.6, 0.75], [0, 1]);
+  const serendipityScale = useTransform(smoothProgress, [0.6, 0.75], [0.95, 1]);
+
+  // Change search placeholder text dynamically as user scrolls
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    if (latest < 0.15) {
+      setSearchPlaceholder("Save a note, link, or search...");
+    } else if (latest >= 0.15 && latest < 0.4) {
+      setSearchPlaceholder("Typing: 'brutalist glassmorphic app designs'...");
+    } else if (latest >= 0.4 && latest < 0.65) {
+      setSearchPlaceholder("Categorizing: #design #ux #glassmorphism...");
+    } else if (latest >= 0.65 && latest < 0.85) {
+      setSearchPlaceholder("Recalling memory: 'First Spark' milestone...");
+    } else {
+      setSearchPlaceholder("Search your entire second brain...");
+    }
+  });
 
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
@@ -68,29 +96,69 @@ export default function LandingPage() {
   return (
     <div 
       ref={containerRef}
-      className="min-h-[400vh] bg-background text-foreground selection:bg-primary/20 selection:text-primary font-sans overflow-x-hidden"
+      className="min-h-[500vh] bg-background text-foreground selection:bg-primary/20 selection:text-primary font-sans overflow-x-hidden"
     >
-      {/* Top Header */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex items-center justify-between backdrop-blur-md bg-background/50 border-b border-border-subtle/30">
-        <div className="flex items-center gap-3">
-            <div className="w-8 h-8 flex items-center justify-center p-1 bg-background rounded-xl shadow-premium border border-border-subtle">
+      {/* Floating Sidebar (iOS / Main App style) - Fades in on scroll */}
+      <motion.div 
+        style={{ opacity: sidebarOpacity, x: sidebarX }}
+        className="hidden lg:flex flex-col items-center justify-between fixed left-6 top-6 bottom-6 w-24 py-10 z-50 liquid-glass-panel border border-white/20 rounded-[32px]"
+      >
+        <div className="flex flex-col items-center gap-12">
+          <div className="flex flex-col items-center gap-4 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="w-12 h-12 flex items-center justify-center p-1.5 bg-background rounded-2xl shadow-premium border border-border-subtle hover:scale-105 transition-transform">
               <Logo className="w-full h-full" glow={false} />
             </div>
-            <span className="text-lg font-bold tracking-tight font-display">Pensieve</span>
+            <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-foreground/40 font-mono vertical-text">
+              PENSIEVE
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
+
+        <div className="flex flex-col items-center gap-4 w-full px-3">
           <button 
             onClick={handleGoogleSignIn}
-            className="px-5 py-2.5 bg-foreground/5 text-foreground rounded-full text-xs font-bold hover:bg-foreground/10 transition-all cursor-pointer"
+            className="w-full py-2.5 bg-foreground/5 text-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/10 transition-all cursor-pointer"
           >
             Log In
           </button>
           <button 
             onClick={() => setShowEmailInput(true)}
-            className="px-6 py-2.5 bg-primary text-white rounded-full text-xs font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 cursor-pointer"
+            className="w-full py-2.5 bg-primary text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-all shadow-md shadow-primary/20 cursor-pointer"
           >
-            Get Started
+            Start
           </button>
+        </div>
+      </motion.div>
+
+      {/* Top Header for Mobile/Navbar Fallback (Left Side buttons matching requested Dock) */}
+      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex items-center justify-between backdrop-blur-md bg-background/30 border-b border-border-subtle/20 lg:bg-transparent lg:border-none">
+        <div className="flex items-center gap-4">
+          <div className="w-8 h-8 flex items-center justify-center p-1 bg-background rounded-xl border border-border-subtle">
+            <Logo className="w-full h-full" glow={false} />
+          </div>
+          <span className="text-base font-bold tracking-tight font-display lg:hidden">Pensieve</span>
+          
+          {/* Header left Dock for small screens / general view */}
+          <div className="hidden lg:flex items-center gap-3">
+            <button 
+              onClick={handleGoogleSignIn}
+              className="px-4 py-2 bg-foreground/5 border border-border-subtle text-foreground rounded-full text-xs font-bold hover:bg-foreground/10 transition-all cursor-pointer"
+            >
+              Log In
+            </button>
+            <button 
+              onClick={() => setShowEmailInput(true)}
+              className="px-5 py-2 bg-primary text-white rounded-full text-xs font-bold hover:opacity-90 transition-all shadow-md cursor-pointer"
+            >
+              Get Started
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile controls */}
+        <div className="flex lg:hidden items-center gap-2">
+          <button onClick={handleGoogleSignIn} className="px-3 py-1.5 bg-foreground/5 text-foreground rounded-lg text-[10px] font-bold uppercase">Log In</button>
+          <button onClick={() => setShowEmailInput(true)} className="px-3 py-1.5 bg-primary text-white rounded-lg text-[10px] font-bold uppercase">Start</button>
         </div>
       </nav>
 
@@ -98,54 +166,69 @@ export default function LandingPage() {
         {/* Ambient Glow */}
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 w-full max-w-5xl h-[600px] bg-primary/10 blur-[150px] rounded-full opacity-60 pointer-events-none" />
 
-        {/* Section 1: Hero */}
-        <section className="sticky top-0 h-screen flex flex-col items-center justify-center text-center px-6 pt-20 pointer-events-none">
-          <motion.div style={{ opacity: heroOpacity, scale: heroScale }} className="space-y-6">
-            <h1 className="text-4xl md:text-6xl font-bold font-display tracking-tight leading-tight text-foreground">
+        {/* Hero Section Sticky Container to prevent overlap */}
+        <section className="sticky top-0 h-screen flex flex-col items-center justify-center text-center px-6 pointer-events-none select-none">
+          {/* Centered Large Logo on first scroll */}
+          <motion.div 
+            style={{ opacity: centerLogoOpacity, scale: centerLogoScale }}
+            className="flex flex-col items-center gap-4 mb-6"
+          >
+            <div className="w-20 h-20 p-2.5 bg-background rounded-3xl shadow-xl border border-border-subtle">
+              <Logo className="w-full h-full" glow={true} />
+            </div>
+            <span className="text-sm font-bold tracking-[0.4em] uppercase text-foreground/60 font-mono">
+              PENSIEVE
+            </span>
+          </motion.div>
+
+          <motion.div 
+            style={{ opacity: heroOpacity, y: heroY }} 
+            className="space-y-4 max-w-xl mx-auto"
+          >
+            <h1 className="text-4xl md:text-5xl font-bold font-display tracking-tight leading-tight text-foreground">
               What are you remembering today?
             </h1>
-            <p className="text-sm md:text-lg text-foreground/50 max-w-xl mx-auto leading-relaxed font-sans">
+            <p className="text-xs md:text-sm text-foreground/45 max-w-md mx-auto leading-relaxed font-sans">
               Search your private workspace or type to save instantly. A fluid mind needs a fluid vault.
             </p>
           </motion.div>
-        </section>
 
-        {/* The Omnibar Mockup - animates with scroll */}
-        <motion.div 
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 w-full max-w-3xl z-40 px-4 pointer-events-auto"
-          style={{ y: omnibarY, scale: omnibarScale }}
-        >
-          <div className="w-full liquid-glass-panel shadow-2xl rounded-[32px] p-2 flex items-center gap-4 group transition-all duration-300 hover:shadow-primary/20">
-            <div className="pl-4 text-foreground/40">
-              <Search className="w-6 h-6" />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Save a note, link, or search..." 
-              className="flex-1 bg-transparent border-none outline-none text-lg text-foreground placeholder:text-foreground/30 py-4 font-sans"
-              disabled
-            />
-            <div className="pr-4 flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <Sparkles className="w-5 h-5" />
+          {/* Floating omnibar - properly spaced inside the flex layout */}
+          <motion.div 
+            className="w-full max-w-3xl z-40 px-4 mt-12 pointer-events-auto"
+            style={{ y: omnibarY, scale: omnibarScale }}
+          >
+            <div className="w-full liquid-glass-panel shadow-2xl rounded-[24px] p-1 flex items-center gap-3 border border-white/20">
+              <div className="pl-3.5 text-foreground/45">
+                <Search className="w-5 h-5" />
+              </div>
+              <input 
+                type="text" 
+                placeholder={searchPlaceholder} 
+                className="flex-1 bg-transparent border-none outline-none text-base text-foreground placeholder:text-foreground/35 py-3.5 font-sans"
+                disabled
+              />
+              <div className="pr-3 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <Sparkles className="w-4 h-4" />
+                </div>
               </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </section>
 
         {/* Section 2: Masonry Grid Preview */}
-        <section className="relative h-screen flex flex-col items-center justify-center px-6 pointer-events-none">
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
           <motion.div 
             style={{ opacity: gridOpacity, y: gridY }}
-            className="w-full max-w-5xl pt-32"
+            className="w-full max-w-5xl"
           >
-            <div className="text-center mb-12">
+            <div className="text-center mb-16">
               <h2 className="text-3xl font-display font-bold text-foreground">Effortless Organization</h2>
-              <p className="text-sm text-foreground/50 mt-2">Everything you save, automatically categorized and beautifully displayed.</p>
+              <p className="text-sm text-foreground/45 mt-2">Everything you save, automatically categorized and beautifully displayed.</p>
             </div>
             
-            <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-              {/* Mock Cards */}
+            <div className="columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
               {[
                 { type: 'note', color: 'bg-rose-100', text: 'Architecture inspiration for the new project.', height: 'h-32' },
                 { type: 'link', color: 'bg-blue-100', text: 'https://design.com', height: 'h-24' },
@@ -156,66 +239,113 @@ export default function LandingPage() {
               ].map((card, i) => (
                 <div key={i} className={`w-full ${card.height} ${card.color} rounded-2xl p-4 break-inside-avoid shadow-sm border border-black/5 relative overflow-hidden group`}>
                   <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent pointer-events-none" />
-                  <p className="relative z-10 text-xs font-medium text-black/70">{card.text}</p>
+                  <p className="relative z-10 text-xs font-semibold text-neutral-800">{card.text}</p>
                 </div>
               ))}
             </div>
           </motion.div>
         </section>
 
-        {/* Section 3: Serendipity & Intelligence */}
-        <section className="relative h-screen flex flex-col items-center justify-center px-6 pointer-events-none">
+        {/* Section 3: Highlighted Features */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
+          <motion.div 
+            style={{ opacity: featuresOpacity, y: featuresY }}
+            className="w-full max-w-5xl space-y-16"
+          >
+            <div className="text-center">
+              <h2 className="text-3xl font-display font-bold text-foreground">Local-First Architecture</h2>
+              <p className="text-sm text-foreground/45 mt-2">Maximum privacy. Your database stays securely in your browser context.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-6 rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-md space-y-4">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">Zero Cloud Required</h3>
+                <p className="text-xs text-foreground/50 leading-relaxed font-sans">Works entirely offline. All notes and images are parsed locally on your device.</p>
+              </div>
+
+              <div className="p-6 rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-md space-y-4">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                  <Cloud className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">Delta Sync Fallback</h3>
+                <p className="text-xs text-foreground/50 leading-relaxed font-sans">Optionally connect to Firestore or Supabase. Fails back to local storage automatically if you lose connection.</p>
+              </div>
+
+              <div className="p-6 rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-md space-y-4">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+                  <Activity className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">Telemetry & Analytics</h3>
+                <p className="text-xs text-foreground/50 leading-relaxed font-sans">Get real-time insights into your mind palette: count favorites, track focused items, and swatch percentages.</p>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Section 4: Serendipity & Intelligence */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
           <motion.div 
             style={{ opacity: serendipityOpacity, scale: serendipityScale }}
             className="w-full max-w-4xl text-center space-y-12"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr from-amber-200 to-orange-300 shadow-xl mb-6">
-              <Compass className="w-10 h-10 text-orange-700" />
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr from-amber-300 to-orange-400 shadow-xl mb-6">
+              <Compass className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-5xl md:text-7xl font-display font-bold text-foreground leading-tight">
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-foreground leading-tight">
               Rediscover your <br/> <span className="italic text-primary">Wandering Mind.</span>
             </h2>
-            <p className="text-xl text-foreground/60 max-w-2xl mx-auto font-sans">
-              Click the Serendipity button to instantly recall a forgotten thought. Earn unique 3D milestone cards as you build your collection.
+            <p className="text-sm md:text-base text-foreground/60 max-w-xl mx-auto font-sans">
+              Recall long-forgotten thoughts instantly. Earn beautiful collectible achievement cards with 3D parallax effects as your workspace grows.
             </p>
 
-            <div className="flex justify-center gap-6 mt-12">
-               <div className="w-48 h-64 liquid-glass-panel rounded-[24px] shadow-2xl flex flex-col items-center justify-center p-6 transform -rotate-6 translate-y-4">
-                 <Trophy className="w-12 h-12 text-amber-500 mb-4" />
-                 <span className="text-xs font-bold uppercase tracking-widest text-foreground/50">Milestone</span>
-                 <span className="text-lg font-display font-bold">First Spark</span>
+            <div className="flex flex-wrap justify-center gap-6 mt-12">
+               <div className="w-44 h-56 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-[24px] shadow-2xl flex flex-col items-center justify-center p-6 transform -rotate-6 translate-y-4">
+                 <Trophy className="w-10 h-10 text-amber-500 mb-4 animate-bounce" />
+                 <span className="text-[9px] font-bold uppercase tracking-widest text-foreground/45">Milestone</span>
+                 <span className="text-sm font-display font-bold">First Spark</span>
                </div>
-               <div className="w-48 h-64 liquid-glass-panel rounded-[24px] shadow-2xl flex flex-col items-center justify-center p-6 transform rotate-3 -translate-y-2 z-10">
-                 <Compass className="w-12 h-12 text-blue-500 mb-4" />
-                 <span className="text-xs font-bold uppercase tracking-widest text-foreground/50">Milestone</span>
-                 <span className="text-lg font-display font-bold">Wandering Mind</span>
+               <div className="w-44 h-56 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-[24px] shadow-2xl flex flex-col items-center justify-center p-6 transform rotate-3 -translate-y-2 z-10">
+                 <Compass className="w-10 h-10 text-blue-400 mb-4" />
+                 <span className="text-[9px] font-bold uppercase tracking-widest text-foreground/45">Milestone</span>
+                 <span className="text-sm font-display font-bold">Wandering Mind</span>
                </div>
-               <div className="w-48 h-64 liquid-glass-panel rounded-[24px] shadow-2xl flex flex-col items-center justify-center p-6 transform rotate-12 translate-y-6">
-                 <Palette className="w-12 h-12 text-rose-500 mb-4" />
-                 <span className="text-xs font-bold uppercase tracking-widest text-foreground/50">Milestone</span>
-                 <span className="text-lg font-display font-bold">Colorful</span>
+               <div className="w-44 h-56 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-[24px] shadow-2xl flex flex-col items-center justify-center p-6 transform rotate-12 translate-y-6">
+                 <Palette className="w-10 h-10 text-rose-500 mb-4 animate-pulse" />
+                 <span className="text-[9px] font-bold uppercase tracking-widest text-foreground/45">Milestone</span>
+                 <span className="text-sm font-display font-bold">Colorful</span>
                </div>
             </div>
           </motion.div>
         </section>
 
-        {/* Section 4: Call to action */}
+        {/* Section 5: Call to action (Bottom Last Scroll Forge-style) */}
         <section className="relative h-screen flex flex-col items-center justify-center px-6 pointer-events-auto">
-          <div className="w-full max-w-3xl liquid-glass-panel p-16 rounded-[48px] text-center shadow-2xl border border-white/40">
-            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">Ready to enter your vault?</h2>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-8">
+          <div className="w-full max-w-4xl bg-gradient-to-tr from-foreground to-neutral-900 text-background p-16 rounded-[48px] text-center shadow-3xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/20 blur-[150px] rounded-full -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-125 pointer-events-none" />
+            
+            <h2 className="text-4xl md:text-6xl font-display font-bold text-white mb-6 leading-none">
+              Begin your <br/> <span className="text-primary italic">Second Brain.</span>
+            </h2>
+            <p className="text-sm md:text-lg text-white/60 max-w-xl mx-auto leading-relaxed mb-10 font-sans">
+              Experience the absolute clarity of an organized mind. Your data, completely owned by you.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
               {!showEmailInput ? (
                 <>
                   <button 
                     onClick={() => setShowEmailInput(true)}
-                    className="group px-10 py-5 bg-foreground text-background rounded-2xl text-base font-bold hover:opacity-90 transition-all shadow-2xl flex items-center gap-3 cursor-pointer"
+                    className="group px-10 py-5 bg-white text-black rounded-2xl text-base font-bold hover:scale-105 active:scale-95 transition-all shadow-2xl flex items-center gap-3 cursor-pointer"
                   >
-                    Get Started
+                    Enter Workspace
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </button>
                   <button 
                     onClick={handleGoogleSignIn}
-                    className="px-10 py-5 bg-card-bg border border-border-subtle text-foreground rounded-2xl text-base font-bold hover:bg-foreground/5 transition-all flex items-center gap-3 cursor-pointer"
+                    className="px-10 py-5 bg-white/10 border border-white/20 text-white rounded-2xl text-base font-bold hover:bg-white/20 transition-all flex items-center gap-3 cursor-pointer"
                   >
                     Google Auth
                   </button>
@@ -230,13 +360,13 @@ export default function LandingPage() {
                     placeholder="Enter your email" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-6 py-4 rounded-2xl bg-foreground/[0.03] border border-border-subtle focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-base"
+                    className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-base"
                     required
                   />
                   <div className="flex gap-3">
                     <button 
                       type="submit"
-                      className="flex-1 py-4 bg-foreground text-background rounded-2xl font-bold hover:opacity-90 transition-all shadow-xl cursor-pointer"
+                      className="flex-1 py-4 bg-white text-black rounded-2xl font-bold hover:opacity-90 transition-all shadow-xl cursor-pointer"
                     >
                       Continue
                     </button>
