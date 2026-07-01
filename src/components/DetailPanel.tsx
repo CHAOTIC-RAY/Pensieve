@@ -318,7 +318,7 @@ export default function DetailPanel({
                    </button>
                  </div>
                </div>
-             ) : null;
+             ) : null}
               <div className="space-y-3.5">
                 <div className="flex items-start justify-between gap-4">
                   <h2 className="font-display font-semibold text-lg text-neutral-800 tracking-tight leading-snug">
