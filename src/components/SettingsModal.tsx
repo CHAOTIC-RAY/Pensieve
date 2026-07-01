@@ -34,7 +34,10 @@ import {
   Sparkles,
   Paperclip,
   LogOut,
+  Trophy,
 } from "lucide-react";
+import { useAchievements } from "../hooks/useAchievements";
+import AchievementCard from "./AchievementCard";
 import {
   isLocalAiEnabled,
   getSelectedLocalModelId,
@@ -111,6 +114,7 @@ export default function SettingsModal({
   setAiStrategyState,
   initialTab,
 }: SettingsModalProps) {
+  const { achievements } = useAchievements(items);
   const [activeTab, setActiveTab] = useState<
     "intelligence" | "sync" | "db" | "ui" | "profile"
   >(initialTab || "ui");
@@ -816,6 +820,57 @@ export default function SettingsModal({
                 Swatches
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Milestones / Achievements Section */}
+        <div className="space-y-4 pt-6 border-t border-border-subtle">
+          <h4 className="text-xs font-mono uppercase tracking-wider text-foreground/65 flex items-center gap-1.5">
+            <Trophy className="w-3.5 h-3.5 text-amber-500" />
+            Milestones &amp; Collectibles ({achievements.filter(a => a.unlockedAt).length} / {achievements.length})
+          </h4>
+          <p className="text-[11px] text-foreground/50 leading-relaxed">
+            Your milestones unlocked through thinking, organizing, and using serendipity.
+          </p>
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            {achievements.map((ach) => {
+              const Icon = ach.icon || Trophy;
+              const isUnlocked = !!ach.unlockedAt;
+              return (
+                <div 
+                  key={ach.id}
+                  className={`p-4 rounded-2xl border transition-all duration-300 flex items-center gap-3.5 ${
+                    isUnlocked 
+                      ? "bg-amber-500/5 border-amber-500/25 shadow-sm" 
+                      : "bg-foreground/[0.01] border-border-subtle opacity-60"
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    isUnlocked ? "bg-amber-500 text-white" : "bg-foreground/5 text-foreground/30"
+                  }`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 font-sans">
+                      <span className="text-xs font-bold text-text-heading truncate">{ach.title}</span>
+                      {ach.rarity && (
+                        <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider shrink-0 ${
+                          ach.rarity === 'Legendary' ? 'bg-amber-500/20 text-amber-600' :
+                          ach.rarity === 'Epic' ? 'bg-purple-500/20 text-purple-600' :
+                          ach.rarity === 'Rare' ? 'bg-blue-500/20 text-blue-600' :
+                          'bg-foreground/10 text-foreground/60'
+                        }`}>
+                          {ach.rarity}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-foreground/50 truncate leading-relaxed">
+                      {ach.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

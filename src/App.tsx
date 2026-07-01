@@ -12,7 +12,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { 
   Sparkles, Heart, Palette, Brain, Filter, Check, Star, RefreshCw, Pin,
   Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera,
-  BookOpen, ExternalLink, LayoutGrid, List, Columns, ArrowUpDown, SlidersHorizontal, Quote
+  BookOpen, ExternalLink, LayoutGrid, List, Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from './lib/firebase';
@@ -45,6 +45,9 @@ import {
 } from './services/themeStudio';
 
 import SettingsModal from './components/SettingsModal';
+import { useAchievements } from './hooks/useAchievements';
+import AchievementsModal from './components/AchievementsModal';
+import AchievementToast from './components/AchievementToast';
 
 const COLOR_FILTERS = [
   { name: 'red', class: 'bg-rose-500 border-rose-600' },
@@ -143,6 +146,10 @@ export default function App() {
 
   // Local AI (LiteRT / WebGPU) States
   const [aiStrategy, setAiStrategyState] = useState<AiStrategy>(getAiStrategy());
+
+  // Achievements
+  const { achievements, activeToast, dismissToast, triggerSerendipity } = useAchievements(items);
+  const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
   const [localAiEnabled, setLocalAiEnabledState] = useState(isLocalAiEnabled());
   const [localModelId, setLocalModelIdState] = useState(getSelectedLocalModelId());
   const [localVisionModelId, setLocalVisionModelIdState] = useState(getSelectedVisionModelId());
@@ -585,6 +592,17 @@ export default function App() {
         setAiStrategyState={setAiStrategyState}
       />
 
+      <AchievementsModal
+        isOpen={isAchievementsOpen}
+        onClose={() => setIsAchievementsOpen(false)}
+        achievements={achievements}
+      />
+      
+      <AchievementToast 
+        achievement={activeToast} 
+        onDismiss={dismissToast} 
+      />
+
       {/* Workspace Container */}
       <div className={`flex-1 flex w-full relative ${sidebarPosition === 'right' ? 'flex-row-reverse' : 'flex-row'}`}>
         
@@ -632,6 +650,19 @@ export default function App() {
           })}
           
           <div className="w-6 h-[1px] bg-border-subtle my-1" />
+
+          {/* Achievements Button */}
+          <button
+            onClick={() => setIsAchievementsOpen(true)}
+            title="Milestones"
+            className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),_0_4px_8px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 ${
+              isAchievementsOpen 
+                ? 'bg-amber-500/20 border-amber-500/30 text-amber-500' 
+                : 'bg-foreground/5 border-foreground/10 text-foreground/70 hover:bg-amber-500/10 hover:text-amber-500'
+            }`}
+          >
+            <Trophy className={`w-5 h-5 ${isAchievementsOpen ? 'fill-current text-amber-500' : ''}`} />
+          </button>
           
           {/* Settings / Preferences Button */}
           <button
@@ -719,7 +750,10 @@ export default function App() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onItemCreated={handleItemCreated}
-            onTriggerSerendipity={() => setIsSerendipityOpen(true)}
+            onTriggerSerendipity={() => {
+              triggerSerendipity();
+              setIsSerendipityOpen(true);
+            }}
             localAiEnabled={localAiEnabled}
           />
 

@@ -46,3 +46,16 @@ export interface SerendipityPrompt {
   type: 'tag' | 'time' | 'random' | 'color';
   value: string;
 }
+
+export type AchievementRarity = 'Common' | 'Rare' | 'Epic' | 'Legendary';
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  rarity: AchievementRarity;
+  icon?: any; // Icon component reference
+  image?: string; // Optional illustration URL
+  xp?: number; // Optional experience points/movement value
+  unlockedAt?: string; // ISO date string when unlocked
+}
