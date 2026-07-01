@@ -7,7 +7,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Calendar, Star, Sparkles, Plus, Trash2, 
   ExternalLink, BookOpen, Copy, Check, Palette, Eye, Quote as QuoteIcon, Utensils,
-  Film, Disc, ShoppingBag, CheckCircle2, Type, AlignLeft, AlignCenter, AlignRight
+  Film, Disc, ShoppingBag, CheckCircle2, Type, AlignLeft, AlignCenter, AlignRight,
+  Bookmark, Link as LinkIcon, MessageSquare, Tag, Hash, Compass, Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
@@ -178,7 +179,7 @@ export default function DetailPanel({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-neutral-900/10 backdrop-blur-[2px] z-40 cursor-pointer"
+          className="fixed inset-0 bg-neutral-950/20 dark:bg-neutral-950/50 backdrop-blur-[4px] z-40 cursor-pointer animate-fade-in"
         />
       </AnimatePresence>
 
@@ -187,153 +188,252 @@ export default function DetailPanel({
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
-        transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-        className="fixed top-0 right-0 h-full w-full max-w-md bg-card-bg shadow-2xl z-50 flex flex-col border-l border-border-subtle"
+        transition={{ type: 'spring', damping: 30, stiffness: 250 }}
+        className="fixed top-0 right-0 h-full w-full max-w-lg bg-card-bg shadow-[0_0_50px_rgba(0,0,0,0.12)] z-50 flex flex-col border-l border-border-subtle/70 relative before:absolute before:inset-0 before:bg-[radial-gradient(#80808007_1.2px,transparent_1.2px)] before:[background-size:20px_20px] before:pointer-events-none overflow-hidden"
       >
+        {/* Editorial Top Border Accents */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-80" />
+
         {/* Drawer Header */}
-        <div className="flex items-center justify-between px-6 py-4.5 border-b border-border-subtle/50">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-foreground/45">Inspector</span>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle/40 bg-card-bg/95 backdrop-blur-sm z-10">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-foreground/50 flex items-center gap-1.5">
+              <Bookmark className="w-3.5 h-3.5 text-indigo-400" />
+              Memory Registry
+            </span>
             {item.isFavorite && (
-              <span className="flex items-center gap-1 text-[10px] font-sans font-semibold bg-rose-500/10 text-rose-500 border border-rose-500/20 px-2 py-0.5 rounded-full">
-                <Star className="w-3 h-3 fill-rose-500" /> Favorite
+              <span className="flex items-center gap-1 text-[10px] font-semibold bg-rose-500/10 text-rose-500 border border-rose-500/20 px-2 py-0.5 rounded-full">
+                <Star className="w-3 h-3 fill-rose-500 text-rose-500" /> Favorite
               </span>
             )}
           </div>
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-foreground/5 text-foreground/50 hover:text-foreground transition"
+            className="p-1.5 rounded-xl hover:bg-foreground/5 text-foreground/40 hover:text-foreground/80 transition"
           >
-            <X className="w-4.5 h-4.5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Scrollable details */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6.5 no-scrollbar">
+        <div className="flex-1 overflow-y-auto p-7 space-y-8.5 no-scrollbar z-10">
           
-          {/* Card preview visual */}
+          {/* Polaroid Photo Frame for Saving Memories Beautifully */}
+          {item.type === 'image' && item.imageUrl && (
+            <div className="flex flex-col items-center">
+              <motion.div 
+                initial={{ rotate: -1.5, scale: 0.96, opacity: 0 }}
+                animate={{ rotate: -0.5, scale: 1, opacity: 1 }}
+                whileHover={{ rotate: 0, scale: 1.01 }}
+                transition={{ duration: 0.4 }}
+                className="bg-[#FCFAF2] dark:bg-neutral-900 p-5 pb-9 rounded-sm shadow-[0_12px_28px_rgba(0,0,0,0.08)] border border-neutral-200/55 dark:border-neutral-800 max-w-sm w-full mx-auto relative before:absolute before:inset-0 before:bg-[radial-gradient(#80808004_1px,transparent_1px)] before:[background-size:12px_12px] before:pointer-events-none"
+              >
+                {/* Elegant realistic physical tape accent */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2.5 w-20 h-5 bg-white/50 dark:bg-neutral-850/30 backdrop-blur-[1.5px] border border-white/20 dark:border-white/5 rotate-[-1deg] shadow-[0_1px_3px_rgba(0,0,0,0.01)] z-15 select-none" />
+                
+                {/* Polaroid Shadow Accent */}
+                <div className="absolute inset-x-5 -bottom-1.5 h-1.5 bg-neutral-950/5 dark:bg-black/20 blur-[2.5px] rounded-full pointer-events-none" />
+                
+                {/* Image Area */}
+                <div className="aspect-[4/3] w-full overflow-hidden border border-neutral-200/40 dark:border-neutral-800 bg-neutral-900/5 dark:bg-neutral-950 rounded-xs relative group">
+                  <img 
+                    src={item.imageUrl} 
+                    alt={item.title} 
+                    className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700" 
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                
+                {/* Handwritten-style Caption */}
+                <div className="mt-5 text-center">
+                  <span className="font-serif italic text-base text-neutral-800 dark:text-neutral-200 tracking-wide font-medium block leading-snug">
+                    {item.title || "Captured Mindscape"}
+                  </span>
+                  <span className="block text-[8px] font-mono text-neutral-500/60 dark:text-neutral-450 mt-2 uppercase tracking-widest">
+                    {new Date(item.createdAt).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                  </span>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Swatch Swatches Frame for Colors */}
           {item.type === 'color' && (item.colorHex || item.colorPalette) && (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {item.colorPalette && item.colorPalette.length > 0 ? (
-                <div className="w-full h-36 rounded-2xl overflow-hidden flex shadow-inner border border-black/5">
-                  {item.colorPalette.map((colHex, index) => (
-                    <div 
-                      key={index}
-                      className="flex-1 h-full cursor-pointer hover:flex-[1.5] transition-all duration-300 relative group"
-                      style={{ backgroundColor: colHex }}
-                      onClick={() => handleCopyHarmonic(colHex)}
-                      title={`Click to copy hex ${colHex}`}
-                    >
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] text-white font-mono transition-opacity select-none">
-                        {copiedHarmonic === colHex ? 'Copied!' : colHex}
+                <div className="w-full bg-foreground/[0.01] border border-border-subtle/70 p-5 rounded-2xl space-y-4 shadow-sm relative overflow-hidden">
+                  <div className="w-full h-24 rounded-xl overflow-hidden flex border border-black/5 dark:border-white/5 shadow-sm">
+                    {item.colorPalette.map((colHex, index) => (
+                      <div 
+                        key={index}
+                        className="flex-1 h-full cursor-pointer hover:flex-[1.8] transition-all duration-300 relative group"
+                        style={{ backgroundColor: colHex }}
+                        onClick={() => handleCopyHarmonic(colHex)}
+                        title={`Click to copy hex ${colHex}`}
+                      >
+                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[9px] text-white font-mono transition-opacity select-none tracking-wider font-bold">
+                          {copiedHarmonic === colHex ? 'COPIED!' : colHex}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  <div className="flex justify-between items-center px-0.5">
+                    <span className="text-[9px] font-mono text-foreground/55 uppercase tracking-wider flex items-center gap-1.5 font-bold">
+                      <Palette className="w-3.5 h-3.5 text-primary" /> COLOR PALETTE DECK
+                    </span>
+                    <span className="text-[8px] font-mono text-foreground/40 italic">Click color to copy HEX</span>
+                  </div>
                 </div>
               ) : (
-                <div 
-                  className="w-full h-36 rounded-2xl relative shadow-inner cursor-pointer group"
-                  style={{ backgroundColor: item.colorHex }}
-                  onClick={() => handleCopyHarmonic(item.colorHex || '')}
-                  title={`Click to copy hex ${item.colorHex}`}
-                >
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[11px] text-white font-mono transition-opacity select-none font-bold">
-                    {copiedHarmonic === item.colorHex ? 'Copied!' : `Copy ${item.colorHex}`}
+                <div className="w-full bg-foreground/[0.01] border border-border-subtle/70 p-5 rounded-2xl space-y-4 shadow-sm text-center">
+                  <div 
+                    className="w-full h-28 rounded-xl relative border border-black/5 dark:border-white/5 cursor-pointer group shadow-md overflow-hidden"
+                    style={{ backgroundColor: item.colorHex }}
+                    onClick={() => handleCopyHarmonic(item.colorHex || '')}
+                    title={`Click to copy hex ${item.colorHex}`}
+                  >
+                    <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] text-white font-mono transition-opacity select-none font-bold tracking-wider">
+                      {copiedHarmonic === item.colorHex ? 'COPIED!' : `COPY HEX ${item.colorHex}`}
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center px-0.5 text-xs">
+                    <span className="font-mono text-foreground/60 text-[10px] font-bold">SWATCH HEX: {item.colorHex}</span>
+                    <span className="font-mono text-[9px] text-foreground/45 italic">Click swatch to copy</span>
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          {item.type === 'image' && item.imageUrl && (
-            <div className="w-full rounded-2xl overflow-hidden border border-neutral-100 bg-neutral-50 relative">
-              <img 
-                src={item.imageUrl} 
-                alt={item.title} 
-                className="w-full object-contain max-h-[220px]" 
-                referrerPolicy="no-referrer"
-              />
-            </div>
-          )}
-
-          {item.type === 'quote' && (
-            <div className="p-6 bg-amber-50/20 border-l-[3px] border-amber-300 rounded-2xl flex flex-col gap-4">
-              <QuoteIcon className="w-8 h-8 text-amber-200" />
-              <blockquote className="font-serif italic text-base text-neutral-800 leading-relaxed">
-                "{item.content}"
+          {/* Aesthetic Quote Block - Editorial Serif Quote */}
+          {item.type === 'quote' && !isEditing && (
+            <motion.div 
+              initial={{ scale: 0.98, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="px-8 py-11 bg-foreground/[0.01] border border-border-subtle/85 rounded-3xl flex flex-col items-center justify-center text-center gap-6 relative overflow-hidden shadow-sm"
+            >
+              {/* Massive Decorative quote icon */}
+              <QuoteIcon className="w-12 h-12 text-primary/10 fill-primary/5 absolute -top-1.5 -left-1.5 transform -rotate-12 pointer-events-none" />
+              <QuoteIcon className="w-10 h-10 text-primary/20 fill-primary/10 pointer-events-none" />
+              
+              <blockquote className="font-serif italic text-lg md:text-xl text-foreground/90 leading-relaxed tracking-wide max-w-sm px-2">
+                “{item.content}”
               </blockquote>
-              {item.author && <span className="text-right text-xs font-mono text-neutral-500">— {item.author}</span>}
-            </div>
+              
+              {item.author && (
+                <div className="flex items-center gap-2.5 pt-1">
+                  <div className="w-5 h-[1px] bg-foreground/20" />
+                  <span className="text-[10px] font-mono text-foreground/50 tracking-wider uppercase font-bold">— {item.author}</span>
+                  <div className="w-5 h-[1px] bg-foreground/20" />
+                </div>
+              )}
+            </motion.div>
           )}
 
-          {/* Edit / Text details */}
-          <div className="space-y-4">
+          {/* Note View Frame - Lined notebook paper look or editorial typography */}
+          {item.type === 'note' && !isEditing && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-7 rounded-3xl shadow-[0_8px_24px_rgba(0,0,0,0.03)] border border-border-subtle relative overflow-hidden"
+              style={{ 
+                backgroundColor: noteStyle.bgColor || 'var(--card-bg)', 
+                color: noteStyle.color || 'var(--foreground)',
+                fontFamily: noteStyle.fontFamily === 'serif' ? 'Georgia, serif' : noteStyle.fontFamily === 'mono' ? 'JetBrains Mono, monospace' : noteStyle.fontFamily === 'display' ? 'Playfair Display, Georgia, serif' : 'var(--font-sans)',
+                fontSize: noteStyle.fontSize === 'sm' ? '13px' : noteStyle.fontSize === 'lg' ? '17px' : noteStyle.fontSize === 'xl' ? '20px' : '15px',
+                fontWeight: noteStyle.bold ? 'bold' : 'normal',
+                fontStyle: noteStyle.italic ? 'italic' : 'normal',
+                backgroundImage: 'linear-gradient(rgba(128, 128, 128, 0.06) 1px, transparent 1px)',
+                backgroundSize: '100% 32px',
+                lineHeight: '32px'
+              }}
+            >
+              {/* Vertical red line of real notebook paper */}
+              <div className="absolute left-7.5 top-0 bottom-0 w-[1px] bg-red-400/20 pointer-events-none" />
+              
+              <div className="pl-6.5 whitespace-pre-wrap select-text leading-relaxed">
+                {item.content}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Edit Panel Draft - Editorial Form Layout */}
+          <div className="space-y-5">
             {isEditing ? (
-              <div className="space-y-4">
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                className="space-y-5 bg-foreground/[0.01] border border-border-subtle p-5.5 rounded-2xl shadow-sm"
+              >
                 <div className="space-y-1">
-                  <label className="text-[10px] font-mono text-neutral-400 uppercase">Title</label>
+                  <label className="text-[9px] font-mono text-foreground/45 uppercase tracking-widest">Title</label>
                   <input 
                     type="text"
                     value={title}
                     onChange={e => setTitle(e.target.value)}
-                    className="w-full text-base font-display font-medium border-b border-neutral-200 pb-1 outline-none text-neutral-800"
+                    className="w-full text-base font-serif font-semibold border-b border-border-subtle pb-1 bg-transparent outline-none text-foreground focus:border-indigo-500/40 transition-colors"
                   />
                 </div>
 
                 {item.type !== 'color' && (
                   <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-neutral-400 uppercase">Content / Body</label>
+                    <label className="text-[9px] font-mono text-foreground/45 uppercase tracking-widest">Content Draft</label>
                     <textarea 
                       value={content}
                       onChange={e => setContent(e.target.value)}
-                      className="w-full text-sm font-sans text-neutral-600 border border-neutral-200 p-2.5 rounded-xl outline-none min-h-[120px] resize-none"
+                      className="w-full text-sm font-sans text-foreground/80 bg-input-bg border border-border-subtle p-3.5 rounded-xl outline-none min-h-[140px] resize-none focus:border-indigo-500/40 transition-colors leading-relaxed"
                     />
                   </div>
                 )}
 
                 {item.type === 'quote' && (
                   <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-neutral-400 uppercase">Author</label>
+                    <label className="text-[9px] font-mono text-foreground/45 uppercase tracking-widest">Author / Source</label>
                     <input 
                       type="text"
                       value={author}
                       onChange={e => setAuthor(e.target.value)}
-                      className="w-full text-sm font-sans border-b border-neutral-200 pb-1 outline-none text-neutral-800"
+                      className="w-full text-sm font-sans border-b border-border-subtle pb-1 bg-transparent outline-none text-foreground focus:border-indigo-500/40 transition-colors"
                     />
                   </div>
                 )}
 
-<div className="flex gap-2">
-                   <button 
-                     onClick={handleSaveChanges}
-                     className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
-                   >
-                     Save Changes
-                   </button>
-                   <button 
-                     onClick={() => setIsEditing(false)}
-                     className="text-neutral-500 hover:text-neutral-800 text-xs font-medium px-3"
-                   >
-                     Cancel
-                   </button>
-                 </div>
-               </div>
-             ) : null}
-              <div className="space-y-3.5">
-                <div className="flex items-start justify-between gap-4">
-                  <h2 className="font-display font-semibold text-lg text-neutral-800 tracking-tight leading-snug">
+                <div className="flex gap-2.5 pt-1.5">
+                  <button 
+                    onClick={handleSaveChanges}
+                    className="bg-foreground text-background text-xs font-semibold px-4 py-2 rounded-xl hover:opacity-90 transition shadow-sm cursor-pointer"
+                  >
+                    Save Draft
+                  </button>
+                  <button 
+                    onClick={() => setIsEditing(false)}
+                    className="text-foreground/50 hover:text-foreground text-xs font-semibold px-3 py-2 border border-border-subtle rounded-xl hover:bg-foreground/5 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            ) : null}
+
+            {/* Display Mode Text Details */}
+            {!isEditing && (
+              <div className="space-y-4">
+                <div className="flex items-start justify-between gap-5">
+                  <h2 className="font-serif font-bold text-xl md:text-2xl text-foreground/90 tracking-tight leading-tight">
                     {item.title}
                   </h2>
                   <button 
                     onClick={() => setIsEditing(true)}
-                    className="text-[11px] font-sans font-medium text-indigo-600 hover:text-indigo-800 hover:underline shrink-0 pt-1"
+                    className="text-[11px] font-semibold text-indigo-500 hover:text-indigo-400 hover:underline shrink-0 pt-1 flex items-center gap-1"
                   >
-                    Edit Detail
+                    <Type className="w-3.5 h-3.5" />
+                    Edit Details
                   </button>
                 </div>
 
-                {item.type !== 'color' && (
-                  <p className="text-neutral-600 text-sm font-sans leading-relaxed whitespace-pre-wrap">
+                {/* Generic view for item types that aren't note or quote */}
+                {item.type !== 'color' && item.type !== 'note' && item.type !== 'quote' && (
+                  <p className="text-foreground/80 text-sm font-sans leading-relaxed whitespace-pre-wrap">
                     {item.content}
                   </p>
                 )}
@@ -342,30 +442,34 @@ export default function DetailPanel({
                 {item.type === 'article' && (
                   <button
                     onClick={() => setIsReaderOpen(true)}
-                    className="w-full mt-2 py-3 bg-neutral-900 hover:bg-neutral-950 text-white font-sans font-medium text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm"
+                    className="w-full mt-3 py-3 bg-foreground text-background hover:opacity-95 font-sans font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
                   >
                     <BookOpen className="w-4 h-4" />
-                    <span>Open in Distraction-Free Reader Mode</span>
+                    <span>Open distraction-free Reader Mode</span>
                   </button>
                 )}
 
-                {/* Recipe specific details (ingredients & instructions) */}
+                {/* Recipe details */}
                 {item.type === 'recipe' && (
-                  <div className="space-y-4 pt-3 border-t border-neutral-100 mt-3">
+                  <div className="space-y-4.5 pt-4.5 border-t border-border-subtle/50 mt-3">
                     {item.ingredients && item.ingredients.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider font-semibold">Ingredients</span>
-                        <ul className="text-xs text-neutral-600 list-disc list-inside space-y-1 bg-neutral-50 p-3.5 rounded-xl border border-neutral-100">
+                      <div className="space-y-2">
+                        <span className="text-[10px] font-mono text-foreground/45 uppercase tracking-widest font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" /> Ingredients Swatch
+                        </span>
+                        <ul className="text-xs text-foreground/75 list-disc list-inside space-y-1.5 bg-foreground/[0.01] p-4 rounded-xl border border-border-subtle">
                           {item.ingredients.map((ing, idx) => (
-                            <li key={idx}>{ing}</li>
+                            <li key={idx} className="font-serif italic">{ing}</li>
                           ))}
                         </ul>
                       </div>
                     )}
                     {item.steps && item.steps.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider font-semibold">Preparation Steps</span>
-                        <ol className="text-xs text-neutral-600 list-decimal list-inside space-y-2 bg-neutral-50 p-3.5 rounded-xl border border-neutral-100">
+                      <div className="space-y-2">
+                        <span className="text-[10px] font-mono text-foreground/45 uppercase tracking-widest font-semibold flex items-center gap-1">
+                          <Compass className="w-3.5 h-3.5 text-indigo-400" /> Method Guidelines
+                        </span>
+                        <ol className="text-xs text-foreground/75 list-decimal list-inside space-y-2.5 bg-foreground/[0.01] p-4 rounded-xl border border-border-subtle">
                           {item.steps.map((step, idx) => (
                             <li key={idx} className="pl-1 leading-relaxed">{step}</li>
                           ))}
@@ -374,77 +478,84 @@ export default function DetailPanel({
                     )}
                     <button
                       onClick={() => setIsReaderOpen(true)}
-                      className="w-full mt-2 py-3 bg-[#B28A54] hover:bg-[#997341] text-white font-sans font-medium text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm"
+                      className="w-full mt-2 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-sans font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
                     >
                       <BookOpen className="w-4 h-4" />
-                      <span>Start Cooking (Step-by-step Reader)</span>
+                      <span>Start cooking step-by-step</span>
                     </button>
                   </div>
                 )}
 
-                {/* Video / Music specific details */}
+                {/* Video / Music Details */}
                 {(item.type === 'video' || item.type === 'music') && (
-                  <div className="grid grid-cols-2 gap-3 text-xs bg-neutral-50 p-3 rounded-xl border border-neutral-100">
+                  <div className="grid grid-cols-2 gap-4 text-xs bg-foreground/[0.01] p-4 rounded-xl border border-border-subtle font-sans">
                     <div>
-                      <span className="text-[9px] font-mono text-neutral-400 uppercase block">Source</span>
-                      <span className="font-semibold text-neutral-700">{item.siteName || 'Unknown'}</span>
+                      <span className="text-[9px] font-mono text-foreground/45 uppercase block tracking-wider">Provenance</span>
+                      <span className="font-semibold text-foreground/80 flex items-center gap-1 mt-0.5">
+                        <LinkIcon className="w-3.5 h-3.5 text-indigo-400" />
+                        {item.siteName || 'Unknown'}
+                      </span>
                     </div>
                     {item.duration && (
                       <div>
-                        <span className="text-[9px] font-mono text-neutral-400 uppercase block">Duration</span>
-                        <span className="font-semibold text-neutral-700">{item.duration}</span>
+                        <span className="text-[9px] font-mono text-foreground/45 uppercase block tracking-wider">Playtime</span>
+                        <span className="font-semibold text-foreground/80 flex items-center gap-1 mt-0.5">
+                          <Disc className="w-3.5 h-3.5 text-indigo-400" />
+                          {item.duration}
+                        </span>
                       </div>
                     )}
                     {item.author && (
                       <div className="col-span-2">
-                        <span className="text-[9px] font-mono text-neutral-400 uppercase block">Creator / Artist</span>
-                        <span className="font-semibold text-neutral-700">{item.author}</span>
+                        <span className="text-[9px] font-mono text-foreground/45 uppercase block tracking-wider">Creator / Artist</span>
+                        <span className="font-semibold text-foreground/80 mt-0.5 block">{item.author}</span>
                       </div>
                     )}
                   </div>
                 )}
 
                 {item.url && (
-                  <div className="pt-2 flex items-center gap-1">
+                  <div className="pt-2 flex items-center gap-1.5">
                     <a 
                       href={item.url} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      className="text-xs font-mono text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline"
+                      className="text-xs font-mono text-indigo-500 hover:text-indigo-400 flex items-center gap-1 hover:underline"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
-                      <span>Visit original website ({item.siteName || 'link'})</span>
+                      <span>Visit original source ({item.siteName || 'external link'})</span>
                     </a>
                   </div>
                 )}
               </div>
+            )}
           </div>
 
-          {/* Color Harmonic Harmonies section */}
+          {/* Color swatches suggested harmony details */}
           {item.type === 'color' && item.colorHex && (
-            <div className="space-y-3 pt-4 border-t border-border-subtle/50">
-              <span className="text-[10px] font-mono text-foreground/45 uppercase tracking-wider flex items-center gap-1">
-                <Palette className="w-3.5 h-3.5 text-foreground/45" />
-                Color Harmony & Values
+            <div className="space-y-4 pt-5 border-t border-border-subtle/50">
+              <span className="text-[10px] font-mono text-foreground/45 uppercase tracking-widest flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5 text-indigo-400" />
+                Color Harmonies & Values
               </span>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-mono text-foreground/60">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-mono text-foreground/60 p-3 bg-foreground/[0.01] border border-border-subtle rounded-xl">
                 <span>RGB: {rgb.r}, {rgb.g}, {rgb.b}</span>
                 <span>HSL: {hsl.h}°, {hsl.s}%, {hsl.l}%</span>
               </div>
 
-              <div className="space-y-2 pt-2">
-                <span className="text-[10px] font-mono text-foreground/45 uppercase">Suggested Harmonies</span>
+              <div className="space-y-2.5 pt-2">
+                <span className="text-[10px] font-mono text-foreground/45 uppercase tracking-wider block">Curated Harmonies</span>
                 <div className="grid grid-cols-2 gap-2.5">
                   {harmonies.map((harmony, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleCopyHarmonic(harmony.hex)}
-                      className="flex items-center gap-2 p-1.5 rounded-xl border border-border-subtle/40 bg-foreground/[0.02] hover:bg-card-bg transition text-left"
+                      className="flex items-center gap-2.5 p-2 rounded-xl border border-border-subtle bg-foreground/[0.01] hover:bg-card-bg transition text-left cursor-pointer"
                     >
-                      <div className="w-6 h-6 rounded-lg shadow-sm border border-black/5" style={{ backgroundColor: harmony.hex }} />
+                      <div className="w-6.5 h-6.5 rounded-lg shadow-sm border border-black/5 shrink-0" style={{ backgroundColor: harmony.hex }} />
                       <div className="flex flex-col overflow-hidden">
                         <span className="text-[10px] font-sans font-semibold text-foreground/85 leading-none">{harmony.name}</span>
-                        <span className="text-[9px] font-mono text-foreground/50 uppercase leading-normal">
+                        <span className="text-[9px] font-mono text-foreground/50 uppercase leading-normal mt-0.5">
                           {copiedHarmonic === harmony.hex ? 'Copied!' : harmony.hex}
                         </span>
                       </div>
@@ -455,31 +566,36 @@ export default function DetailPanel({
             </div>
           )}
 
-          {/* AI Metadata Overview */}
+          {/* AI Metadata Smart Insights */}
           {item.aiSummary && (
-            <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl space-y-1.5">
-              <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-wider flex items-center gap-1 font-semibold">
-                <Sparkles className="w-3 h-3 fill-indigo-500 text-indigo-500" />
-                AI Smart Insight
+            <motion.div 
+              initial={{ scale: 0.98, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="p-5 bg-gradient-to-br from-primary/[0.04] to-indigo-500/[0.04] dark:from-primary/[0.08] dark:to-indigo-500/[0.08] border border-primary/15 dark:border-primary/20 rounded-2xl space-y-2 shadow-sm relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-xl pointer-events-none" />
+              <span className="text-[9px] font-mono text-primary uppercase tracking-widest flex items-center gap-1.5 font-bold">
+                <Sparkles className="w-3.5 h-3.5 fill-primary/10 text-primary animate-pulse" />
+                AI Smart Reflection
               </span>
-              <p className="text-xs text-indigo-950 font-sans leading-relaxed font-medium">
+              <p className="text-xs text-foreground/80 font-sans leading-relaxed">
                 {item.aiSummary}
               </p>
-            </div>
+            </motion.div>
           )}
 
-          {/* Note Style Editor */}
+          {/* Interactive Custom Lined Note Style editor */}
           {item.type === 'note' && (
-            <div className="space-y-3 pt-4 border-t border-neutral-100">
-              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider flex items-center gap-1">
-                <Type className="w-3.5 h-3.5 text-neutral-400" />
-                Note Style
+            <div className="space-y-4.5 pt-5 border-t border-border-subtle/50">
+              <span className="text-[10px] font-mono text-foreground/45 uppercase tracking-widest flex items-center gap-1.5">
+                <Type className="w-4 h-4 text-indigo-400" />
+                Journal Styling options
               </span>
-              <div className="space-y-3">
-                {/* Font Family */}
+              <div className="space-y-3.5 bg-foreground/[0.01] border border-border-subtle p-4 rounded-2xl">
+                {/* Font Choice */}
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-mono text-neutral-500 uppercase">Font Family</label>
-                  <div className="flex gap-1.5">
+                  <label className="text-[9px] font-mono text-foreground/45 uppercase tracking-wider">Font Family</label>
+                  <div className="flex flex-wrap gap-1.5">
                     {(['serif', 'sans', 'mono', 'display'] as const).map((font) => (
                       <button
                         key={font}
@@ -490,12 +606,11 @@ export default function DetailPanel({
                           });
                           setNoteStyle({ ...noteStyle, fontFamily: font });
                         }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
                           noteStyle.fontFamily === font
-                            ? 'bg-neutral-800 text-white border-neutral-800'
-                            : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
+                            ? 'bg-foreground text-background border-foreground'
+                            : 'bg-card-bg text-foreground/60 border-border-subtle hover:bg-foreground/5'
                         }`}
-                        style={{ fontFamily: font === 'serif' ? 'Georgia, serif' : font === 'sans' ? 'Inter, sans-serif' : font === 'mono' ? 'JetBrains Mono, monospace' : 'Playfair Display, Georgia, serif' }}
                       >
                         {font.charAt(0).toUpperCase() + font.slice(1)}
                       </button>
@@ -503,9 +618,9 @@ export default function DetailPanel({
                   </div>
                 </div>
 
-                {/* Font Size */}
+                {/* Font Sizing */}
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-mono text-neutral-500 uppercase">Font Size</label>
+                  <label className="text-[9px] font-mono text-foreground/45 uppercase tracking-wider">Font Scale</label>
                   <div className="flex gap-1.5">
                     {(['sm', 'base', 'lg', 'xl'] as const).map((size) => (
                       <button
@@ -517,10 +632,10 @@ export default function DetailPanel({
                           });
                           setNoteStyle({ ...noteStyle, fontSize: size });
                         }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
                           noteStyle.fontSize === size
-                            ? 'bg-neutral-800 text-white border-neutral-800'
-                            : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
+                            ? 'bg-foreground text-background border-foreground'
+                            : 'bg-card-bg text-foreground/60 border-border-subtle hover:bg-foreground/5'
                         }`}
                       >
                         {size.toUpperCase()}
@@ -529,10 +644,10 @@ export default function DetailPanel({
                   </div>
                 </div>
 
-                {/* Colors */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Swatch Colors */}
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-mono text-neutral-500 uppercase">Text Color</label>
+                    <label className="text-[9px] font-mono text-foreground/45 uppercase tracking-wider">Text Ink</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
@@ -544,17 +659,17 @@ export default function DetailPanel({
                           });
                           setNoteStyle({ ...noteStyle, color: e.target.value });
                         }}
-                        className="w-8 h-8 rounded-lg cursor-pointer border-0"
+                        className="w-8 h-8 rounded-lg cursor-pointer border-0 bg-transparent"
                       />
-                      <span className="text-xs font-mono text-neutral-400">{noteStyle.color || '#121212'}</span>
+                      <span className="text-xs font-mono text-foreground/50">{noteStyle.color || '#121212'}</span>
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-mono text-neutral-500 uppercase">Background</label>
+                    <label className="text-[9px] font-mono text-foreground/45 uppercase tracking-wider">Paper Tone</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
-                        value={noteStyle.bgColor || '#FEEBC8'}
+                        value={noteStyle.bgColor || '#FAF9F6'}
                         onChange={async (e) => {
                           await onUpdateItem({
                             ...item,
@@ -562,14 +677,14 @@ export default function DetailPanel({
                           });
                           setNoteStyle({ ...noteStyle, bgColor: e.target.value });
                         }}
-                        className="w-8 h-8 rounded-lg cursor-pointer border-0"
+                        className="w-8 h-8 rounded-lg cursor-pointer border-0 bg-transparent"
                       />
-                      <span className="text-xs font-mono text-neutral-400">{noteStyle.bgColor || '#FEEBC8'}</span>
+                      <span className="text-xs font-mono text-foreground/50">{noteStyle.bgColor || '#FAF9F6'}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Bold/Italic toggles */}
+                {/* Bold/Italic Toggles */}
                 <div className="flex gap-2">
                   <button
                     onClick={async () => {
@@ -579,10 +694,10 @@ export default function DetailPanel({
                       });
                       setNoteStyle({ ...noteStyle, bold: !noteStyle.bold });
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                    className={`w-9 h-9 flex items-center justify-center rounded-xl text-xs font-bold border transition cursor-pointer ${
                       noteStyle.bold
-                        ? 'bg-neutral-800 text-white border-neutral-800'
-                        : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
+                        ? 'bg-foreground text-background border-foreground'
+                        : 'bg-card-bg text-foreground/60 border-border-subtle hover:bg-foreground/5'
                     }`}
                   >
                     B
@@ -595,10 +710,10 @@ export default function DetailPanel({
                       });
                       setNoteStyle({ ...noteStyle, italic: !noteStyle.italic });
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs italic border transition ${
+                    className={`w-9 h-9 flex items-center justify-center rounded-xl text-xs italic border transition cursor-pointer ${
                       noteStyle.italic
-                        ? 'bg-neutral-800 text-white border-neutral-800'
-                        : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
+                        ? 'bg-foreground text-background border-foreground'
+                        : 'bg-card-bg text-foreground/60 border-border-subtle hover:bg-foreground/5'
                     }`}
                   >
                     I
@@ -608,12 +723,12 @@ export default function DetailPanel({
             </div>
           )}
 
-          {/* Read/Watched Toggle */}
+          {/* Watched/Read Status Tracking Section */}
           {(item.type === 'article' || item.type === 'document' || item.type === 'film' || item.type === 'video') && (
-            <div className="space-y-3 pt-4 border-t border-neutral-100">
-              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-neutral-400" />
-                Status Tracking
+            <div className="space-y-3 pt-5 border-t border-border-subtle/50">
+              <span className="text-[10px] font-mono text-foreground/45 uppercase tracking-widest flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
+                Memory Status Tracking
               </span>
               {(item.type === 'article' || item.type === 'document') && (
                 <button
@@ -624,10 +739,10 @@ export default function DetailPanel({
                       readAt: !item.isRead ? new Date().toISOString() : undefined
                     });
                   }}
-                  className={`w-full py-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${
+                  className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
                     item.isRead
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                      ? 'bg-indigo-500 text-white'
+                      : 'bg-foreground/5 text-foreground/80 border border-border-subtle/40 hover:bg-foreground/10'
                   }`}
                 >
                   <CheckCircle2 className="w-4 h-4" />
@@ -643,10 +758,10 @@ export default function DetailPanel({
                       watchedAt: !item.isWatched ? new Date().toISOString() : undefined
                     });
                   }}
-                  className={`w-full py-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${
+                  className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
                     item.isWatched
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                      ? 'bg-indigo-500 text-white'
+                      : 'bg-foreground/5 text-foreground/80 border border-border-subtle/40 hover:bg-foreground/10'
                   }`}
                 >
                   <CheckCircle2 className="w-4 h-4" />
@@ -656,60 +771,60 @@ export default function DetailPanel({
             </div>
           )}
 
-          {/* Film Detail Expanded View */}
+          {/* Film Details */}
           {item.type === 'film' && (
-            <div className="space-y-4 pt-4 border-t border-neutral-100">
-              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider flex items-center gap-1">
-                <Film className="w-3.5 h-3.5 text-neutral-400" />
-                Film Details
+            <div className="space-y-4 pt-5 border-t border-border-subtle/50">
+              <span className="text-[10px] font-mono text-foreground/45 uppercase tracking-widest flex items-center gap-1.5">
+                <Film className="w-4 h-4 text-indigo-400" />
+                Filmography details
               </span>
               
               {item.moviePoster && (
-                <div className="w-full rounded-2xl overflow-hidden border border-neutral-100 bg-neutral-50">
+                <div className="w-full rounded-2xl overflow-hidden border border-border-subtle bg-foreground/[0.01]">
                   <img 
                     src={item.moviePoster} 
                     alt={item.title} 
-                    className="w-full object-cover max-h-[200px]" 
+                    className="w-full object-cover max-h-[220px]" 
                     referrerPolicy="no-referrer"
                   />
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3 text-xs bg-neutral-50 p-3 rounded-xl border border-neutral-100">
+              <div className="grid grid-cols-2 gap-4 text-xs bg-foreground/[0.01] p-4 rounded-xl border border-border-subtle">
                 {item.releaseYear && (
                   <div>
-                    <span className="text-[9px] font-mono text-neutral-400 uppercase block">Year</span>
-                    <span className="font-semibold text-neutral-700">{item.releaseYear}</span>
+                    <span className="text-[9px] font-mono text-foreground/45 uppercase block tracking-wider">Year</span>
+                    <span className="font-semibold text-foreground/80 mt-0.5 block">{item.releaseYear}</span>
                   </div>
                 )}
                 {item.runtime && (
                   <div>
-                    <span className="text-[9px] font-mono text-neutral-400 uppercase block">Runtime</span>
-                    <span className="font-semibold text-neutral-700">{item.runtime}</span>
+                    <span className="text-[9px] font-mono text-foreground/45 uppercase block tracking-wider">Runtime</span>
+                    <span className="font-semibold text-foreground/80 mt-0.5 block">{item.runtime}</span>
                   </div>
                 )}
                 {item.rating && (
                   <div>
-                    <span className="text-[9px] font-mono text-neutral-400 uppercase block">Rating</span>
-                    <span className="font-semibold text-neutral-700 flex items-center gap-1">
+                    <span className="text-[9px] font-mono text-foreground/45 uppercase block tracking-wider">Rating</span>
+                    <span className="font-semibold text-foreground/80 flex items-center gap-1 mt-0.5">
                       <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> {item.rating}
                     </span>
                   </div>
                 )}
                 {item.director && (
                   <div className="col-span-2">
-                    <span className="text-[9px] font-mono text-neutral-400 uppercase block">Director</span>
-                    <span className="font-semibold text-neutral-700">{item.director}</span>
+                    <span className="text-[9px] font-mono text-foreground/45 uppercase block tracking-wider">Director</span>
+                    <span className="font-semibold text-foreground/80 mt-0.5 block">{item.director}</span>
                   </div>
                 )}
               </div>
 
               {item.genre && item.genre.length > 0 && (
                 <div className="space-y-1.5">
-                  <span className="text-[9px] font-mono text-neutral-400 uppercase">Genres</span>
+                  <span className="text-[9px] font-mono text-foreground/45 uppercase tracking-wider block">Genres</span>
                   <div className="flex flex-wrap gap-1.5">
                     {item.genre.map((g, i) => (
-                      <span key={i} className="text-xs font-medium bg-neutral-100 text-neutral-600 px-2 py-1 rounded-md">
+                      <span key={i} className="text-xs font-semibold bg-foreground/5 text-foreground/70 px-2.5 py-1 rounded-xl border border-border-subtle/30">
                         {g}
                       </span>
                     ))}
@@ -719,8 +834,8 @@ export default function DetailPanel({
 
               {item.cast && item.cast.length > 0 && (
                 <div className="space-y-1.5">
-                  <span className="text-[9px] font-mono text-neutral-400 uppercase">Cast</span>
-                  <div className="text-xs text-neutral-600 leading-relaxed">
+                  <span className="text-[9px] font-mono text-foreground/45 uppercase tracking-wider block">Starring Cast</span>
+                  <div className="text-xs text-foreground/75 leading-relaxed">
                     {item.cast.join(', ')}
                   </div>
                 </div>
@@ -728,9 +843,12 @@ export default function DetailPanel({
             </div>
           )}
 
-          {/* Interactive Tag Manager */}
-          <div className="space-y-3 pt-4 border-t border-neutral-100">
-            <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider">Mind Index Tags</span>
+          {/* Interactive Tag Manager Section */}
+          <div className="space-y-4 pt-5 border-t border-border-subtle/50">
+            <span className="text-[10px] font-mono text-foreground/45 uppercase tracking-widest flex items-center gap-1.5 font-semibold">
+              <Hash className="w-3.5 h-3.5 text-indigo-400" />
+              Memory Index Tags
+            </span>
             
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag, idx) => {
@@ -738,13 +856,13 @@ export default function DetailPanel({
                 return (
                   <span 
                     key={idx}
-                    className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition ${
+                    className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-xl border transition ${
                       isAiTag 
-                        ? 'bg-indigo-50/40 text-indigo-600 border-indigo-100' 
-                        : 'bg-neutral-50 text-neutral-600 border-neutral-200'
+                        ? 'bg-indigo-500/5 text-indigo-400 border-indigo-500/15' 
+                        : 'bg-foreground/5 text-foreground/70 border-border-subtle'
                     }`}
                   >
-                    {isAiTag ? <Sparkles className="w-2.5 h-2.5 text-indigo-400 shrink-0" /> : null}
+                    {isAiTag ? <Sparkles className="w-2.5 h-2.5 text-indigo-400 shrink-0" /> : <Tag className="w-2.5 h-2.5 text-foreground/40 shrink-0" />}
                     <span 
                       className="cursor-pointer hover:underline"
                       onClick={() => {
@@ -761,7 +879,7 @@ export default function DetailPanel({
                         e.stopPropagation();
                         handleRemoveTag(tag);
                       }}
-                      className="ml-1 text-neutral-400 hover:text-neutral-700 transition"
+                      className="ml-1 text-foreground/35 hover:text-foreground/75 transition cursor-pointer"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -770,54 +888,57 @@ export default function DetailPanel({
               })}
             </div>
 
-            {/* Add tag form */}
+            {/* Elegant Add tag form */}
             <form onSubmit={handleAddTag} className="flex gap-2 pt-1.5">
-              <div className="flex items-center bg-neutral-50 border border-neutral-200/60 rounded-xl px-2.5 py-1.5 flex-1 focus-within:border-neutral-300 transition">
-                <Plus className="w-3.5 h-3.5 text-neutral-400 mr-1.5 shrink-0" />
+              <div className="flex items-center bg-input-bg border border-border-subtle rounded-xl px-3 py-1.8 flex-1 focus-within:border-indigo-500/40 transition">
+                <Plus className="w-4 h-4 text-foreground/35 mr-2 shrink-0" />
                 <input 
                   type="text" 
                   value={newTag}
                   onChange={e => setNewTag(e.target.value)}
-                  placeholder="Add manual tag..."
-                  className="w-full text-xs outline-none bg-transparent text-neutral-700 font-sans"
+                  placeholder="Index a new tag..."
+                  className="w-full text-xs outline-none bg-transparent text-foreground placeholder-foreground/35 font-sans"
                 />
               </div>
               <button 
                 type="submit"
-                className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition"
+                className="bg-foreground text-background text-xs font-semibold px-4.5 py-1.8 rounded-xl hover:opacity-90 transition shadow-sm cursor-pointer"
               >
                 Add
               </button>
             </form>
           </div>
 
-          {/* Extra generic metadata */}
-          <div className="pt-4 border-t border-neutral-100 text-[11px] font-mono text-neutral-400 space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Added on: {new Date(item.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
+          {/* Time & Category Metadata block */}
+          <div className="pt-5 border-t border-border-subtle/50 text-[10px] font-mono text-foreground/45 space-y-2">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Registered: {new Date(item.createdAt).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' })}</span>
             </div>
-            <div>Category: <span className="capitalize text-neutral-600 font-semibold">{item.type}</span></div>
+            <div className="flex items-center gap-2">
+              <Compass className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Category: <span className="capitalize text-foreground/70 font-semibold">{item.type}</span></span>
+            </div>
           </div>
         </div>
 
         {/* Footer actions */}
-        <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50 flex justify-between items-center">
+        <div className="px-6 py-4.5 border-t border-border-subtle/40 bg-card-bg/95 backdrop-blur-sm flex justify-between items-center z-10">
           <button
             onClick={async () => {
-              if (window.confirm('Are you sure you want to delete this from your mind?')) {
+              if (window.confirm('Are you certain you want to delete this memory from your mind?')) {
                 await onDeleteItem(item);
                 onClose();
               }
             }}
-            className="flex items-center gap-1 text-xs text-red-500 font-semibold hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-xl border border-transparent hover:border-red-100 transition"
+            className="flex items-center gap-1.5 text-xs text-rose-500 font-bold hover:bg-rose-500/5 px-3.5 py-2.5 rounded-xl border border-transparent hover:border-rose-500/10 transition cursor-pointer"
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Delete Permanently</span>
+            <Trash2 className="w-4 h-4" />
+            <span>Purge Memory</span>
           </button>
 
-          <span className="text-[10px] font-mono text-neutral-400">
-            ID: {item.id.slice(0, 8)}
+          <span className="text-[9px] font-mono text-foreground/40 uppercase tracking-widest">
+            REG: {item.id.slice(0, 8)}
           </span>
         </div>
       </motion.div>
@@ -845,7 +966,7 @@ export default function DetailPanel({
                 </div>
                 <button
                   onClick={() => setIsReaderOpen(false)}
-                  className="p-1.5 rounded-xl hover:bg-foreground/5 text-foreground/50 hover:text-foreground transition flex items-center gap-1.5 text-xs font-semibold"
+                  className="p-1.5 rounded-xl hover:bg-foreground/5 text-foreground/50 hover:text-foreground transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                   <span>Exit Reader</span>
@@ -862,16 +983,16 @@ export default function DetailPanel({
               {item.type === 'recipe' ? (
                 <div className="space-y-8">
                   {/* Recipe Header */}
-                  <div className="space-y-3 mb-6">
-                    <span className="text-xs font-mono text-[#B28A54] font-bold uppercase tracking-widest flex items-center gap-1.5">
+                  <div className="space-y-3 mb-6 font-serif">
+                    <span className="text-xs font-mono text-indigo-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
                       <Utensils className="w-4 h-4" /> Cooking Mode
                     </span>
-                    <h1 className="font-display font-bold text-3xl md:text-4xl text-neutral-900 tracking-tight leading-tight">
+                    <h1 className="font-bold text-3xl md:text-4xl text-foreground tracking-tight leading-tight">
                       {item.title}
                     </h1>
-                    {item.author && <p className="text-sm font-sans text-[#B28A54] font-semibold">Recipe by {item.author}</p>}
+                    {item.author && <p className="text-sm font-sans text-indigo-500 font-semibold">Recipe by {item.author}</p>}
                     {item.duration && (
-                      <span className="inline-block text-xs font-mono bg-[#FFFDF5] text-[#B28A54] border border-[#F3EFE0] px-3 py-1 rounded-full font-bold">
+                      <span className="inline-block text-xs font-mono bg-indigo-500/5 text-indigo-400 border border-indigo-500/10 px-3 py-1 rounded-full font-bold">
                         Prep & Cook Time: {item.duration}
                       </span>
                     )}
@@ -879,14 +1000,14 @@ export default function DetailPanel({
 
                   {/* Interactive Ingredients List */}
                   {item.ingredients && item.ingredients.length > 0 && (
-                    <div className="space-y-3.5 bg-[#FFFDF5] border border-[#F3EFE0] p-6 rounded-3xl">
-                      <h3 className="font-display font-bold text-lg text-[#2C2114] flex items-center gap-2">
-                        <Check className="w-5 h-5 text-[#B28A54]" /> Check off Ingredients
+                    <div className="space-y-3.5 bg-foreground/[0.01] border border-border-subtle p-6 rounded-3xl">
+                      <h3 className="font-serif font-bold text-lg text-foreground flex items-center gap-2">
+                        <Check className="w-5 h-5 text-indigo-500" /> Check off Ingredients
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {item.ingredients.map((ing, idx) => (
-                          <label key={idx} className="flex items-start gap-2.5 text-sm text-neutral-700 cursor-pointer select-none">
-                            <input type="checkbox" className="mt-1 rounded border-neutral-300 text-[#B28A54] focus:ring-[#B28A54]" />
+                          <label key={idx} className="flex items-start gap-2.5 text-sm text-foreground/80 cursor-pointer select-none">
+                            <input type="checkbox" className="mt-1 rounded border-border-subtle text-indigo-500 focus:ring-indigo-500" />
                             <span>{ing}</span>
                           </label>
                         ))}
@@ -897,14 +1018,14 @@ export default function DetailPanel({
                   {/* Step-by-Step Instructions */}
                   {item.steps && item.steps.length > 0 && (
                     <div className="space-y-4">
-                      <h3 className="font-display font-bold text-lg text-neutral-900">Step-by-Step Directions</h3>
+                      <h3 className="font-serif font-bold text-lg text-foreground">Step-by-Step Directions</h3>
                       <div className="space-y-4">
                         {item.steps.map((step, idx) => (
-                          <div key={idx} className="flex gap-4 p-4.5 rounded-2xl bg-neutral-50 border border-neutral-100 hover:bg-neutral-100/50 transition">
-                            <span className="w-8 h-8 rounded-full bg-[#B28A54] text-white font-mono font-bold flex items-center justify-center shrink-0">
+                          <div key={idx} className="flex gap-4 p-4.5 rounded-2xl bg-foreground/[0.01] border border-border-subtle hover:bg-foreground/[0.03] transition">
+                            <span className="w-8 h-8 rounded-full bg-indigo-500 text-white font-mono font-bold flex items-center justify-center shrink-0">
                               {idx + 1}
                             </span>
-                            <p className="text-neutral-700 text-sm leading-relaxed pt-0.5">
+                            <p className="text-foreground/80 text-sm leading-relaxed pt-0.5 font-serif">
                               {step}
                             </p>
                           </div>
@@ -916,12 +1037,12 @@ export default function DetailPanel({
               ) : (
                 <>
                   {/* Title / Site Name / Author Header */}
-                  <div className="space-y-3 mb-10">
-                    <span className="text-xs font-mono text-indigo-600 font-bold uppercase tracking-widest">{item.siteName}</span>
-                    <h1 className="font-display font-bold text-3xl md:text-4xl text-neutral-900 tracking-tight leading-tight">
+                  <div className="space-y-3 mb-10 font-serif">
+                    <span className="text-xs font-mono text-indigo-500 font-bold uppercase tracking-widest">{item.siteName}</span>
+                    <h1 className="font-bold text-3xl md:text-4xl text-foreground tracking-tight leading-tight">
                       {item.title}
                     </h1>
-                    <div className="flex items-center gap-3 text-xs font-mono text-neutral-400 pt-2 border-t border-neutral-50">
+                    <div className="flex items-center gap-3 text-xs font-mono text-foreground/40 pt-3 border-t border-border-subtle mt-2">
                       <span>Published on {item.siteName}</span>
                       {item.url && (
                         <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline flex items-center gap-0.5">
@@ -932,13 +1053,13 @@ export default function DetailPanel({
                   </div>
 
                   {/* Rendered content */}
-                  <div className="markdown-body prose max-w-none">
+                  <div className="markdown-body prose max-w-none text-foreground/80 font-serif">
                     <ReactMarkdown>{item.content}</ReactMarkdown>
                   </div>
                 </>
               )}
 
-              <div className="mt-16 pt-8 border-t border-neutral-100 text-center text-xs font-mono text-neutral-400">
+              <div className="mt-16 pt-8 border-t border-border-subtle text-center text-xs font-mono text-foreground/35">
                 End of reader. You are reading inside your private mind.
               </div>
             </div>

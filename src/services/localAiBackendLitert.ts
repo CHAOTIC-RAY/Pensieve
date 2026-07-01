@@ -32,12 +32,12 @@ export function setLocalAiEnabled(enabled: boolean): void {
   localStorage.setItem(LOCAL_AI_ENABLED_KEY, enabled ? 'true' : 'false');
 }
 
-export type AiStrategy = 'local' | 'api_key';
+export type AiStrategy = 'local' | 'api_key' | 'puter';
 
 export function getAiStrategy(): AiStrategy {
   if (typeof window === 'undefined') return 'api_key';
   const val = localStorage.getItem('pensieve_ai_strategy');
-  if (val === 'local' || val === 'api_key') return val;
+  if (val === 'local' || val === 'api_key' || val === 'puter') return val;
   return isLocalAiEnabled() ? 'local' : 'api_key';
 }
 
@@ -192,39 +192,14 @@ export async function generateLocalVisionResponse(
   base64Image: string,
   systemPrompt: string = 'You are an AI assistant that can analyze images.'
 ): Promise<string> {
-  if (!activeEngine) {
-    throw new Error('Local vision model is not loaded. Please initialize it first.');
-  }
-
   try {
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      { 
-        role: 'user', 
-        content: [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: base64Image } }
-        ] 
-      }
-    ];
-
-    const reply = await activeEngine.chat.completions.create({
-      messages,
-      temperature: 0.3,
-      max_tokens: 1024
+    const { initVisionModel, generateVisionResponse } = await import('../lib/builtinAi');
+    await initVisionModel(getSelectedVisionModelId(), (report) => {
+      console.log('[Vision Model Init]', report.text);
     });
-
-    return reply.choices[0].message.content || '';
+    return await generateVisionResponse(prompt, base64Image, systemPrompt);
   } catch (error: any) {
     console.error('[Local Vision Error]', error);
-    if (
-      error.message?.includes('Instance reference no longer exists') ||
-      error.message?.includes('Device was lost') ||
-      String(error).includes('GPUDeviceLostInfo')
-    ) {
-      activeEngine = null;
-      activeModelId = null;
-    }
     throw error;
   }
 }

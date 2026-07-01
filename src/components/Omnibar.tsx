@@ -40,6 +40,13 @@ export default function Omnibar({
   onTriggerSerendipity,
   localAiEnabled = false
 }: OmnibarProps) {
+  const isUrl = (str: string) => {
+    const clean = str.trim();
+    return /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .?=&+%-]*)*\/?$/i.test(clean) && (clean.includes('.') || clean.startsWith('http'));
+  };
+
+  const hexRegex = /^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+
   const [isFocused, setIsFocused] = useState(false);
   const [composerType, setComposerType] = useState<MindItemType | null>(null);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
@@ -63,7 +70,7 @@ export default function Omnibar({
   // Composer form states
   const [noteTitle, setNoteTitle] = useState('');
   const [noteBody, setNoteBody] = useState('');
-  const [checklistItems, setChecklistItems] = useState<{ text: string; done: boolean }[]>([{ text: '', done: false }]);
+  const [checklistItems, setChecklistItems] = useState<{ text: string; done: boolean }[]>([]);
   const [quoteBody, setQuoteBody] = useState('');
   const [quoteAuthor, setQuoteAuthor] = useState('');
   const [colorHex, setColorHex] = useState('#3b82f6');
@@ -201,9 +208,8 @@ export default function Omnibar({
       return;
     }
 
-    // 2. URL detection: starts with http, https, or www, or ends with common TLDs
-    const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/i;
-    if (urlRegex.test(cleanVal) && (cleanVal.includes('.') || cleanVal.startsWith('http'))) {
+    // 2. URL detection: starts with http, https, or www, or ends with common TLDs, supporting search queries and parameters
+    if (isUrl(cleanVal)) {
       let absoluteUrl = cleanVal;
       if (!absoluteUrl.startsWith('http://') && !absoluteUrl.startsWith('https://')) {
         absoluteUrl = 'https://' + absoluteUrl;
@@ -247,7 +253,7 @@ export default function Omnibar({
     setDetectedType(null);
     setNoteTitle('');
     setNoteBody('');
-    setChecklistItems([{ text: '', done: false }]);
+    setChecklistItems([]);
     setQuoteBody('');
     setQuoteAuthor('');
     setColorHex('#3b82f6');
@@ -307,13 +313,35 @@ export default function Omnibar({
       // Create based on selected composerType
       switch (composerType) {
         case 'note':
-          if (!noteBody.trim() && !noteTitle.trim()) return;
-          newItem = {
-            type: 'note',
-            title: noteTitle.trim() || 'Untitled Note',
-            content: noteBody.trim(),
-            tags: ['note', 'writing']
-          };
+          const trimmedBody = noteBody.trim();
+          const trimmedTitle = noteTitle.trim();
+          if (!trimmedBody && !trimmedTitle) return;
+          
+          if (isUrl(trimmedBody) && !trimmedTitle) {
+            newItem = {
+              type: 'link',
+              title: 'Saving bookmark...',
+              content: '',
+              url: trimmedBody.startsWith('http') ? trimmedBody : 'https://' + trimmedBody,
+              tags: ['link', 'bookmark']
+            };
+          } else if (hexRegex.test(trimmedBody) && !trimmedTitle) {
+            const hex = trimmedBody.startsWith('#') ? trimmedBody : `#${trimmedBody}`;
+            newItem = {
+              type: 'color',
+              title: 'Color Swatch',
+              content: hex,
+              colorHex: hex,
+              tags: ['color', hex]
+            };
+          } else {
+            newItem = {
+              type: 'note',
+              title: trimmedTitle || 'Untitled Note',
+              content: trimmedBody,
+              tags: ['note', 'writing']
+            };
+          }
           break;
 
         case 'article': // Handled as link with body parsing on server
@@ -749,7 +777,7 @@ export default function Omnibar({
                     />
                     
                     {/* Checklist option */}
-                    {checklistItems.length > 0 && checklistItems[0].text !== undefined && (
+                    {checklistItems.length > 0 ? (
                       <div className="border-t border-dashed border-neutral-200 pt-3 space-y-2">
                         <span className="text-[11px] font-mono text-neutral-400 uppercase">Checklist Mode</span>
                         {checklistItems.map((item, idx) => (
@@ -787,6 +815,17 @@ export default function Omnibar({
                           + Add checklist item
                         </button>
                       </div>
+                    ) : (
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setChecklistItems([{ text: '', done: false }])}
+                          className="text-[11px] font-sans font-medium text-neutral-400 hover:text-neutral-600 flex items-center gap-1.5"
+                        >
+                          <CheckSquare className="w-3.5 h-3.5" />
+                          <span>Convert to checklist / add tasks</span>
+                        </button>
+                      </div>
                     )}
 
                     <div className="flex justify-between items-center pt-2">
@@ -797,19 +836,24 @@ export default function Omnibar({
                         Cancel
                       </button>
                       
-                      {checklistItems.length > 0 && checklistItems[0].text !== undefined ? (
+                      {checklistItems.some(item => item.text.trim() !== '') ? (
                         <button
                           onClick={saveChecklistAsNote}
                           className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
                         >
-                          Save Checklist
+                          {noteBody.trim() ? "Save Note & Checklist" : "Save Checklist"}
                         </button>
                       ) : (
                         <button
                           onClick={handleCreateItem}
-                          className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
+                          disabled={!noteBody.trim() && !noteTitle.trim()}
+                          className={`text-xs font-semibold px-4 py-2 rounded-xl transition ${
+                            (noteBody.trim() || noteTitle.trim())
+                              ? 'bg-neutral-800 hover:bg-neutral-900 text-white cursor-pointer'
+                              : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
+                          }`}
                         >
-                          Save Note
+                          {isUrl(noteBody) ? "Save Link" : hexRegex.test(noteBody.trim()) ? "Save Color Swatch" : "Save Note"}
                         </button>
                       )}
                     </div>

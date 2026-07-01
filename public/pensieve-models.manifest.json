@@ -1,6 +1,46 @@
 {
-  "version": 7,
+  "version": 8,
   "models": [
+    {
+      "model_id": "Phi-3.5-vision-instruct-q4f16_1-MLC",
+      "name": "Phi-3.5 Vision (balanced) (3.9GB VRAM)",
+      "runtime": "webllm",
+      "litert_web": false,
+      "litert_community_repo": "mlc-ai",
+      "power_tier": "balanced",
+      "context_window_size": 4096,
+      "published": true
+    },
+    {
+      "model_id": "Phi-3.5-vision-instruct-q4f32_1-MLC",
+      "name": "Phi-3.5 Vision (higher quality) (5.9GB VRAM)",
+      "runtime": "webllm",
+      "litert_web": false,
+      "litert_community_repo": "mlc-ai",
+      "power_tier": "high",
+      "context_window_size": 4096,
+      "published": true
+    },
+    {
+      "model_id": "Qwen2-VL-2B-Instruct-q4f16_1-MLC",
+      "name": "Qwen2-VL 2B Instruct (low-power vision) (2.8GB VRAM)",
+      "runtime": "webllm",
+      "litert_web": false,
+      "litert_community_repo": "mlc-ai",
+      "power_tier": "balanced",
+      "context_window_size": 4096,
+      "published": true
+    },
+    {
+      "model_id": "Qwen2-VL-7B-Instruct-q4f16_1-MLC",
+      "name": "Qwen2-VL 7B Instruct (ultra quality vision) (6.8GB VRAM)",
+      "runtime": "webllm",
+      "litert_web": false,
+      "litert_community_repo": "mlc-ai",
+      "power_tier": "high",
+      "context_window_size": 4096,
+      "published": true
+    },
     {
       "model_id": "gemma3-1b-it-litert",
       "name": "Gemma 3 1B IT (LiteRT Community Web)",

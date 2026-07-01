@@ -100,4 +100,7 @@ export interface Achievement {
   image?: string; // Optional illustration URL
   xp?: number; // Optional experience points/movement value
   unlockedAt?: string; // ISO date string when unlocked
+  quote?: string;
+  author?: string;
+  lore?: string;
 }

@@ -19,15 +19,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       navigate('/');
-    } catch (error) {
-      console.error("Error signing in with Google:", error);
+    } catch (err: any) {
+      console.error("Error signing in with Google:", err);
+      setError(err.message || "Failed to sign in with Google. Check your network or browser settings.");
       setIsLoading(false);
     }
   };
@@ -35,11 +38,13 @@ export default function LoginPage() {
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/');
-    } catch (error) {
-      console.error("Error signing in with email:", error);
+    } catch (err: any) {
+      console.error("Error signing in with email:", err);
+      setError("Email sign-in failed. Ensure this method is enabled in Firebase Console.");
       setIsLoading(false);
     }
   };
@@ -67,6 +72,16 @@ export default function LoginPage() {
             <h1 className="text-3xl font-bold text-white font-display">Welcome Back</h1>
             <p className="text-white/60 text-sm">Sign in to access your second brain</p>
           </div>
+
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-200 text-xs text-center"
+            >
+              {error}
+            </motion.div>
+          )}
 
           {/* Google Sign In Button */}
           <button

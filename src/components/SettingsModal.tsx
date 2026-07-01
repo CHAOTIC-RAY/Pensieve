@@ -35,6 +35,7 @@ import {
   Paperclip,
   LogOut,
   Trophy,
+  Download,
 } from "lucide-react";
 import { useAchievements } from "../hooks/useAchievements";
 import AchievementCard from "./AchievementCard";
@@ -51,6 +52,7 @@ import {
   setAiStrategy,
   AiStrategy,
 } from "../services/localAiBackendLitert";
+import { DbStrategy, setDbStrategy } from "../services/dbStrategyService";
 import { auth } from "../lib/firebase";
 import {
   signInWithEmailAndPassword,
@@ -92,6 +94,8 @@ interface SettingsModalProps {
   items: MindItem[];
   aiStrategy: AiStrategy;
   setAiStrategyState: (val: AiStrategy) => void;
+  dbStrategy: DbStrategy;
+  setDbStrategyState: (val: DbStrategy) => void;
 }
 
 export default function SettingsModal({
@@ -112,6 +116,8 @@ export default function SettingsModal({
   items,
   aiStrategy,
   setAiStrategyState,
+  dbStrategy,
+  setDbStrategyState,
   initialTab,
 }: SettingsModalProps) {
   const { achievements } = useAchievements(items);
@@ -300,6 +306,25 @@ export default function SettingsModal({
     setProfileEmail(val);
     localStorage.setItem("mymind_profile_email", val);
     window.dispatchEvent(new Event("app-settings-updated"));
+  };
+
+  const handleExportData = () => {
+    try {
+      const dataStr = JSON.stringify(items, null, 2);
+      const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+
+      const exportFileDefaultName = `pensieve-mind-data-${new Date().toISOString().slice(0, 10)}.json`;
+
+      const linkElement = document.createElement("a");
+      linkElement.setAttribute("href", dataUri);
+      linkElement.setAttribute("download", exportFileDefaultName);
+      linkElement.click();
+
+      triggerToast("Data exported successfully!");
+    } catch (err) {
+      console.error("Failed to export data:", err);
+      triggerToast("Failed to export data.");
+    }
   };
 
   const handleProfileGradientChange = (val: string) => {
@@ -501,6 +526,9 @@ export default function SettingsModal({
     };
     onUpdateSettings(updated);
     triggerToast(`Applied ${preset.name} Preset`);
+    
+    // Dispatch event to unlock Grand Alchemist achievement
+    window.dispatchEvent(new CustomEvent('pensieve_trigger_theme'));
   };
 
   const handleUpdateSingleSetting = <K extends keyof UserSettings>(
@@ -714,15 +742,15 @@ export default function SettingsModal({
 
           <div className="space-y-1.5">
             <label className="block text-xs font-mono uppercase tracking-wider text-foreground/60">
-              Registered Email
+              Backup &amp; Export
             </label>
-            <input
-              type="email"
-              value={profileEmail}
-              onChange={(e) => handleProfileEmailChange(e.target.value)}
-              placeholder="E.g. 2003Ray.Dark@gmail.com"
-              className="w-full bg-input-bg border border-border-subtle rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-foreground/40 transition-colors"
-            />
+            <button
+              onClick={handleExportData}
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl transition-all text-xs font-bold active:scale-95 duration-200 cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              Export Mind Data (.json)
+            </button>
           </div>
         </div>
 
@@ -896,6 +924,9 @@ export default function SettingsModal({
     ]);
     setPlaygroundLoading(true);
 
+    // Dispatch event to unlock playground conversation achievement
+    window.dispatchEvent(new CustomEvent('pensieve_trigger_playground'));
+
     try {
       if (aiStrategy === "api_key") {
         let base64Image: string | null = null;
@@ -932,7 +963,7 @@ export default function SettingsModal({
         setPlaygroundLoading(false);
       } else if (currentImg) {
         // Handle Local Vision
-        if (localModelId.toLowerCase().includes('vision')) {
+        try {
           const mockBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
           const reply = await generateLocalVisionResponse(userMsg || "What is in this image?", mockBase64);
           setPlaygroundHistory((prev) => [
@@ -940,18 +971,15 @@ export default function SettingsModal({
             { role: "assistant", content: reply },
           ]);
           setPlaygroundLoading(false);
-        } else {
-          // Local Text only
-          setTimeout(() => {
-            setPlaygroundHistory((prev) => [
-              ...prev,
-              {
-                role: "assistant",
-                content: `I noticed you attached an image (${currentImg})! Our current local model runs in optimized text-only mode to save VRAM.\n\nTo enable fully featured **Local Vision**, select **Phi-3.5 Vision** in the model dropdown above.`,
-              },
-            ]);
-            setPlaygroundLoading(false);
-          }, 1000);
+        } catch (visionErr: any) {
+          setPlaygroundHistory((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: `Error running local vision model: ${visionErr.message || visionErr}. Please make sure your local vision model is selected and fully loaded.`,
+            },
+          ]);
+          setPlaygroundLoading(false);
         }
       } else {
         // Run real local text inference!
@@ -996,34 +1024,47 @@ export default function SettingsModal({
       <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
         Global AI Reasoning Strategy
       </label>
-      <div className="grid grid-cols-2 p-1 bg-foreground/5 rounded-2xl border border-border-subtle">
+      <div className="grid grid-cols-3 p-1 bg-foreground/5 rounded-2xl border border-border-subtle">
         <button
           onClick={() => handleStrategyChange("local")}
-          className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
+          className={`flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl text-xs font-semibold transition-all ${
             aiStrategy === "local"
               ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
               : "text-foreground/60 hover:text-foreground"
           }`}
         >
-          <Brain className="w-4 h-4" />
-          Local Engine
+          <Brain className="w-3.5 h-3.5 text-indigo-400" />
+          Local WebGPU
         </button>
         <button
           onClick={() => handleStrategyChange("api_key")}
-          className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
+          className={`flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl text-xs font-semibold transition-all ${
             aiStrategy === "api_key"
               ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
               : "text-foreground/60 hover:text-foreground"
           }`}
         >
-          <Cloud className="w-4 h-4" />
+          <Cloud className="w-3.5 h-3.5 text-orange-400" />
           Cloud API
+        </button>
+        <button
+          onClick={() => handleStrategyChange("puter")}
+          className={`flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl text-xs font-semibold transition-all ${
+            aiStrategy === "puter"
+              ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
+              : "text-foreground/60 hover:text-foreground"
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+          Puter.js AI
         </button>
       </div>
       <p className="text-[10px] text-foreground/50 leading-relaxed px-1">
         {aiStrategy === "local"
           ? "Using on-device WebGPU shaders for private, offline intelligence. Your data never leaves this browser."
-          : "Routing requests to high-performance cloud models via secure API keys for deeper reasoning and vision."}
+          : aiStrategy === "puter"
+            ? "Using Puter.js's integrated free and fast cloud-hosted models for instant indexing and tagging."
+            : "Routing requests to high-performance cloud models via secure API keys for deeper reasoning and vision."}
       </p>
     </section>
   );
@@ -1674,8 +1715,69 @@ export default function SettingsModal({
           </p>
         </div>
 
+        {/* Database & Storage Connection Strategy Selector */}
+        <section className="space-y-3 p-4 bg-foreground/[0.02] border border-border-subtle/85 rounded-2xl">
+          <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
+            Active Sync &amp; Storage Strategy
+          </label>
+          <div className="grid grid-cols-3 p-1 bg-foreground/5 rounded-2xl border border-border-subtle">
+            <button
+              onClick={() => {
+                setDbStrategy("puter");
+                setDbStrategyState("puter");
+                window.dispatchEvent(new Event('app-settings-updated'));
+              }}
+              className={`flex items-center justify-center gap-1.5 py-2.5 px-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                dbStrategy === "puter"
+                  ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
+                  : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              Puter.js
+            </button>
+            <button
+              onClick={() => {
+                setDbStrategy("supabase");
+                setDbStrategyState("supabase");
+                window.dispatchEvent(new Event('app-settings-updated'));
+              }}
+              className={`flex items-center justify-center gap-1.5 py-2.5 px-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                dbStrategy === "supabase"
+                  ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
+                  : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              <Database className="w-3.5 h-3.5 text-emerald-400" />
+              Supabase
+            </button>
+            <button
+              onClick={() => {
+                setDbStrategy("firebase");
+                setDbStrategyState("firebase");
+                window.dispatchEvent(new Event('app-settings-updated'));
+              }}
+              className={`flex items-center justify-center gap-1.5 py-2.5 px-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                dbStrategy === "firebase"
+                  ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
+                  : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              <Cloud className="w-3.5 h-3.5 text-orange-400" />
+              Firebase
+            </button>
+          </div>
+          <p className="text-[10px] text-foreground/50 leading-relaxed px-1">
+            {dbStrategy === "puter"
+              ? "Puter.js Strategy: Fast, secure client-side cloud NoSQL sync & storage. Default and recommended."
+              : dbStrategy === "supabase"
+                ? "Supabase Strategy: Sync your personal mind items to a secure, relational Supabase database table."
+                : "Firebase Strategy: Persist and load real-time mind cards inside your custom Firestore connection."}
+          </p>
+        </section>
+
         {/* Custom Firebase Section */}
-        <section className="space-y-4">
+        <section className={`space-y-4 transition-all duration-300 ${dbStrategy !== "firebase" ? "opacity-35 pointer-events-none grayscale" : ""}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-semibold text-text-heading select-none">
               <Cloud className="w-4 h-4 text-orange-400" />
@@ -1817,7 +1919,7 @@ export default function SettingsModal({
         </section>
 
         {/* Database Section */}
-        <section className="space-y-4 pt-6 border-t border-border-subtle">
+        <section className={`space-y-4 pt-6 border-t border-border-subtle transition-all duration-300 ${dbStrategy !== "supabase" ? "opacity-35 pointer-events-none grayscale" : ""}`}>
           <div className="flex items-center gap-2 text-sm font-semibold text-text-heading select-none">
             <Database className="w-4 h-4 text-emerald-400" />
             Custom Supabase Connection

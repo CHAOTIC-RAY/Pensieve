@@ -16,7 +16,9 @@ import {
   Film, Disc, ShoppingBag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { db, auth } from './lib/firebase';
+import { db, auth, handleFirestoreError, OperationType } from './lib/firebase';
+import { isPuterAvailable, getPuterItems, savePuterItems, chatWithPuterAi } from './lib/puter';
+import { DbStrategy, getDbStrategy, loadDbItems, saveDbItems } from './services/dbStrategyService';
 import { MindItem, MindItemType } from './types';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
@@ -136,9 +138,67 @@ export default function App() {
   const [items, setItems] = useState<MindItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all'); // 'all', 'favorites', MindItemType
+  const [typingTimer, setTypingTimer] = useState<any>(null);
+
+  const handleCategoryChange = (catId: string) => {
+    setActiveCategory(catId);
+    setActiveColorFilter(null);
+    setIsSettingsOpen(false);
+
+    if (typingTimer) {
+      clearInterval(typingTimer);
+    }
+
+    const categorySearchQueries: Record<string, string> = {
+      all: '',
+      favorites: 'favorite',
+      note: 'notes',
+      link: 'bookmarks',
+      image: 'images',
+      quote: 'quotes',
+      video: 'videos',
+      music: 'music',
+      tweet: 'tweets',
+      article: 'articles',
+      recipe: 'recipes',
+      film: 'films',
+      album: 'albums',
+      product: 'products',
+    };
+
+    const targetQuery = categorySearchQueries[catId] ?? '';
+    
+    if (targetQuery === '') {
+      setSearchQuery('');
+      return;
+    }
+
+    let current = '';
+    let idx = 0;
+    const interval = setInterval(() => {
+      if (idx < targetQuery.length) {
+        current += targetQuery[idx];
+        setSearchQuery(current);
+        idx++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 60);
+    setTypingTimer(interval);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimer) clearInterval(typingTimer);
+    };
+  }, [typingTimer]);
   const [activeColorFilter, setActiveColorFilter] = useState<string | null>(null);
   const [vibeFilter, setVibeFilter] = useState<{ type: 'color' | 'tag'; value: string; label: string } | null>(null);
-  const [selectedItem, setSelectedItem] = useState<MindItem | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const selectedItem = items.find(i => i.id === selectedItemId) || null;
+  const setSelectedItem = (item: MindItem | null) => {
+    setSelectedItemId(item ? item.id : null);
+  };
   const [isSerendipityOpen, setIsSerendipityOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
 
@@ -148,9 +208,11 @@ export default function App() {
 
   // Local AI (LiteRT / WebGPU) States
   const [aiStrategy, setAiStrategyState] = useState<AiStrategy>(getAiStrategy());
+  const [dbStrategy, setDbStrategyState] = useState<DbStrategy>(getDbStrategy());
 
   // Achievements
   const { achievements, activeToast, dismissToast, triggerSerendipity } = useAchievements(items);
+  const totalXp = achievements.reduce((acc, ach) => acc + (ach.unlockedAt ? (ach.xp || 10) : 0), 0);
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
   const [localAiEnabled, setLocalAiEnabledState] = useState(isLocalAiEnabled());
   const [localModelId, setLocalModelIdState] = useState(getSelectedLocalModelId());
@@ -228,48 +290,54 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Real-time Firestore snapshot listener
+  // Real-time Cloud database/storage strategy sync
   useEffect(() => {
-    setIsSyncing(true);
-    const q = query(collection(db, 'mind-items'), orderBy('createdAt', 'desc'));
-    
-    // Load local items initially
     const localItems = JSON.parse(localStorage.getItem('mymind_local_items') || '[]');
-    if (localItems.length > 0) {
-      setItems(localItems);
-    }
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docsList: MindItem[] = [];
-      snapshot.forEach((doc) => {
-        docsList.push({ id: doc.id, ...doc.data() } as MindItem);
+    if (!user) {
+      if (localItems.length > 0) {
+        setItems(localItems);
+      }
+      setIsSyncing(false);
+      return;
+    }
+
+    setIsSyncing(true);
+    console.log(`[Pensieve Sync] Loading items from strategy: ${dbStrategy} for user: ${user.uid}`);
+
+    // Fetch from the active database strategy
+    loadDbItems(user.uid, dbStrategy)
+      .then((remoteList) => {
+        if (remoteList && remoteList.length > 0) {
+          // Merge local and remote list to prevent any data loss
+          const remoteIds = new Set(remoteList.map(i => i.id));
+          const localOnly = localItems.filter((item: MindItem) => !remoteIds.has(item.id));
+          const merged = [...localOnly, ...remoteList].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+
+          setItems(merged);
+          localStorage.setItem('mymind_local_items', JSON.stringify(merged));
+          
+          // If there were local-only unsynced items, persist them to the active strategy
+          if (localOnly.length > 0) {
+            saveDbItems(user.uid, merged, dbStrategy);
+          }
+        } else if (localItems.length > 0) {
+          // First time syncing with a fresh database connection, push local items
+          setItems(localItems);
+          saveDbItems(user.uid, localItems, dbStrategy);
+        } else {
+          setItems([]);
+        }
+        setIsSyncing(false);
+      })
+      .catch((err) => {
+        console.error(`[Pensieve Sync] Sync failed for strategy ${dbStrategy}:`, err);
+        setItems(localItems);
+        setIsSyncing(false);
       });
-      
-      // Merge with local items that haven't been synced (simple approach: prefer Firestore, but keep local items if they don't exist in Firestore)
-      const firestoreIds = new Set(docsList.map(i => i.id));
-      const localOnly = localItems.filter((item: MindItem) => !firestoreIds.has(item.id));
-      const mergedList = [...localOnly, ...docsList].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
-      setItems(mergedList);
-      localStorage.setItem('mymind_local_items', JSON.stringify(mergedList));
-      setIsSyncing(false);
-
-      // Keep the open detail panel updated if the selected item changes
-      if (selectedItem) {
-        const updated = mergedList.find(i => i.id === selectedItem.id);
-        if (updated) setSelectedItem(updated);
-      }
-    }, (error) => {
-      console.error("Firestore error:", error);
-      setIsSyncing(false);
-      // Fallback for permissions error: disable syncing UI
-      if (String(error).includes('Missing or insufficient permissions')) {
-         console.warn("Firestore rules not deployed yet or missing permissions. Local fallback active.");
-      }
-    });
-
-    return () => unsubscribe();
-  }, [selectedItem]);
+  }, [user, dbStrategy]);
 
   const { results: searchedItems } = useSearch(items, searchQuery);
 
@@ -312,22 +380,19 @@ export default function App() {
         return 0;
       });
 
-  // Helper to safely update an item with Firestore / LocalStorage fallback
+  // Helper to safely update an item with DB Strategy / LocalStorage fallback
   const safeUpdateItem = async (itemId: string, updates: Partial<MindItem>) => {
-    try {
-      await updateDoc(doc(db, 'mind-items', itemId), updates);
-    } catch (e) {
-      console.warn("Firestore update failed, syncing to local storage fallback:", e);
-    }
-    
     setItems(prev => {
       const updated = prev.map(item => item.id === itemId ? { ...item, ...updates } : item);
       localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      if (user) {
+        saveDbItems(user.uid, updated, dbStrategy);
+      }
       return updated;
     });
   };
 
-  // Handle Item Creation with Multi-Stage Background AI parsing
+  // Handle Item Creation with Multi-Stage Background AI parsing (including Puter AI alternative)
   const handleItemCreated = async (newItem: Omit<MindItem, 'id' | 'createdAt'>): Promise<string> => {
     // Stage 1: Fast client-side write with "analyzing" state
     const docData = {
@@ -337,70 +402,120 @@ export default function App() {
       tags: newItem.tags || []
     };
 
-    let createdId = Date.now().toString(); // temporary local ID fallback
-    let saveFailed = false;
-    try {
-      const docRef = await addDoc(collection(db, 'mind-items'), docData);
-      createdId = docRef.id;
-    } catch (error) {
-      console.error("Firestore addDoc error:", error);
-      saveFailed = true;
-    }
-
+    const createdId = Date.now().toString(); // unique ID
     const fallbackItem = { ...docData, id: createdId } as MindItem;
-    // Always put it in local state immediately so it renders without delay
+
+    // Put it in local state and active database instantly
     setItems(prev => {
       const updated = [fallbackItem, ...prev];
       localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      if (user) {
+        saveDbItems(user.uid, updated, dbStrategy);
+      }
       return updated;
     });
 
-    // Stage 2: Background processing on server
-    // We run this asynchronously so the card is saved instantly in UI with a thinking skeleton!
+    // Stage 2: Background processing on client / Puter AI / Server
     (async () => {
       try {
         let processedItem = { ...docData, id: createdId };
 
-        // 2A. If it's a URL (link or article), scrape metadata first on the server
+        // 2A. Scrape link/article metadata
         if ((newItem.type === 'link' || newItem.type === 'article') && newItem.url) {
-          const scrapeResponse = await fetch('/api/scrape', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: newItem.url })
-          });
-          
-          if (scrapeResponse.ok) {
-            const scraped = await scrapeResponse.json();
-            if (scraped.success) {
-              processedItem.title = scraped.title || processedItem.title;
-              processedItem.content = scraped.description || '';
-              processedItem.imageUrl = scraped.imageUrl || '';
-              processedItem.siteName = scraped.siteName || '';
-              processedItem.favicon = scraped.favicon || '';
-              processedItem.bodyText = scraped.bodyText || ''; // Sent to Gemini
-              
-              // Partially update local Firestore and state for immediate visual meta-filling
-              await safeUpdateItem(createdId, {
-                title: processedItem.title,
-                content: processedItem.content,
-                imageUrl: processedItem.imageUrl,
-                siteName: processedItem.siteName,
-                favicon: processedItem.favicon
-              });
+          try {
+            const scrapeResponse = await fetch('/api/scrape', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: newItem.url })
+            });
+            
+            if (scrapeResponse.ok) {
+              const scraped = await scrapeResponse.json();
+              if (scraped.success) {
+                processedItem.title = scraped.title || processedItem.title;
+                processedItem.content = scraped.description || '';
+                processedItem.imageUrl = scraped.imageUrl || '';
+                processedItem.siteName = scraped.siteName || '';
+                processedItem.favicon = scraped.favicon || '';
+                processedItem.bodyText = scraped.bodyText || '';
+                
+                await safeUpdateItem(createdId, {
+                  title: processedItem.title,
+                  content: processedItem.content,
+                  imageUrl: processedItem.imageUrl,
+                  siteName: processedItem.siteName,
+                  favicon: processedItem.favicon
+                });
+              }
             }
+          } catch (scrapeErr) {
+            console.warn("Scraping fallback failed:", scrapeErr);
           }
         }
 
-        // 2B. Perform local WebGPU AI or Cloud Gemini analysis & Tagging
-        if (isLocalAiEnabled()) {
-          console.log('[Pensieve Local AI] Initiating on-device WebGPU model for metadata categorization & tagging...');
+        // 2B. Puter AI Strategy (Explicit choice)
+        if (aiStrategy === 'puter' && isPuterAvailable()) {
+          console.log('[Pensieve Puter AI] Running explicit Puter.js cloud AI reasoning strategy...');
+          try {
+            const aiPrompt = `Analyze this item and return a strict, parsable JSON object with: 
+            {
+              "title": "A short descriptive title",
+              "category": "note", // note, link, image, quote, color, article, video, recipe, document, music, tweet, voice, film, album, or product
+              "tags": ["3-5 short tags"],
+              "aiSummary": "One clean explanatory sentence explaining what this is",
+              "dominantColor": "grey" // red, orange, yellow, green, blue, purple, pink, black, white, grey
+            }
+            
+            Item details:
+            Type: "${processedItem.type}"
+            Title: "${processedItem.title || ''}"
+            Content: "${processedItem.content || ''}"
+            Url: "${processedItem.url || 'none'}"`;
+
+            const aiText = await window.puter.ai.chat(aiPrompt);
+            let parsed;
+            try {
+              const cleanJson = aiText.replace(/```json/gi, '').replace(/```/g, '').trim();
+              parsed = JSON.parse(cleanJson);
+            } catch {
+              parsed = {
+                title: processedItem.title || "Reflected Insight",
+                category: processedItem.type,
+                tags: ["mind", processedItem.type],
+                aiSummary: aiText.length > 150 ? aiText.slice(0, 150) + "..." : aiText,
+                dominantColor: "grey"
+              };
+            }
+
+            const finalDoc = {
+              title: parsed.title || processedItem.title,
+              content: processedItem.content,
+              type: parsed.category || processedItem.type,
+              tags: Array.from(new Set([...(docData.tags), ...(parsed.tags || [])])),
+              aiTags: parsed.tags || [],
+              manualTags: docData.manualTags || [],
+              aiSummary: parsed.aiSummary || 'Analyzed via Puter Cloud AI.',
+              dominantColor: parsed.dominantColor || 'grey',
+              analyzing: false
+            };
+
+            await safeUpdateItem(createdId, finalDoc);
+            return;
+          } catch (puterAiErr) {
+            console.warn('[Pensieve Puter AI] Puter AI Strategy failed. Trying fallbacks...', puterAiErr);
+          }
+        }
+
+        // 2C. Local WebGPU AI analysis
+        if (aiStrategy === 'local' && isLocalAiEnabled()) {
+          console.log('[Pensieve Local AI] Initiating on-device WebGPU model...');
           try {
             const aiResult = await organizeAndTagItemLocally(processedItem);
             if (aiResult && aiResult.success) {
               const finalDoc = {
                 title: aiResult.title || processedItem.title,
                 content: aiResult.content || processedItem.content,
-                type: aiResult.category || processedItem.type, // Dynamic item category updates
+                type: aiResult.category || processedItem.type,
                 tags: Array.from(new Set([...(docData.tags), ...(aiResult.tags || [])])),
                 aiTags: aiResult.tags || [],
                 manualTags: docData.manualTags || [],
@@ -414,13 +529,67 @@ export default function App() {
               if (aiResult.siteName) finalDoc.siteName = aiResult.siteName;
 
               await safeUpdateItem(createdId, finalDoc);
-              return; // Bypasses cloud analysis entirely
+              return;
             }
           } catch (localErr) {
-            console.warn('[Pensieve Local AI] Local model failed to classify. Falling back to Gemini API...', localErr);
+            console.warn('[Pensieve Local AI] Local model failed. Falling back...', localErr);
           }
         }
 
+        // 2D. Fallback to Puter AI if available or server-side Gemini
+        if (isPuterAvailable()) {
+          console.log('[Pensieve Puter AI] Running Puter.js alternative free cloud AI...');
+          try {
+            const aiPrompt = `Analyze this item and return a strict, parsable JSON object with: 
+            {
+              "title": "A short descriptive title",
+              "category": "note", // note, link, image, quote, color, article, video, recipe, document, music, tweet, voice, film, album, or product
+              "tags": ["3-5 short tags"],
+              "aiSummary": "One clean explanatory sentence explaining what this is",
+              "dominantColor": "grey" // red, orange, yellow, green, blue, purple, pink, black, white, grey
+            }
+            
+            Item details:
+            Type: "${processedItem.type}"
+            Title: "${processedItem.title || ''}"
+            Content: "${processedItem.content || ''}"
+            Url: "${processedItem.url || 'none'}"`;
+
+            const aiText = await window.puter.ai.chat(aiPrompt);
+            let parsed;
+            try {
+              const cleanJson = aiText.replace(/```json/gi, '').replace(/```/g, '').trim();
+              parsed = JSON.parse(cleanJson);
+            } catch {
+              parsed = {
+                title: processedItem.title || "Reflected Insight",
+                category: processedItem.type,
+                tags: ["mind", processedItem.type],
+                aiSummary: aiText.length > 150 ? aiText.slice(0, 150) + "..." : aiText,
+                dominantColor: "grey"
+              };
+            }
+
+            const finalDoc = {
+              title: parsed.title || processedItem.title,
+              content: processedItem.content,
+              type: parsed.category || processedItem.type,
+              tags: Array.from(new Set([...(docData.tags), ...(parsed.tags || [])])),
+              aiTags: parsed.tags || [],
+              manualTags: docData.manualTags || [],
+              aiSummary: parsed.aiSummary || 'Analyzed via Puter Cloud AI.',
+              dominantColor: parsed.dominantColor || 'grey',
+              analyzing: false
+            };
+
+            await safeUpdateItem(createdId, finalDoc);
+            return;
+          } catch (puterAiErr) {
+            console.warn('[Pensieve Puter AI] Failed, falling back to server-side Gemini:', puterAiErr);
+          }
+        }
+
+        // 2D. Server-side Gemini API fallback
         const analyzeResponse = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -430,11 +599,10 @@ export default function App() {
         if (analyzeResponse.ok) {
           const aiResult = await analyzeResponse.json();
           if (aiResult.success) {
-            // Merge AI outcomes and clear analyzing state
             const finalDoc = {
               title: aiResult.title || processedItem.title,
               content: aiResult.content || processedItem.content,
-              type: aiResult.category || processedItem.type, // dynamic article reclassification!
+              type: aiResult.category || processedItem.type,
               tags: Array.from(new Set([...(docData.tags), ...(aiResult.tags || [])])),
               aiTags: aiResult.tags || [],
               manualTags: docData.manualTags || [],
@@ -456,7 +624,6 @@ export default function App() {
         }
       } catch (error) {
         console.error("Background indexing failed:", error);
-        // Fallback: clear loading state safely
         await safeUpdateItem(createdId, { 
           analyzing: false,
           aiSummary: 'Saved locally (offline indexing)'
@@ -467,55 +634,42 @@ export default function App() {
     return createdId;
   };
 
-  // Toggle favorite / pin
+  // Toggle favorite
   const handleToggleFavorite = async (item: MindItem) => {
     const newIsFavorite = !item.isFavorite;
-    try {
-      await updateDoc(doc(db, 'mind-items', item.id), {
-        isFavorite: newIsFavorite
-      });
-    } catch (e) {
-      console.error(e);
-      // Local fallback
-      setItems(prev => {
-        const updated = prev.map(i => i.id === item.id ? { ...i, isFavorite: newIsFavorite } : i);
-        localStorage.setItem('mymind_local_items', JSON.stringify(updated));
-        return updated;
-      });
-    }
+    setItems(prev => {
+      const updated = prev.map(i => i.id === item.id ? { ...i, isFavorite: newIsFavorite } : i);
+      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      if (user) {
+        saveDbItems(user.uid, updated, dbStrategy);
+      }
+      return updated;
+    });
   };
 
   // Toggle Top of Mind focus pin
   const handleToggleTopMind = async (item: MindItem) => {
     const newIsTopMind = !item.isTopMind;
-    try {
-      await updateDoc(doc(db, 'mind-items', item.id), {
-        isTopMind: newIsTopMind
-      });
-    } catch (e) {
-      console.error(e);
-      // Local fallback
-      setItems(prev => {
-        const updated = prev.map(i => i.id === item.id ? { ...i, isTopMind: newIsTopMind } : i);
-        localStorage.setItem('mymind_local_items', JSON.stringify(updated));
-        return updated;
-      });
-    }
+    setItems(prev => {
+      const updated = prev.map(i => i.id === item.id ? { ...i, isTopMind: newIsTopMind } : i);
+      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      if (user) {
+        saveDbItems(user.uid, updated, dbStrategy);
+      }
+      return updated;
+    });
   };
 
   // Delete item
   const handleDeleteItem = async (item: MindItem) => {
-    try {
-      await deleteDoc(doc(db, 'mind-items', item.id));
-    } catch (e) {
-      console.error(e);
-      // Local fallback
-      setItems(prev => {
-        const updated = prev.filter(i => i.id !== item.id);
-        localStorage.setItem('mymind_local_items', JSON.stringify(updated));
-        return updated;
-      });
-    }
+    setItems(prev => {
+      const updated = prev.filter(i => i.id !== item.id);
+      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      if (user) {
+        saveDbItems(user.uid, updated, dbStrategy);
+      }
+      return updated;
+    });
     if (selectedItem?.id === item.id) {
       setSelectedItem(null);
     }
@@ -523,29 +677,26 @@ export default function App() {
 
   // Update item (used for inline edits in inspector or checklist toggles)
   const handleUpdateItem = async (updatedItem: MindItem) => {
-    try {
-      const { id, ...data } = updatedItem;
-      await updateDoc(doc(db, 'mind-items', id), data as any);
-    } catch (e) {
-      console.error(e);
-      // Local fallback
-      setItems(prev => {
-        const updated = prev.map(i => i.id === updatedItem.id ? { ...i, ...updatedItem } : i);
-        localStorage.setItem('mymind_local_items', JSON.stringify(updated));
-        return updated;
-      });
-    }
+    setItems(prev => {
+      const updated = prev.map(i => i.id === updatedItem.id ? { ...i, ...updatedItem } : i);
+      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      if (user) {
+        saveDbItems(user.uid, updated, dbStrategy);
+      }
+      return updated;
+    });
   };
 
   // Interactive Checklist toggling helper
   const handleUpdateChecklist = async (item: MindItem, updatedContent: string) => {
-    try {
-      await updateDoc(doc(db, 'mind-items', item.id), {
-        content: updatedContent
-      });
-    } catch (e) {
-      console.error(e);
-    }
+    setItems(prev => {
+      const updated = prev.map(i => i.id === item.id ? { ...i, content: updatedContent } : i);
+      localStorage.setItem('mymind_local_items', JSON.stringify(updated));
+      if (user) {
+        saveDbItems(user.uid, updated, dbStrategy);
+      }
+      return updated;
+    });
   };
 
   if (authLoading) {
@@ -559,10 +710,17 @@ export default function App() {
   return user ? (
     <div id="mymind-workspace" className="min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-foreground selection:text-background transition-colors duration-300 relative">
         {/* Editorial Ambient Spot Blurs */}
-        <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden opacity-30 dark:opacity-10">
-          <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[#c084fc] blur-[130px]" />
-          <div className="absolute -bottom-40 -right-40 w-[800px] h-[800px] rounded-full bg-[#818cf8] blur-[150px]" />
+        <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden opacity-40 dark:opacity-25">
+          {/* Main Dark Grey ambient shadow */}
+          <div className="absolute -top-40 left-1/4 w-[700px] h-[700px] rounded-full bg-neutral-800/10 dark:bg-neutral-900/35 blur-[130px]" />
+          {/* Subtle purple accent blur */}
+          <div className="absolute top-1/3 -right-40 w-[600px] h-[600px] rounded-full bg-primary/5 dark:bg-primary/10 blur-[140px]" />
+          {/* Subtle whitish highlight blur */}
+          <div className="absolute -bottom-40 left-10 w-[500px] h-[500px] rounded-full bg-white/20 dark:bg-white/5 blur-[120px]" />
         </div>
+
+        {/* Paper Texture Overlay */}
+        <div className="paper-texture" />
 
       {/* Compact Mobile-Only Header */}
       <header className="flex md:hidden items-center justify-between px-4 py-3 bg-card-bg/50 backdrop-blur-md border-b border-border-subtle/40 shrink-0 z-40 select-none">
@@ -605,6 +763,8 @@ export default function App() {
         items={items}
         aiStrategy={aiStrategy}
         setAiStrategyState={setAiStrategyState}
+        dbStrategy={dbStrategy}
+        setDbStrategyState={setDbStrategyState}
       />
 
       <AchievementsModal
@@ -625,7 +785,7 @@ export default function App() {
         <div className="hidden md:flex flex-col items-center fixed top-6 left-6 z-40 select-none pointer-events-none">
           <div className="flex flex-col items-center gap-3">
             <div className="w-11 h-11 flex items-center justify-center pointer-events-auto cursor-pointer"
-                 onClick={() => { setActiveCategory('all'); setActiveColorFilter(null); setIsSettingsOpen(false); }}>
+                 onClick={() => handleCategoryChange('all')}>
               <Logo className="w-full h-full" />
             </div>
             <span className="text-[10px] font-bold tracking-[0.25em] text-foreground/45 font-display uppercase [writing-mode:vertical-lr] rotate-180 py-1 select-none">
@@ -647,11 +807,7 @@ export default function App() {
             return (
               <button
                 key={cat.id}
-                onClick={() => {
-                  setActiveCategory(cat.id);
-                  setActiveColorFilter(null);
-                  setIsSettingsOpen(false);
-                }}
+                onClick={() => handleCategoryChange(cat.id)}
                 title={cat.label}
                 className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),_0_4px_8px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 ${
                   isActive 
@@ -669,14 +825,19 @@ export default function App() {
           {/* Achievements Button */}
           <button
             onClick={() => setIsAchievementsOpen(true)}
-            title="Milestones"
-            className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),_0_4px_8px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 ${
+            title={`Milestones (${totalXp} XP)`}
+            className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border relative shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),_0_4px_8px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 ${
               isAchievementsOpen 
-                ? 'bg-amber-500/20 border-amber-500/30 text-amber-500' 
+                ? 'bg-amber-500/20 border-amber-500/30 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' 
                 : 'bg-foreground/5 border-foreground/10 text-foreground/70 hover:bg-amber-500/10 hover:text-amber-500'
             }`}
           >
             <Trophy className={`w-5 h-5 ${isAchievementsOpen ? 'fill-current text-amber-500' : ''}`} />
+            {totalXp > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-950 font-mono font-black text-[9px] px-1.5 py-0.5 rounded-full border border-yellow-300 shadow-md">
+                {totalXp}
+              </span>
+            )}
           </button>
           
           {/* Settings / Preferences Button */}
@@ -751,11 +912,11 @@ export default function App() {
         }`}>
           
           {/* Centered Editorial Greeting & Focus Title */}
-          <div className="text-center mt-2 md:mt-24 mb-2 md:mb-6 px-4 max-w-xl mx-auto space-y-0.5 md:space-y-1.5 select-none pointer-events-none shrink-0">
-            <h1 className="text-lg md:text-5xl font-bold tracking-tight text-foreground font-display transition-colors duration-300 leading-tight">
+          <div className="text-center mt-2 md:mt-24 mb-4 md:mb-6 px-4 max-w-xl mx-auto space-y-0.5 md:space-y-1.5 select-none pointer-events-none shrink-0">
+            <h1 className="text-2xl md:text-5xl font-bold tracking-tight text-foreground font-display transition-colors duration-300 leading-tight">
               What are you remembering today?
             </h1>
-            <p className="text-[10px] md:text-base text-foreground/45 font-sans transition-colors duration-300">
+            <p className="text-xs md:text-base text-foreground/45 font-sans transition-colors duration-300">
               Search your private workspace or type to save instantly
             </p>
           </div>
@@ -806,10 +967,7 @@ export default function App() {
                 return (
                   <button
                     key={cat.id}
-                    onClick={() => {
-                      setActiveCategory(cat.id);
-                      setActiveColorFilter(null);
-                    }}
+                    onClick={() => handleCategoryChange(cat.id)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-all border shrink-0 ${
                       isActive
                         ? 'bg-primary text-white border-primary shadow-sm scale-105 font-semibold'
@@ -1186,7 +1344,7 @@ export default function App() {
       </div>
 
       {/* Mobile Bottom Navigation Bar (Circular Glass icons) */}
-      <nav className="md:hidden fixed bottom-6 left-6 right-6 z-[110] flex items-center justify-between transition-all duration-300">
+      <nav className="md:hidden fixed bottom-4 left-4 right-4 z-[110] flex items-center justify-between transition-all duration-300">
         {[
           { id: 'all', label: 'All', icon: Aperture },
           { id: 'favorites', label: 'Favs', icon: Heart },
@@ -1212,12 +1370,12 @@ export default function App() {
               className="flex flex-col items-center justify-center gap-0.5 transition-all duration-300 relative group"
               style={{ color: isActive ? 'var(--primary)' : undefined }}
             >
-              <div className={`relative z-10 p-4 rounded-full transition-all duration-500 bg-background/80 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.1)] ${isActive ? '-translate-y-2 scale-110 shadow-[0_4px_12px_rgba(var(--primary-rgb),0.3)]' : 'group-active:scale-90'}`}>
-                <Icon className={`w-6 h-6 ${isActive ? 'fill-current' : 'text-foreground/70'}`} />
+              <div className={`relative z-10 p-3 rounded-full transition-all duration-500 bg-background/90 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.1)] ${isActive ? '-translate-y-2 scale-110 shadow-[0_4px_12px_rgba(var(--primary-rgb),0.3)]' : 'group-active:scale-90'}`}>
+                <Icon className={`w-5 h-5 ${isActive ? 'fill-current text-primary' : 'text-foreground/70'}`} />
                 {isActive && (
                   <motion.div 
                     layoutId="mobileNavActiveIndicator"
-                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_8px_var(--primary)]"
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full shadow-[0_0_8px_var(--primary)]"
                   />
                 )}
               </div>

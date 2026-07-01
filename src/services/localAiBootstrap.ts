@@ -6,6 +6,7 @@ import {
   isWebLiteRtSupported, 
   isLocalAiEnabled, 
   getSelectedLocalModelId, 
+  getSelectedVisionModelId,
   initLocalAiModel,
   ProgressReport
 } from './localAiBackendLitert';
@@ -96,15 +97,27 @@ export async function bootstrapLocalAiOnLaunch(force: boolean = false): Promise<
   }
 
   const modelId = getSelectedLocalModelId();
-  updateStatus('downloading', 0.05, `Loading local model "${modelId}"...`);
+  const visionModelId = getSelectedVisionModelId();
+  updateStatus('downloading', 0.05, `Loading local text model "${modelId}"...`);
 
   try {
+    // 1. Initialize Local LLM Model (0.05 to 0.50 progress)
     await initLocalAiModel(modelId, (report: ProgressReport) => {
-      // Normalize progress to prevent overshooting
-      const normalizedProgress = Math.max(0, Math.min(1, report.progress));
-      updateStatus('downloading', normalizedProgress, report.text);
+      const rawProgress = Math.max(0, Math.min(1, report.progress));
+      const scaledProgress = 0.05 + rawProgress * 0.45; // scale to 0.05 - 0.50
+      updateStatus('downloading', scaledProgress, `[Text Model] ${report.text}`);
     });
-    updateStatus('ready', 1.0, 'Local AI Model is fully downloaded and running offline in-browser!');
+
+    // 2. Initialize Local Vision Model (0.50 to 0.95 progress)
+    updateStatus('downloading', 0.50, `Loading local vision model "${visionModelId}"...`);
+    const { initVisionModel } = await import('../lib/builtinAi');
+    await initVisionModel(visionModelId, (report) => {
+      const rawProgress = Math.max(0, Math.min(1, report.progress));
+      const scaledProgress = 0.50 + rawProgress * 0.45; // scale to 0.50 - 0.95
+      updateStatus('downloading', scaledProgress, `[Vision Model] ${report.text}`);
+    });
+
+    updateStatus('ready', 1.0, 'Both text & vision engines are fully warmed up and active!');
   } catch (err: any) {
     console.error('[Bootstrap Fail]', err);
     updateStatus('failed', 0, `Bootstrap failed: ${err.message || err}.`);

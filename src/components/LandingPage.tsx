@@ -107,15 +107,15 @@ export default function LandingPage() {
       ref={containerRef}
       className="min-h-[600vh] bg-[#FDFBF7] text-neutral-900 selection:bg-primary/20 selection:text-primary font-sans overflow-x-hidden"
     >
-      {/* Sidebar Dock - Minimal tab style containing only sideways Logo, active tab rectangle, and Liquid Glass Login */}
+      {/* Sidebar Dock - Minimal tab style containing only sideways Logo and Liquid Glass Login */}
       <motion.div 
         style={{ opacity: sidebarOpacity, x: sidebarX }}
-        className="hidden lg:flex flex-col items-center justify-between fixed left-6 top-6 bottom-6 w-20 py-8 z-40 bg-white/70 backdrop-blur-xl rounded-[28px] shadow-premium"
+        className="hidden lg:flex flex-col items-center justify-between fixed left-6 top-6 bottom-6 w-20 py-8 z-40 bg-transparent"
       >
         <div className="flex flex-col items-center gap-10">
           <div className="flex flex-col items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             {/* Logo sideways / rotated */}
-            <div className="w-11 h-11 flex items-center justify-center p-2 bg-background rounded-2xl border border-black/5 shadow-sm">
+            <div className="w-11 h-11 flex items-center justify-center p-2 bg-background rounded-full border border-black/5 shadow-sm">
               <Logo className="w-full h-full" glow={false} />
             </div>
             <span className="text-[9px] font-bold tracking-[0.25em] text-foreground/45 font-mono my-4 inline-block whitespace-nowrap">
@@ -124,16 +124,13 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Minimal Tab Area containing only the active indicator (solid rectangle) and the liquid glass Login button */}
+        {/* Minimal Area containing only the liquid glass Login button and round icons */}
         <div className="flex flex-col items-center gap-6 w-full px-3">
-          {/* Solid active indicator rectangle mimicking the tab list block */}
-          <div className="w-10 h-3 rounded bg-primary/20 border border-primary/30" />
-          
           {/* Liquid Glass Styled Login Button */}
           <button 
             onClick={handleGoogleSignIn}
             title="Log In"
-            className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all flex items-center justify-center cursor-pointer shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),_0_4px_8px_rgba(0,0,0,0.05)] hover:scale-105 active:scale-95"
+            className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all flex items-center justify-center cursor-pointer shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),_0_4px_8px_rgba(0,0,0,0.05)] hover:scale-105 active:scale-95"
           >
             <LogIn className="w-5 h-5" />
           </button>
@@ -144,7 +141,7 @@ export default function LandingPage() {
             target="_blank"
             rel="noopener noreferrer"
             title="View on GitHub"
-            className="w-10 h-10 rounded-xl bg-foreground/5 border border-foreground/10 text-foreground/40 hover:text-foreground/70 hover:bg-foreground/10 transition-all flex items-center justify-center hover:scale-105"
+            className="w-10 h-10 rounded-full bg-foreground/5 border border-foreground/10 text-foreground/40 hover:text-foreground/70 hover:bg-foreground/10 transition-all flex items-center justify-center hover:scale-105"
           >
             <Github className="w-4 h-4" />
           </a>
@@ -152,16 +149,16 @@ export default function LandingPage() {
       </motion.div>
 
       {/* Top Header for Mobile/Navbar Fallback */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex items-center justify-between backdrop-blur-md bg-background/30 border-b border-border-subtle/20 lg:hidden">
-        <div className="flex items-center gap-4">
+      <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center justify-between backdrop-blur-md bg-background/30 border-b border-border-subtle/20 lg:hidden">
+        <div className="flex items-center gap-3">
           <div className="w-8 h-8 flex items-center justify-center p-1 bg-background rounded-xl border border-border-subtle">
             <Logo className="w-full h-full" glow={false} />
           </div>
-          <span className="text-base font-bold tracking-tight font-display">Pensieve</span>
+          <span className="text-sm font-bold tracking-tight font-display">Pensieve</span>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handleGoogleSignIn} className="px-3 py-1.5 bg-foreground/5 text-foreground rounded-lg text-[10px] font-bold uppercase">Log In</button>
-          <button onClick={() => setShowEmailInput(true)} className="px-3 py-1.5 bg-primary text-white rounded-lg text-[10px] font-bold uppercase">Start</button>
+          <button onClick={handleGoogleSignIn} className="px-2.5 py-1.5 bg-foreground/5 text-foreground rounded-lg text-[9px] font-bold uppercase">Log In</button>
+          <button onClick={() => setShowEmailInput(true)} className="px-2.5 py-1.5 bg-primary text-white rounded-lg text-[9px] font-bold uppercase">Start</button>
         </div>
       </nav>
 
@@ -170,50 +167,50 @@ export default function LandingPage() {
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 w-full max-w-5xl h-[600px] bg-primary/10 blur-[150px] rounded-full opacity-60 pointer-events-none" />
 
         {/* Hero Section Sticky Container to prevent overlap */}
-        <section className="sticky top-0 h-screen flex flex-col items-center justify-center text-center px-6 pointer-events-none select-none">
+        <section className="sticky top-0 h-[100svh] flex flex-col items-center justify-center text-center px-4 pointer-events-none select-none">
           {/* Centered Large Logo on first scroll */}
           <motion.div 
             style={{ opacity: centerLogoOpacity, scale: centerLogoScale }}
-            className="flex flex-col items-center gap-4 mb-6"
+            className="flex flex-col items-center gap-3 mb-4 md:mb-6"
           >
-            <div className="w-20 h-20 p-2.5 bg-background rounded-3xl shadow-xl border border-border-subtle">
+            <div className="w-16 h-16 md:w-20 md:h-20 p-2 md:p-2.5 bg-background rounded-2xl md:rounded-3xl shadow-xl border border-border-subtle">
               <Logo className="w-full h-full" glow={true} />
             </div>
-            <span className="text-sm font-bold tracking-[0.4em] uppercase text-foreground/60 font-mono">
+            <span className="text-[10px] md:text-sm font-bold tracking-[0.4em] uppercase text-foreground/60 font-mono">
               PENSIEVE
             </span>
           </motion.div>
 
           <motion.div 
             style={{ opacity: heroOpacity, y: heroY }} 
-            className="space-y-4 max-w-xl mx-auto"
+            className="space-y-3 md:space-y-4 max-w-xl mx-auto"
           >
-            <h1 className="text-4xl md:text-5xl font-bold font-display tracking-tight leading-tight text-foreground">
+            <h1 className="text-3xl md:text-5xl font-bold font-display tracking-tight leading-tight text-foreground px-2">
               What are you remembering today?
             </h1>
-            <p className="text-xs md:text-sm text-foreground/45 max-w-md mx-auto leading-relaxed font-sans">
+            <p className="text-[10px] md:text-sm text-foreground/45 max-w-[280px] md:max-w-md mx-auto leading-relaxed font-sans">
               Search your private workspace or type to save instantly. A fluid mind needs a fluid vault.
             </p>
           </motion.div>
 
           {/* Floating Omnibar - Light Glass Mode */}
           <motion.div 
-            className="w-full max-w-3xl z-40 px-4 mt-12 pointer-events-auto"
+            className="w-full max-w-3xl z-40 px-4 mt-8 md:mt-12 pointer-events-auto"
             style={{ y: omnibarY, scale: omnibarScale }}
           >
-            <div className="w-full bg-white/95 backdrop-blur-xl shadow-premium rounded-[24px] p-1 flex items-center gap-3 border border-white/60">
-              <div className="pl-3.5 text-neutral-450">
-                <Search className="w-5 h-5 text-neutral-400" />
+            <div className="w-full bg-white/95 backdrop-blur-xl shadow-premium rounded-[20px] md:rounded-[24px] p-1 flex items-center gap-2 md:gap-3 border border-white/60">
+              <div className="pl-3 md:pl-3.5 text-neutral-450">
+                <Search className="w-4 h-4 md:w-5 md:h-5 text-neutral-400" />
               </div>
               <input 
                 type="text" 
                 placeholder={searchPlaceholder} 
-                className="flex-1 bg-transparent border-none outline-none text-base text-neutral-800 placeholder:text-neutral-400 py-3.5 font-sans"
+                className="flex-1 bg-transparent border-none outline-none text-sm md:text-base text-neutral-800 placeholder:text-neutral-400 py-3 md:py-3.5 font-sans"
                 disabled
               />
-              <div className="pr-3 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-primary border border-primary/25">
-                  <Sparkles className="w-4 h-4" />
+              <div className="pr-2 md:pr-3 flex items-center gap-1.5 md:gap-2">
+                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary/15 flex items-center justify-center text-primary border border-primary/25">
+                  <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 </div>
               </div>
             </div>

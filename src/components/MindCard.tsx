@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MindItem, NoteStyle } from '../types';
+import LogoDrawing from './LogoDrawing';
 
 interface MindCardProps {
   item: MindItem;
@@ -212,35 +213,7 @@ export default function MindCard({
     );
   };
 
-  // Shimmer state (Gemini thinking background)
-  if (item.analyzing) {
-    return (
-      <div 
-        id={`card-analyzing-${item.id}`}
-        className="break-inside-avoid mb-6 w-full bg-card-bg border border-card-border rounded-3xl p-5 shadow-sm flex flex-col gap-4 relative overflow-hidden h-[180px]"
-      >
-        <div className="flex items-center justify-between">
-          <div className="h-4 w-28 rounded shimmer-bg" />
-          <div className="h-4 w-4 rounded-full shimmer-bg" />
-        </div>
-        <div className="h-14 w-full rounded-lg shimmer-bg" />
-        <div className="flex items-center gap-2 mt-auto">
-          <div className="h-6 w-14 rounded-full shimmer-bg" />
-          <div className="h-6 w-16 rounded-full shimmer-bg" />
-          <div className="h-6 w-12 rounded-full shimmer-bg" />
-        </div>
-        <div className="absolute inset-0 bg-background/20 backdrop-blur-[1px] flex items-center justify-center gap-2">
-          <span className="text-xs font-mono font-medium text-foreground/60 flex items-center gap-2">
-            <svg className="animate-spin h-3.5 w-3.5 text-foreground/60" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            AI is organizing...
-          </span>
-        </div>
-      </div>
-    );
-  }
+  // Shimmer state removed - actual card is now rendered with a beautiful drawing-logo overlay instead of being hidden
 
   const canMarkRead = item.type === 'article' || item.type === 'document';
   const canMarkWatched = item.type === 'film' || item.type === 'video';
@@ -1027,6 +1000,15 @@ export default function MindCard({
                 +{item.tags.length - 3} more
               </span>
             )}
+          </div>
+        )}
+
+        {item.analyzing && (
+          <div className="absolute inset-0 bg-card-bg/75 backdrop-blur-[2.5px] flex flex-col items-center justify-center gap-3 z-20 pointer-events-auto cursor-wait">
+            <LogoDrawing className="w-11 h-11" color="text-primary" />
+            <span className="text-[10px] font-mono font-bold text-foreground/85 uppercase tracking-widest animate-pulse">
+              AI is organizing...
+            </span>
           </div>
         )}
       </motion.div>

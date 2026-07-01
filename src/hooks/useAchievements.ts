@@ -40,6 +40,23 @@ export function useAchievements(items: MindItem[]) {
     setToastQueue(q => q.slice(1));
   }, []);
 
+  // Listen for global custom events to trigger specific interactive achievements
+  useEffect(() => {
+    const handlePlayground = () => {
+      unlock('mind_meld');
+    };
+    const handleTheme = () => {
+      unlock('transmuter');
+    };
+
+    window.addEventListener('pensieve_trigger_playground', handlePlayground);
+    window.addEventListener('pensieve_trigger_theme', handleTheme);
+    return () => {
+      window.removeEventListener('pensieve_trigger_playground', handlePlayground);
+      window.removeEventListener('pensieve_trigger_theme', handleTheme);
+    };
+  }, [unlock]);
+
   // Evaluators
   useEffect(() => {
     if (!items || items.length === 0) return;
@@ -77,11 +94,76 @@ export function useAchievements(items: MindItem[]) {
     if (aiCount >= 5 && !unlockedIds['deep_thinker']) {
       unlock('deep_thinker');
     }
+
+    // Chronomancer / Time Weaver: Log memories across 3 distinct calendar days
+    const distinctDays = new Set(items.map(i => {
+      try {
+        return i.createdAt.substring(0, 10);
+      } catch {
+        return null;
+      }
+    }).filter(Boolean));
+    if (distinctDays.size >= 3 && !unlockedIds['chronomancer']) {
+      unlock('chronomancer');
+    }
+
+    // NEW PROGRAMMATIC EVALUATORS FOR CREATIVE CARDS:
+    
+    // Grand Archivist (generated_9_0): Have at least 50 total items
+    if (items.length >= 50 && !unlockedIds['generated_9_0']) {
+      unlock('generated_9_0');
+    }
+
+    // Mindfulness Scribe (generated_2_0): Log an item containing the word "zen" or "peace"
+    const hasZen = items.some(i => {
+      const contentLower = (i.content || '').toLowerCase();
+      const titleLower = (i.title || '').toLowerCase();
+      return contentLower.includes('zen') || contentLower.includes('peace') || titleLower.includes('zen') || titleLower.includes('peace');
+    });
+    if (hasZen && !unlockedIds['generated_2_0']) {
+      unlock('generated_2_0');
+    }
+
+    // Emerald Seeker (generated_4_4): Save green items
+    const greenItems = items.filter(i => i.dominantColor === 'green').length;
+    if (greenItems >= 3 && !unlockedIds['generated_4_4']) {
+      unlock('generated_4_4');
+    }
+
+    // Folio Guardian (generated_5_0): Notes styled with Serif typography
+    const hasSerif = items.some(i => i.noteStyle?.fontFamily === 'serif');
+    if (hasSerif && !unlockedIds['generated_5_0']) {
+      unlock('generated_5_0');
+    }
+
+    // Melody Weaver (generated_6_0): Voice memory recorded
+    const hasVoice = items.some(i => i.type === 'voice' || (i.audioUrl && i.audioUrl.length > 0));
+    if (hasVoice && !unlockedIds['generated_6_0']) {
+      unlock('generated_6_0');
+    }
+
+    // Kinetoscope Keeper (generated_7_0): Movie/video/film notes logged
+    const hasFilms = items.some(i => i.type === 'film' || i.type === 'video');
+    if (hasFilms && !unlockedIds['generated_7_0']) {
+      unlock('generated_7_0');
+    }
   }, [items, unlockedIds, unlock]);
 
   const triggerSerendipity = useCallback(() => {
     if (!unlockedIds['wandering_mind']) {
       unlock('wandering_mind');
+    }
+  }, [unlockedIds, unlock]);
+
+  const triggerPlaygroundConversation = useCallback(() => {
+    if (!unlockedIds['mind_meld']) {
+      unlock('mind_meld');
+    }
+  }, [unlockedIds, unlock]);
+
+  const triggerThemeChange = useCallback(() => {
+    if (!unlockedIds['transmuter']) {
+      unlock('transmuter');
     }
   }, [unlockedIds, unlock]);
 
@@ -95,6 +177,8 @@ export function useAchievements(items: MindItem[]) {
     achievements: allAchievements,
     activeToast: toastQueue.length > 0 ? toastQueue[0] : null,
     dismissToast,
-    triggerSerendipity
+    triggerSerendipity,
+    triggerPlaygroundConversation,
+    triggerThemeChange
   };
 }
