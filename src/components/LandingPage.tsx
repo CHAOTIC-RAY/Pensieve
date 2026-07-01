@@ -22,11 +22,11 @@ import {
   LogIn,
   Github
 } from 'lucide-react';
-import { auth } from '../lib/firebase';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 
 export default function LandingPage() {
+  const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const [email, setEmail] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
@@ -93,18 +93,13 @@ export default function LandingPage() {
     }
   });
 
-  const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Error signing in with Google:", error);
-    }
+  const handleGoogleSignIn = () => {
+    navigate('/login');
   };
 
   const handleEmailSignIn = (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Email sign-in link sent to " + email + " (Simulation)");
+    navigate('/login');
   };
 
   return (
@@ -115,15 +110,15 @@ export default function LandingPage() {
       {/* Sidebar Dock - Minimal tab style containing only sideways Logo, active tab rectangle, and Liquid Glass Login */}
       <motion.div 
         style={{ opacity: sidebarOpacity, x: sidebarX }}
-        className="hidden lg:flex flex-col items-center justify-between fixed left-6 top-6 bottom-6 w-20 py-8 z-40 bg-white/70 backdrop-blur-xl border border-black/5 rounded-[28px] shadow-premium"
+        className="hidden lg:flex flex-col items-center justify-between fixed left-6 top-6 bottom-6 w-20 py-8 z-40 bg-white/70 backdrop-blur-xl rounded-[28px] shadow-premium"
       >
         <div className="flex flex-col items-center gap-10">
           <div className="flex flex-col items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             {/* Logo sideways / rotated */}
-            <div className="w-11 h-11 flex items-center justify-center p-2 bg-background rounded-2xl border border-black/5 shadow-sm transform -rotate-90">
+            <div className="w-11 h-11 flex items-center justify-center p-2 bg-background rounded-2xl border border-black/5 shadow-sm">
               <Logo className="w-full h-full" glow={false} />
             </div>
-            <span className="text-[9px] font-bold tracking-[0.25em] text-foreground/45 font-mono rotate-90 my-4 inline-block whitespace-nowrap">
+            <span className="text-[9px] font-bold tracking-[0.25em] text-foreground/45 font-mono my-4 inline-block whitespace-nowrap">
               PENSIEVE
             </span>
           </div>
@@ -181,7 +176,7 @@ export default function LandingPage() {
             style={{ opacity: centerLogoOpacity, scale: centerLogoScale }}
             className="flex flex-col items-center gap-4 mb-6"
           >
-            <div className="w-20 h-20 p-2.5 bg-background rounded-3xl shadow-xl border border-border-subtle transform -rotate-90">
+            <div className="w-20 h-20 p-2.5 bg-background rounded-3xl shadow-xl border border-border-subtle">
               <Logo className="w-full h-full" glow={true} />
             </div>
             <span className="text-sm font-bold tracking-[0.4em] uppercase text-foreground/60 font-mono">
@@ -383,7 +378,7 @@ export default function LandingPage() {
               borderRadius: lastScrollRadius,
               padding: lastScrollPadding
             }}
-            className="w-full max-w-5xl bg-gradient-to-tr from-foreground to-neutral-900 text-background text-center shadow-3xl relative overflow-hidden group h-full flex flex-col justify-center items-center"
+            className="w-full h-full bg-gradient-to-br from-slate-800 via-purple-900 to-slate-900 text-background text-center shadow-3xl relative overflow-hidden group flex flex-col justify-center items-center animate-gradient"
           >
             <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/20 blur-[150px] rounded-full -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-125 pointer-events-none" />
             

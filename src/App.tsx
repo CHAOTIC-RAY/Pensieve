@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from './lib/firebase';
 import { MindItem, MindItemType } from './types';
 import LandingPage from './components/LandingPage';
+import LoginPage from './components/LoginPage';
 import Logo from './components/Logo';
 import Omnibar from './components/Omnibar';
 import { useSearch } from './hooks/useSearch';
@@ -1250,6 +1251,7 @@ export default function App() {
     ) : (
       <Routes>
         <Route path="/landing" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/landing" replace />} />
       </Routes>
     );
