@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { 
   motion, 
   useScroll, 
@@ -15,11 +15,13 @@ import {
   Compass,
   Trophy,
   Activity,
-  Layers,
   Lock,
   Cloud,
   Mic,
-  Volume2
+  Volume2,
+  BookOpen,
+  ExternalLink,
+  Settings2
 } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
@@ -50,9 +52,9 @@ export default function LandingPage() {
   const heroOpacity = useTransform(smoothProgress, [0, 0.15], [1, 0]);
   const heroY = useTransform(smoothProgress, [0, 0.15], [0, -50]);
 
-  // Omnibar positions: starts in the center, moves to the top on scroll
-  const omnibarY = useTransform(smoothProgress, [0, 0.2], [40, -180]);
-  const omnibarScale = useTransform(smoothProgress, [0, 0.2], [1, 0.95]);
+  // Omnibar positions: floats down, pinned in a comfortable viewing location
+  const omnibarY = useTransform(smoothProgress, [0, 0.15, 0.8], [0, -180, -180]);
+  const omnibarScale = useTransform(smoothProgress, [0, 0.15], [1, 0.95]);
 
   // Content grid fades in
   const gridOpacity = useTransform(smoothProgress, [0.12, 0.25], [0, 1]);
@@ -67,8 +69,14 @@ export default function LandingPage() {
   const voiceY = useTransform(smoothProgress, [0.48, 0.65], [80, 0]);
 
   // Serendipity section
-  const serendipityOpacity = useTransform(smoothProgress, [0.68, 0.85], [0, 1]);
-  const serendipityScale = useTransform(smoothProgress, [0.68, 0.85], [0.95, 1]);
+  const serendipityOpacity = useTransform(smoothProgress, [0.68, 0.82], [0, 1]);
+  const serendipityScale = useTransform(smoothProgress, [0.68, 0.82], [0.95, 1]);
+
+  // Last scroll zoom transitions (Forge-style)
+  // Expands full-page width and fills out border radius
+  const lastScrollWidth = useTransform(smoothProgress, [0.85, 0.98], ['90%', '100%']);
+  const lastScrollRadius = useTransform(smoothProgress, [0.85, 0.98], ['48px', '0px']);
+  const lastScrollPadding = useTransform(smoothProgress, [0.85, 0.98], ['4rem', '8rem']);
 
   // Change search placeholder text dynamically as user scrolls
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
@@ -106,69 +114,42 @@ export default function LandingPage() {
       ref={containerRef}
       className="min-h-[600vh] bg-background text-foreground selection:bg-primary/20 selection:text-primary font-sans overflow-x-hidden"
     >
-      {/* Floating Sidebar (iOS / Main App style) - Fades in on scroll */}
+      {/* Sidebar Dock (Exactly matches main app layout in Image 2) */}
       <motion.div 
         style={{ opacity: sidebarOpacity, x: sidebarX }}
-        className="hidden lg:flex flex-col items-center justify-between fixed left-6 top-6 bottom-6 w-24 py-10 z-50 liquid-glass-panel border border-white/20 rounded-[32px]"
+        className="hidden lg:flex flex-col items-center justify-between fixed left-6 top-6 bottom-6 w-20 py-8 z-50 bg-[#F7F5F0]/90 backdrop-blur-xl border border-black/5 rounded-[28px] shadow-premium"
       >
-        <div className="flex flex-col items-center gap-12">
-          <div className="flex flex-col items-center gap-4 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="w-12 h-12 flex items-center justify-center p-1.5 bg-background rounded-2xl shadow-premium border border-border-subtle hover:scale-105 transition-transform">
+        <div className="flex flex-col items-center gap-10">
+          <div className="flex flex-col items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="w-11 h-11 flex items-center justify-center p-2 bg-background rounded-2xl border border-black/5 shadow-sm">
               <Logo className="w-full h-full" glow={false} />
             </div>
-            <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-foreground/40 font-mono vertical-text">
+            <span className="text-[9px] font-bold tracking-[0.25em] text-foreground/40 font-mono vertical-text">
               PENSIEVE
             </span>
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-4 w-full px-3">
-          <button 
-            onClick={handleGoogleSignIn}
-            className="w-full py-2.5 bg-foreground/5 text-foreground rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/10 transition-all cursor-pointer"
-          >
-            Log In
+        {/* Tab Icons Mimicking main app filters (Image 2) */}
+        <div className="flex flex-col items-center gap-5">
+          <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+            <div className="w-3.5 h-3.5 rounded-full bg-primary" />
+          </div>
+          <button className="w-10 h-10 rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground/50 hover:text-foreground transition-all flex items-center justify-center cursor-pointer">
+            <Heart className="w-4.5 h-4.5" />
           </button>
-          <button 
-            onClick={() => setShowEmailInput(true)}
-            className="w-full py-2.5 bg-primary text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-all shadow-md shadow-primary/20 cursor-pointer"
-          >
-            Start
+          <button className="w-10 h-10 rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground/50 hover:text-foreground transition-all flex items-center justify-center cursor-pointer">
+            <BookOpen className="w-4.5 h-4.5" />
+          </button>
+          <button className="w-10 h-10 rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground/50 hover:text-foreground transition-all flex items-center justify-center cursor-pointer">
+            <ExternalLink className="w-4.5 h-4.5" />
+          </button>
+          <div className="w-6 h-[1px] bg-foreground/10 my-1" />
+          <button className="w-10 h-10 rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground/50 hover:text-foreground transition-all flex items-center justify-center cursor-pointer">
+            <Settings2 className="w-4.5 h-4.5" />
           </button>
         </div>
       </motion.div>
-
-      {/* Top Header for Mobile/Navbar Fallback (Left Side buttons matching requested Dock) */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-6 flex items-center justify-between backdrop-blur-md bg-background/30 border-b border-border-subtle/20 lg:bg-transparent lg:border-none">
-        <div className="flex items-center gap-4">
-          <div className="w-8 h-8 flex items-center justify-center p-1 bg-background rounded-xl border border-border-subtle">
-            <Logo className="w-full h-full" glow={false} />
-          </div>
-          <span className="text-base font-bold tracking-tight font-display lg:hidden">Pensieve</span>
-          
-          {/* Header left Dock for small screens / general view */}
-          <div className="hidden lg:flex items-center gap-3">
-            <button 
-              onClick={handleGoogleSignIn}
-              className="px-4 py-2 bg-foreground/5 border border-border-subtle text-foreground rounded-full text-xs font-bold hover:bg-foreground/10 transition-all cursor-pointer"
-            >
-              Log In
-            </button>
-            <button 
-              onClick={() => setShowEmailInput(true)}
-              className="px-5 py-2 bg-primary text-white rounded-full text-xs font-bold hover:opacity-90 transition-all shadow-md cursor-pointer"
-            >
-              Get Started
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile controls */}
-        <div className="flex lg:hidden items-center gap-2">
-          <button onClick={handleGoogleSignIn} className="px-3 py-1.5 bg-foreground/5 text-foreground rounded-lg text-[10px] font-bold uppercase">Log In</button>
-          <button onClick={() => setShowEmailInput(true)} className="px-3 py-1.5 bg-primary text-white rounded-lg text-[10px] font-bold uppercase">Start</button>
-        </div>
-      </nav>
 
       <main className="relative w-full">
         {/* Ambient Glow */}
@@ -201,12 +182,12 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
-          {/* Floating omnibar - properly spaced inside the flex layout */}
+          {/* Floating Omnibar - stays visible across screens */}
           <motion.div 
             className="w-full max-w-3xl z-40 px-4 mt-12 pointer-events-auto"
             style={{ y: omnibarY, scale: omnibarScale }}
           >
-            <div className="w-full liquid-glass-panel shadow-2xl rounded-[24px] p-1 flex items-center gap-3 border border-white/20">
+            <div className="w-full bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl shadow-2xl rounded-[24px] p-1 flex items-center gap-3 border border-white/20">
               <div className="pl-3.5 text-foreground/45">
                 <Search className="w-5 h-5" />
               </div>
@@ -321,7 +302,6 @@ export default function LandingPage() {
                 <span className="text-xs font-mono text-foreground/40">0:12 / 1:00</span>
               </div>
               
-              {/* Fake Audio Wave visualization */}
               <div className="h-16 flex items-center justify-between gap-1.5 px-2">
                 {[4, 8, 12, 16, 24, 16, 12, 8, 14, 20, 28, 16, 12, 6, 10, 16, 22, 14, 8, 4].map((h, i) => (
                   <motion.div 
@@ -376,60 +356,69 @@ export default function LandingPage() {
           </motion.div>
         </section>
 
-        {/* Section 6: Call to action (Bottom Last Scroll Forge-style) */}
-        <section className="relative h-screen flex flex-col items-center justify-center px-6 pointer-events-auto">
-          <div className="w-full max-w-4xl bg-gradient-to-tr from-foreground to-neutral-900 text-background p-16 rounded-[48px] text-center shadow-3xl relative overflow-hidden group">
+        {/* Section 6: Call to action (Forge-style full-page zoom-in) */}
+        <section className="relative h-screen flex flex-col items-center justify-center pointer-events-auto">
+          <motion.div 
+            style={{ 
+              width: lastScrollWidth,
+              borderRadius: lastScrollRadius,
+              padding: lastScrollPadding
+            }}
+            className="w-full max-w-5xl bg-gradient-to-tr from-foreground to-neutral-900 text-background text-center shadow-3xl relative overflow-hidden group h-full flex flex-col justify-center items-center"
+          >
             <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/20 blur-[150px] rounded-full -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-125 pointer-events-none" />
             
-            <h2 className="text-4xl md:text-6xl font-display font-bold text-white mb-6 leading-none">
-              Begin your <br/> <span className="text-primary italic">Second Brain.</span>
-            </h2>
-            <p className="text-sm md:text-lg text-white/60 max-w-xl mx-auto leading-relaxed mb-10 font-sans">
-              Experience the absolute clarity of an organized mind. Your data, completely owned by you.
-            </p>
+            <div className="max-w-2xl mx-auto space-y-8 relative z-10">
+              <h2 className="text-5xl md:text-7xl font-display font-bold text-white leading-none">
+                Begin your <br/> <span className="text-primary italic">Second Brain.</span>
+              </h2>
+              <p className="text-sm md:text-lg text-white/60 leading-relaxed font-sans">
+                Experience the absolute clarity of an organized mind. Your data, completely owned by you.
+              </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-              {!showEmailInput ? (
-                <>
-                  <button 
-                    onClick={() => setShowEmailInput(true)}
-                    className="group px-10 py-5 bg-white text-black rounded-2xl text-base font-bold hover:scale-105 active:scale-95 transition-all shadow-2xl flex items-center gap-3 cursor-pointer"
-                  >
-                    Enter Workspace
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                  <button 
-                    onClick={handleGoogleSignIn}
-                    className="px-10 py-5 bg-white/10 border border-white/20 text-white rounded-2xl text-base font-bold hover:bg-white/20 transition-all flex items-center gap-3 cursor-pointer"
-                  >
-                    Google Auth
-                  </button>
-                </>
-              ) : (
-                <form 
-                  onSubmit={handleEmailSignIn}
-                  className="w-full max-w-md flex flex-col gap-3 mx-auto"
-                >
-                  <input 
-                    type="email" 
-                    placeholder="Enter your email" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-base"
-                    required
-                  />
-                  <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-4">
+                {!showEmailInput ? (
+                  <>
                     <button 
-                      type="submit"
-                      className="flex-1 py-4 bg-white text-black rounded-2xl font-bold hover:opacity-90 transition-all shadow-xl cursor-pointer"
+                      onClick={() => setShowEmailInput(true)}
+                      className="group px-10 py-5 bg-white text-black rounded-2xl text-base font-bold hover:scale-105 active:scale-95 transition-all shadow-2xl flex items-center gap-3 cursor-pointer"
                     >
-                      Continue
+                      Enter Workspace
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
-                  </div>
-                </form>
-              )}
+                    <button 
+                      onClick={handleGoogleSignIn}
+                      className="px-10 py-5 bg-white/10 border border-white/20 text-white rounded-2xl text-base font-bold hover:bg-white/20 transition-all flex items-center gap-3 cursor-pointer"
+                    >
+                      Google Auth
+                    </button>
+                  </>
+                ) : (
+                  <form 
+                    onSubmit={handleEmailSignIn}
+                    className="w-full max-w-md flex flex-col gap-3 mx-auto"
+                  >
+                    <input 
+                      type="email" 
+                      placeholder="Enter your email" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-base"
+                      required
+                    />
+                    <div className="flex gap-3">
+                      <button 
+                        type="submit"
+                        className="flex-1 py-4 bg-white text-black rounded-2xl font-bold hover:opacity-90 transition-all shadow-xl cursor-pointer"
+                      >
+                        Continue
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
             </div>
-          </div>
+          </motion.div>
         </section>
       </main>
     </div>
