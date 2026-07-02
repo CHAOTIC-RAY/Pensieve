@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { generateSettingsQrCode, applySettings, getSerializedSettings } from "../utils/settingsQr";
+import QrScanner from "./QrScanner";
+import { QrCode, ScanLine } from "lucide-react";
 import {
   Brain,
   X,
@@ -36,6 +39,8 @@ import {
   LogOut,
   Trophy,
   Download,
+  Check,
+  AlertCircle,
 } from "lucide-react";
 import { useAchievements } from "../hooks/useAchievements";
 import AchievementCard from "./AchievementCard";
@@ -77,7 +82,7 @@ import { MindItem } from "../types";
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: "intelligence" | "sync" | "db" | "ui" | "profile";
+  initialTab?: "intelligence" | "sync" | "db" | "ui" | "profile" | "mobile-link";
   localAiEnabled: boolean;
   setLocalAiEnabledState: (val: boolean) => void;
   localModelId: string;
@@ -122,7 +127,7 @@ export default function SettingsModal({
 }: SettingsModalProps) {
   const { achievements } = useAchievements(items);
   const [activeTab, setActiveTab] = useState<
-    "intelligence" | "sync" | "db" | "ui" | "profile"
+    "intelligence" | "sync" | "db" | "ui" | "profile" | "mobile-link"
   >(initialTab || "ui");
   // Appwrite Configuration States
   const [appwriteEndpoint, setAppwriteEndpoint] = useState("");
@@ -180,6 +185,12 @@ export default function SettingsModal({
   const [authLoading, setAuthLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
 
+  // QR & Mobile Sync States
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanSuccess, setScanSuccess] = useState(false);
+  const [scanError, setScanError] = useState("");
+
   const wasOpen = useRef(false);
   const prevInitialTab = useRef(initialTab);
   useEffect(() => {
@@ -196,6 +207,43 @@ export default function SettingsModal({
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      generateSettingsQrCode()
+        .then((url) => setQrCodeDataUrl(url))
+        .catch((err) => console.error("Error generating settings QR code:", err));
+    }
+  }, [
+    isOpen,
+    activeTab,
+    appwriteEndpoint,
+    appwriteProjectId,
+    appwriteDatabaseId,
+    appwriteCollectionId,
+    appwriteBucketId,
+    supabaseUrl,
+    supabaseKey,
+    openAiKey,
+    geminiKey,
+    localLmUrl,
+    firebaseApiKey,
+    firebaseAuthDomain,
+    firebaseProjectId,
+    firebaseStorageBucket,
+    firebaseMessagingSenderId,
+    firebaseAppId,
+    firebaseDatabaseId,
+    profileName,
+    profileEmail,
+    profileGradient,
+    apiProvider,
+    apiBaseUrl,
+    apiToken,
+    selectedModel,
+    customModelName,
+    speculativeDecoding,
+  ]);
 
   const handleStrategyChange = (strategy: AiStrategy) => {
     setAiStrategy(strategy);
@@ -623,6 +671,144 @@ export default function SettingsModal({
       const scrollAmt = direction === "left" ? -250 : 250;
       presetRowRef.current.scrollBy({ left: scrollAmt, behavior: "smooth" });
     }
+  };
+
+  const renderMobileLinkContent = () => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopyRaw = () => {
+      const raw = getSerializedSettings();
+      navigator.clipboard.writeText(raw);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleScanSuccess = (text: string) => {
+      const success = applySettings(text);
+      if (success) {
+        setScanSuccess(true);
+        setTimeout(() => {
+          setScanSuccess(false);
+          setShowScanner(false);
+          // Reload page to apply all changes instantly, or just let states update
+          window.location.reload();
+        }, 1500);
+      } else {
+        setScanError("Invalid QR code format.");
+        setTimeout(() => setScanError(""), 3000);
+      }
+    };
+
+    return (
+      <div className="space-y-6 max-w-xl mx-auto py-4">
+        {showScanner && (
+          <QrScanner 
+            onScan={handleScanSuccess} 
+            onClose={() => setShowScanner(false)} 
+          />
+        )}
+
+        <div className="text-center select-none">
+          <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
+            <QrCode className="w-6 h-6 animate-pulse" />
+          </div>
+          <h3 className="text-base font-bold text-text-heading">Sync Settings</h3>
+          <p className="text-xs text-foreground/60 mt-1 max-w-sm mx-auto leading-relaxed">
+            Easily copy your local AI configuration, cloud storage backends, databases, and custom themes across devices.
+          </p>
+        </div>
+
+        {/* Desktop View (Generates QR) */}
+        <div className="hidden md:flex flex-col items-center justify-center p-6 border border-border-subtle rounded-3xl bg-card-bg/40 backdrop-blur-sm shadow-sm select-none">
+          <h4 className="text-sm font-bold text-text-heading mb-4">Link with Mobile</h4>
+          {qrCodeDataUrl ? (
+            <div className="relative group p-4 bg-white rounded-2xl shadow-md border border-neutral-200">
+              <img
+                src={qrCodeDataUrl}
+                alt="Settings QR Code"
+                className="w-48 h-48 select-none"
+              />
+              <div className="absolute inset-0 bg-neutral-900/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none" />
+            </div>
+          ) : (
+            <div className="w-48 h-48 bg-neutral-100 dark:bg-neutral-900 rounded-2xl flex items-center justify-center border border-dashed border-border-subtle">
+              <span className="text-xs text-foreground/40 font-medium">Generating QR...</span>
+            </div>
+          )}
+
+          <div className="mt-5 w-full flex flex-col gap-2.5 max-w-xs">
+            <div className="p-3 rounded-2xl bg-modal-sidebar border border-border-subtle flex items-start gap-2.5">
+              <span className="text-xs font-mono text-emerald-400 font-bold select-none mt-0.5">💡</span>
+              <p className="text-[11px] text-foreground/70 leading-normal">
+                Open <strong>Preferences</strong> on your mobile device and tap the <strong>Link with Desktop</strong> button to scan this QR code!
+              </p>
+            </div>
+
+            <button
+              onClick={handleCopyRaw}
+              className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
+                copied
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                  : "bg-card-bg text-foreground border-border-subtle hover:bg-foreground/5"
+              }`}
+            >
+              {copied ? (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Copied to Clipboard!
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Copy Settings Configuration
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile View (Scans QR) */}
+        <div className="flex md:hidden flex-col items-center justify-center p-6 border border-border-subtle rounded-3xl bg-card-bg/40 backdrop-blur-sm shadow-sm select-none text-center">
+           <h4 className="text-sm font-bold text-text-heading mb-2">Link with Desktop</h4>
+           <p className="text-[11px] text-foreground/60 mb-6 max-w-[200px]">
+             Tap the button below to scan the QR code from your desktop browser.
+           </p>
+           
+           <button
+             onClick={() => setShowScanner(true)}
+             className="w-full max-w-[200px] py-3 px-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+           >
+             <ScanLine className="w-5 h-5" />
+             Scan Settings QR
+           </button>
+
+           <AnimatePresence>
+             {scanSuccess && (
+               <motion.div
+                 initial={{ opacity: 0, y: 10 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 exit={{ opacity: 0 }}
+                 className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-xl flex items-center gap-2 text-xs font-bold w-full max-w-[200px] justify-center"
+               >
+                 <Check className="w-4 h-4" />
+                 Settings Synced!
+               </motion.div>
+             )}
+             {scanError && (
+               <motion.div
+                 initial={{ opacity: 0, y: 10 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 exit={{ opacity: 0 }}
+                 className="mt-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl flex items-center gap-2 text-xs font-bold w-full max-w-[200px] justify-center"
+               >
+                 <AlertCircle className="w-4 h-4" />
+                 {scanError}
+               </motion.div>
+             )}
+           </AnimatePresence>
+        </div>
+      </div>
+    );
   };
 
   const renderUserProfileContent = () => {
@@ -2615,6 +2801,70 @@ export default function SettingsModal({
             )}
           </div>
         </section>
+
+        {/* 9. Mobile Bottom Navigation Tabs */}
+        <section className="space-y-3 md:hidden">
+          <div className="flex items-center justify-between">
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
+              Mobile Bottom Navigation
+            </label>
+            <span className="text-[10px] text-foreground/50 font-medium bg-foreground/5 px-2 py-0.5 rounded-full">
+              {(userSettings.mobileTabs || []).length}/3 Selected
+            </span>
+          </div>
+          <div className="bg-card-bg/50 border border-border-subtle rounded-2xl p-4 space-y-4">
+            <p className="text-[11px] text-foreground/60 leading-relaxed mb-3">
+              Customize the three middle tabs on the mobile navigation bar. 
+              <strong> All</strong> and <strong> More</strong> tabs are permanently pinned.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'favorites', label: 'Favorites' },
+                { id: 'note', label: 'Notes' },
+                { id: 'link', label: 'Links' },
+                { id: 'image', label: 'Images' },
+                { id: 'quote', label: 'Quotes' },
+                { id: 'video', label: 'Videos' },
+                { id: 'music', label: 'Music' },
+                { id: 'tweet', label: 'Tweets' },
+                { id: 'article', label: 'Articles' },
+                { id: 'recipe', label: 'Recipes' },
+                { id: 'film', label: 'Films' },
+                { id: 'album', label: 'Albums' },
+                { id: 'product', label: 'Products' }
+              ].map(cat => {
+                const currentTabs = userSettings.mobileTabs || ['favorites', 'note', 'link'];
+                const isSelected = currentTabs.includes(cat.id);
+                
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      let newTabs = [...currentTabs];
+                      if (isSelected) {
+                        if (newTabs.length <= 1) return; // Prevent removing all
+                        newTabs = newTabs.filter(id => id !== cat.id);
+                      } else {
+                        if (newTabs.length >= 3) {
+                          newTabs.pop(); // Remove the last one if we're at limit
+                        }
+                        newTabs.push(cat.id);
+                      }
+                      handleUpdateSingleSetting("mobileTabs", newTabs);
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                      isSelected 
+                        ? 'bg-primary text-white border-primary shadow-sm scale-105' 
+                        : 'bg-foreground/5 text-foreground/70 border-transparent hover:bg-foreground/10'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
       </div>
     );
   };
@@ -2905,6 +3155,18 @@ export default function SettingsModal({
                   <Database className="w-4 h-4 text-orange-400" />
                   Databases
                 </button>
+                <button
+                  onClick={() => setActiveTab("mobile-link")}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors shrink-0 ${
+                    activeTab === "mobile-link"
+                      ? "bg-card-bg text-text-heading shadow-sm border border-border-subtle/30"
+                      : "text-foreground/70 hover:bg-foreground/5"
+                  }`}
+                >
+                  <QrCode className="w-4 h-4 text-emerald-400" />
+                  <span className="hidden md:inline">Link with Mobile</span>
+                  <span className="inline md:hidden">Link with Desktop</span>
+                </button>
 
                 <div className="mt-auto pt-4 border-t border-border-subtle hidden md:block">
                   <span className="text-[10px] text-foreground/40 font-mono block">
@@ -2942,6 +3204,7 @@ export default function SettingsModal({
                 {activeTab === "sync" && renderCloudSyncContent()}
                 {activeTab === "db" && renderDatabasesContent()}
                 {activeTab === "ui" && renderUIAppearanceContent()}
+                {activeTab === "mobile-link" && renderMobileLinkContent()}
               </div>
             </div>
           </motion.div>

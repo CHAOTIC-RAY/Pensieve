@@ -23,6 +23,7 @@ const SLASH_COMMANDS = [
   { cmd: '/todo', label: 'Todo', desc: 'Create a checklist', icon: CheckSquare, color: 'text-emerald-500', type: 'note' as MindItemType },
   { cmd: '/product', label: 'Product', desc: 'Save a product card', icon: ShoppingBag, color: 'text-orange-500', type: 'product' as MindItemType },
   { cmd: '/tag', label: 'Tag', desc: 'Search by tag', icon: Hash, color: 'text-neutral-500', type: null },
+  { cmd: '/store', label: 'Store', desc: 'Open the Effects Marketplace', icon: ShoppingBag, color: 'text-amber-500', type: null, isAction: true },
 ];
 
 interface OmnibarProps {
@@ -169,6 +170,10 @@ export default function Omnibar({
     setShowSlashMenu(false);
     setSlashFilter('');
     onSearchChange('');
+    if ((cmd as any).isAction && cmd.cmd === '/store') {
+      window.dispatchEvent(new CustomEvent('pensieve_trigger_store'));
+      return;
+    }
     if (cmd.type) {
       setComposerType(cmd.type);
     }
@@ -519,7 +524,7 @@ export default function Omnibar({
     <div 
       id="pensieve-omnibar-container"
       ref={containerRef}
-      className="sticky top-0 md:top-auto md:relative w-full max-w-2xl mx-auto z-40 px-4 md:px-4 mt-1 md:mt-4 pt-1 pb-2 md:pt-0 md:pb-2 bg-background md:bg-transparent transition-colors duration-300"
+      className="search-container sticky top-0 md:top-auto md:relative w-full max-w-2xl mx-auto z-40 px-4 md:px-4 mt-1 md:mt-4 pt-1 pb-2 md:pt-0 md:pb-2 bg-background md:bg-transparent transition-colors duration-300"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >

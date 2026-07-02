@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MindItem, Achievement } from '../types';
+import { loadSettings, saveSettings } from '../services/themeStudio';
 import { ACHIEVEMENTS } from '../lib/achievements';
 
 const STORAGE_KEY = 'pensieve_unlocked_achievements';
@@ -30,6 +31,12 @@ export function useAchievements(items: MindItem[]) {
 
       const achievement = ACHIEVEMENTS.find(a => a.id === id);
       if (achievement) {
+        // Grant XP
+        const settings = loadSettings();
+        if (!settings.xp) settings.xp = 0;
+        settings.xp += (achievement.xp || 10);
+        saveSettings(settings);
+
         setToastQueue(q => [...q, { ...achievement, unlockedAt: now }]);
       }
       return updated;

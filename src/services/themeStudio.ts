@@ -1,4 +1,7 @@
 export type UserSettings = {
+  xp?: number;
+  unlockedEffects?: string[];
+  activeEffect?: string | null;
   // Theme
   themeMode: 'light' | 'dark';           // Light/dark mode
   themeColor: string;                    // Hex accent color, e.g. '#f43f5e'
@@ -20,6 +23,9 @@ export type UserSettings = {
   hideImages: boolean;                    // Hide all thumbnails/covers globally
   immersiveMode?: boolean;                // Request fullscreen
   autoNightMode?: boolean;               // Automatically detect and set night mode (6 PM - 6 AM)
+
+  // Navigation
+  mobileTabs?: string[];                  // Configurable mobile bottom tab categories
 };
 
 export const SETTINGS_KEY = 'app_user_settings';
@@ -161,10 +167,15 @@ export const DEFAULT_SETTINGS: UserSettings = {
   reduceMotion: false,
   hideImages: false,
   immersiveMode: false,
-  autoNightMode: false
+  autoNightMode: false,
+  mobileTabs: ['favorites', 'note', 'link'],
+  xp: 100, // starting XP
+  unlockedEffects: [],
+  activeEffect: null,
 };
 
 // Lazy font loader
+
 export function loadGoogleFont(comboId: string) {
   const combo = FONT_COMBOS.find(c => c.id === comboId);
   if (combo && combo.source === 'google' && combo.googleFontsUrl) {

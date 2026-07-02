@@ -40,6 +40,8 @@ import {
 } from './services/themeStudio';
 
 import SettingsModal from './components/SettingsModal';
+import StoreModal from './components/StoreModal';
+import AdminPanel from './components/AdminPanel';
 import { useAchievements } from './hooks/useAchievements';
 import AchievementsModal from './components/AchievementsModal';
 import AchievementToast from './components/AchievementToast';
@@ -141,6 +143,12 @@ export default function App() {
   const location = useLocation();
 
   useEffect(() => {
+    const handleStore = () => setIsStoreOpen(true);
+    window.addEventListener('pensieve_trigger_store', handleStore);
+    return () => window.removeEventListener('pensieve_trigger_store', handleStore);
+  }, []);
+  
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setAuthLoading(false);
@@ -213,6 +221,7 @@ export default function App() {
     setSelectedItemId(item ? item.id : null);
   };
   const [isSerendipityOpen, setIsSerendipityOpen] = useState(false);
+  const [isStoreOpen, setIsStoreOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
   const [isMobileToolbarOpen, setIsMobileToolbarOpen] = useState<'filters' | 'organize' | 'layout' | null>(null);
 
@@ -657,9 +666,13 @@ export default function App() {
     });
   };
 
+  if (location.pathname === '/admin') {
+    return <AdminPanel />;
+  }
+
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center transition-colors duration-300 relative overflow-hidden">
+      <div className={`min-h-screen bg-background text-foreground flex flex-col items-center justify-center transition-colors duration-300 relative overflow-hidden ${userSettings.activeEffect || ''}`}>
         {/* Subtle decorative spot blurs matching theme for premium loader vibe */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30 dark:opacity-15">
           <div className="absolute -top-40 left-1/4 w-[500px] h-[500px] rounded-full bg-primary/10 blur-[100px]" />
@@ -688,7 +701,7 @@ export default function App() {
   }
 
   return user ? (
-    <div id="pensieve-workspace" className="min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-foreground selection:text-background transition-colors duration-300 relative">
+    <div id="pensieve-workspace" className={`min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-foreground selection:text-background transition-colors duration-300 relative ${userSettings.activeEffect || ''}`}>
         <GalaxyBackground />
         {/* Editorial Ambient Spot Blurs */}
         <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden opacity-40 dark:opacity-25">
@@ -711,6 +724,15 @@ export default function App() {
         </div>
         
         <div className="flex items-center gap-2.5">
+          {/* Store Button (Mobile) */}
+          <button
+            onClick={() => setIsStoreOpen(true)}
+            className="md:hidden flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full font-bold text-[10px] tracking-wider uppercase font-mono shadow-sm active:scale-95 transition-transform"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Store
+          </button>
+          
           {/* Simple avatar profile */}
           <div 
             onClick={() => {
@@ -753,6 +775,16 @@ export default function App() {
         onClose={() => setIsAchievementsOpen(false)}
         achievements={achievements}
       />
+      
+      <AnimatePresence>
+        {isStoreOpen && (
+          <StoreModal 
+            isOpen={isStoreOpen}
+            onClose={() => setIsStoreOpen(false)}
+            userSettings={userSettings}
+          />
+        )}
+      </AnimatePresence>
       
       <AchievementToast 
         achievement={activeToast} 
@@ -805,6 +837,14 @@ export default function App() {
           
           <div className="w-6 h-[1px] bg-border-subtle my-1" />
 
+          {/* Store Button */}
+          <button
+            onClick={() => setIsStoreOpen(true)}
+            title="Marketplace"
+            className="w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] bg-amber-500/10 border-amber-500/20 text-amber-500 hover:scale-105 active:scale-95"
+          >
+            <ShoppingBag className="w-5 h-5" />
+          </button>
           {/* Achievements Button */}
           <button
             onClick={() => setIsAchievementsOpen(true)}
@@ -883,7 +923,7 @@ export default function App() {
                {profileName.trim().split(/\s+/).map(p => p[0]).join('').slice(0, 2).toUpperCase() || '?'}
             </div>
             <div className="absolute top-14 right-0 hidden group-hover:flex flex-col bg-card-bg/95 backdrop-blur-md border border-border-subtle p-3 rounded-2xl shadow-premium z-50 pointer-events-none min-w-[200px]">
-              <span className="text-sm font-semibold text-foreground truncate">{profileName}</span>
+              <span className="text-sm font-semibold text-foreground truncate user-name-display" data-name={profileName}>{profileName}</span>
               <span className="text-[10px] font-mono text-foreground/50 mt-1">Personal Account</span>
             </div>
           </div>
@@ -1346,9 +1386,24 @@ export default function App() {
       <nav className="md:hidden fixed bottom-4 left-4 right-4 z-[110] flex items-center justify-between transition-all duration-300">
         {[
           { id: 'all', label: 'All', icon: Aperture },
-          { id: 'favorites', label: 'Favs', icon: Heart },
-          { id: 'note', label: 'Notes', icon: BookOpen },
-          { id: 'link', label: 'Links', icon: ExternalLink },
+          ...(userSettings.mobileTabs || ['favorites', 'note', 'link']).map(tabId => {
+            const mappings: Record<string, any> = {
+              favorites: { label: 'Favs', icon: Heart },
+              note: { label: 'Notes', icon: BookOpen },
+              link: { label: 'Links', icon: ExternalLink },
+              image: { label: 'Images', icon: Camera },
+              quote: { label: 'Quotes', icon: Quote },
+              video: { label: 'Videos', icon: Tv },
+              music: { label: 'Music', icon: Music },
+              tweet: { label: 'Tweets', icon: Twitter },
+              article: { label: 'Articles', icon: FileText },
+              recipe: { label: 'Recipes', icon: Utensils },
+              film: { label: 'Films', icon: Film },
+              album: { label: 'Albums', icon: Disc },
+              product: { label: 'Products', icon: ShoppingBag }
+            };
+            return { id: tabId, ...mappings[tabId] };
+          }),
           { id: 'settings', label: 'More', icon: Settings2 }
         ].map((cat) => {
           const Icon = cat.icon;

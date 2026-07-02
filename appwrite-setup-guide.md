@@ -90,7 +90,39 @@ For storing card images, favicons, audio, and drawing canvas attachments, you wi
 
 ---
 
-## 5. Configuring Pensieve
+## 5. Setting up the Store / Marketplace (Optional)
+
+Pensieve includes an optional Marketplace where you can spend earned XP on visual effects and customizations. If you want to host your own store items, follow these steps:
+
+1.  **Create a Store Collection**:
+    * Inside your database, click **Create Collection**.
+    * Name the collection (e.g., `Store Items`).
+    * Set a **Collection ID** (e.g., `store-items`).
+    * Click **Create**.
+
+2.  **Add Store Attributes**:
+    * Add the following attributes to the `store-items` collection:
+      * `name` (String, size 255, required)
+      * `type` (String, size 50, required) - Valid values: `effect`, `nametag`, `theme`, `other`
+      * `description` (String, size 1000, required)
+      * `price` (Integer, required)
+      * `effectId` (String, size 100, required)
+      * `imageUrl` (String, size 1000, NOT required)
+
+3.  **Permissions**:
+    * Set the **Any** role to **Read** permission for the store collection so everyone can see the items.
+    * Only admins should have **Create/Update/Delete** permissions.
+
+4.  **Configuration**:
+    * Set the following environment variables in your `.env` or project settings:
+      * `VITE_STORE_APPWRITE_ENDPOINT`
+      * `VITE_STORE_APPWRITE_PROJECT_ID`
+      * `VITE_STORE_APPWRITE_DATABASE_ID`
+      * `VITE_STORE_APPWRITE_COLLECTION_ID`
+
+---
+
+## 6. Configuring Pensieve
 
 Now that your Appwrite backend is ready, input your credentials into Pensieve:
 
