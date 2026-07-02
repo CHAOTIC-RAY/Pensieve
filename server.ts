@@ -199,6 +199,9 @@ app.all("/api/hf-proxy/*", async (req, res) => {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     };
+    if (req.headers.range) {
+      headers["Range"] = req.headers.range;
+    }
 
     const response = await fetch(targetUrl, {
       method: upstreamMethod,
@@ -208,19 +211,23 @@ app.all("/api/hf-proxy/*", async (req, res) => {
     const contentType = response.headers.get("content-type");
     const contentLength = response.headers.get("content-length");
     const acceptRanges = response.headers.get("accept-ranges");
+    const contentRange = response.headers.get("content-range");
+
+    res.status(response.status);
 
     if (contentType) res.setHeader("content-type", contentType);
     if (contentLength) res.setHeader("content-length", contentLength);
     if (acceptRanges) res.setHeader("accept-ranges", acceptRanges);
+    if (contentRange) res.setHeader("content-range", contentRange);
 
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader(
       "Access-Control-Expose-Headers",
-      "Content-Length, Content-Type",
+      "Content-Length, Content-Type, Content-Range"
     );
 
     if (upstreamMethod === "HEAD" || !response.body) {
-      res.sendStatus(response.status);
+      res.end();
       return;
     }
 
@@ -254,6 +261,9 @@ app.get("/api/proxy", async (req, res) => {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     };
+    if (req.headers.range) {
+      headers["Range"] = req.headers.range;
+    }
 
     const response = await fetch(targetUrl, {
       method: "GET",
@@ -263,19 +273,23 @@ app.get("/api/proxy", async (req, res) => {
     const contentType = response.headers.get("content-type");
     const contentLength = response.headers.get("content-length");
     const acceptRanges = response.headers.get("accept-ranges");
+    const contentRange = response.headers.get("content-range");
+
+    res.status(response.status);
 
     if (contentType) res.setHeader("content-type", contentType);
     if (contentLength) res.setHeader("content-length", contentLength);
     if (acceptRanges) res.setHeader("accept-ranges", acceptRanges);
+    if (contentRange) res.setHeader("content-range", contentRange);
 
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader(
       "Access-Control-Expose-Headers",
-      "Content-Length, Content-Type"
+      "Content-Length, Content-Type, Content-Range"
     );
 
     if (!response.body) {
-      res.sendStatus(response.status);
+      res.end();
       return;
     }
 
