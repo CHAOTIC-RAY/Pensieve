@@ -1,5 +1,6 @@
 import { CreateMLCEngine } from '@mlc-ai/web-llm';
 import { manageContextBudget } from './localAiContext';
+import { getMlcAppConfig } from '../services/mlcFetchProxy';
 
 let activeEngine: any = null;
 let activeModelId: string | null = null;
@@ -29,14 +30,18 @@ export async function initVisionModel(
     onProgress({ progress: 0.1, text: `Initializing WebGPU engine for ${modelId}...` });
     
     // Phi-3.5-vision-instruct needs specific configuration or just normal engine init
-    const engine = await CreateMLCEngine(modelId, {
-      initProgressCallback: (report) => {
-        onProgress({
-          progress: report.progress || 0,
-          text: report.text || 'Downloading weights...'
-        });
+    const engine = await CreateMLCEngine(
+      modelId,
+      {
+        initProgressCallback: (report) => {
+          onProgress({
+            progress: report.progress || 0,
+            text: report.text || 'Downloading weights...'
+          });
+        },
+        appConfig: getMlcAppConfig()
       }
-    });
+    );
 
     activeEngine = engine;
     activeModelId = modelId;

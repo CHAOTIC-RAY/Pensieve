@@ -6,10 +6,10 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag } from 'lucide-react';
+import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag, X, Database } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from './lib/firebase';
-import { DbStrategy, getDbStrategy, loadDbItems, saveDbItems, processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured } from './services/dbStrategyService';
+import { DbStrategy, getDbStrategy, loadDbItems, saveDbItems, processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured, isAppwriteConfigured } from './services/dbStrategyService';
 import { MindItem, MindItemType } from './types';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
@@ -223,6 +223,9 @@ export default function App() {
   // Local AI (LiteRT / WebGPU) States
   const [aiStrategy, setAiStrategyState] = useState<AiStrategy>(getAiStrategy());
   const [dbStrategy, setDbStrategyState] = useState<DbStrategy>(getDbStrategy());
+  const [appwriteToastDismissed, setAppwriteToastDismissed] = useState(() => {
+    return localStorage.getItem('pensieve_appwrite_toast_dismissed') === 'true';
+  });
 
   // Achievements
   const { achievements, activeToast, dismissToast, triggerSerendipity } = useAchievements(items);
@@ -244,9 +247,7 @@ export default function App() {
 
   // Persistent Theme Studio settings
   const [userSettings, setUserSettings] = useState<UserSettings>(() => {
-    const settings = loadSettings();
-    applyStudioTheme(settings);
-    return settings;
+    return loadSettings();
   });
 
   const handleUpdateSettings = (settings: UserSettings) => {
@@ -254,10 +255,36 @@ export default function App() {
     saveSettings(settings);
   };
 
+  // Dynamically apply appropriate theme based on user login state
   useEffect(() => {
-    const settings = loadSettings();
-    applyStudioTheme(settings);
+    if (!authLoading) {
+      if (user) {
+        applyStudioTheme(userSettings);
+      } else {
+        // Enforce light Editorial theme for the Landing Page
+        applyStudioTheme({
+          themeMode: 'light',
+          themeColor: '#8b5cf6',
+          activePreset: 'Editorial',
+          uiStyle: 'editorial',
+          fontCombo: 'editorial',
+          borderRadius: 16,
+          blurStrength: 24,
+          cardStyle: 'comfortable',
+          backgroundImage: '',
+          reduceMotion: false,
+          hideImages: false,
+          immersiveMode: false,
+          autoNightMode: false
+        });
+      }
+    } else {
+      // Apply the user's customized theme during initial application loading
+      applyStudioTheme(userSettings);
+    }
+  }, [user, authLoading, userSettings]);
 
+  useEffect(() => {
     const handleSettingsUpdated = () => {
       const newSettings = loadSettings();
       // Only update if settings have changed externally
@@ -267,6 +294,9 @@ export default function App() {
       });
       setProfileName(localStorage.getItem('pensieve_profile_name') || 'Ray Dark');
       setProfileGradient(localStorage.getItem('pensieve_profile_avatar_gradient') || 'from-orange-200 to-rose-200');
+      setDbStrategyState(getDbStrategy());
+      setAiStrategyState(getAiStrategy());
+      setAppwriteToastDismissed(localStorage.getItem('pensieve_appwrite_toast_dismissed') === 'true');
     };
     window.addEventListener('app-settings-updated', handleSettingsUpdated);
     return () => {
@@ -629,8 +659,30 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center">
-        <Logo className="w-12 h-12" />
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center transition-colors duration-300 relative overflow-hidden">
+        {/* Subtle decorative spot blurs matching theme for premium loader vibe */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30 dark:opacity-15">
+          <div className="absolute -top-40 left-1/4 w-[500px] h-[500px] rounded-full bg-primary/10 blur-[100px]" />
+        </div>
+        
+        {/* Subtle paper texture overlay */}
+        <div className="paper-texture opacity-50" />
+
+        <div className="flex flex-col items-center gap-5 z-10 animate-fade-in">
+          <Logo className="w-14 h-14" />
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-xs font-semibold tracking-[0.25em] text-foreground/40 uppercase font-display">pensieve</span>
+            {/* Minimalist animated progress loader */}
+            <div className="h-[2px] w-16 bg-foreground/10 rounded-full overflow-hidden relative">
+              <div 
+                className="absolute top-0 bottom-0 left-0 bg-primary w-1/2 rounded-full animate-[pulse_1.5s_infinite_ease-in-out]" 
+                style={{ 
+                  background: 'var(--primary)', 
+                }} 
+              />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -1353,6 +1405,58 @@ export default function App() {
         onInspectItem={setSelectedItem}
         onToggleFavorite={handleToggleFavorite}
       />
+
+      {/* Appwrite recommendation toast */}
+      <AnimatePresence>
+        {!appwriteToastDismissed && !isAppwriteConfigured() && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed bottom-24 right-4 md:bottom-6 md:right-6 max-w-sm bg-card-bg/95 border border-border-subtle/80 backdrop-blur-md p-4 rounded-2xl shadow-xl flex gap-3 items-start z-[120]"
+          >
+            <div className="w-8 h-8 rounded-xl bg-pink-500/10 flex items-center justify-center shrink-0">
+              <Database className="w-4 h-4 text-pink-400" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <h4 className="text-xs font-semibold text-text-heading">Personal Cloud Storage</h4>
+              <p className="text-[10px] text-foreground/60 leading-normal">
+                Set up your private Appwrite database and storage to sync your thoughts and image uploads seamlessly across devices.
+              </p>
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => {
+                    setSettingsTab("db");
+                    setIsSettingsOpen(true);
+                  }}
+                  className="text-[10px] text-pink-400 hover:text-pink-300 font-bold cursor-pointer transition-colors"
+                >
+                  Configure Now
+                </button>
+                <button
+                  onClick={() => {
+                    setAppwriteToastDismissed(true);
+                    localStorage.setItem('pensieve_appwrite_toast_dismissed', 'true');
+                  }}
+                  className="text-[10px] text-foreground/45 hover:text-foreground/75 font-semibold cursor-pointer transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setAppwriteToastDismissed(true);
+                localStorage.setItem('pensieve_appwrite_toast_dismissed', 'true');
+              }}
+              className="text-foreground/35 hover:text-foreground/60 cursor-pointer shrink-0 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       </div>
     ) : (
       <Routes>

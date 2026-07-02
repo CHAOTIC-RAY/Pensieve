@@ -530,11 +530,11 @@ export default function Omnibar({
             initial={{ opacity: 0, y: 8, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
-            className="absolute bottom-full mb-2 left-4 right-4 bg-white/98 backdrop-blur-xl border border-black/8 rounded-2xl shadow-2xl overflow-hidden z-50"
+            className="absolute bottom-full mb-2 left-4 right-4 bg-modal-bg/98 backdrop-blur-xl border border-border-subtle rounded-2xl shadow-2xl overflow-hidden z-50"
           >
-            <div className="px-4 py-2 border-b border-neutral-100 flex items-center gap-2">
-              <Slash className="w-3.5 h-3.5 text-neutral-400" />
-              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider">Commands</span>
+            <div className="px-4 py-2 border-b border-border-subtle flex items-center gap-2">
+              <Slash className="w-3.5 h-3.5 text-foreground/50" />
+              <span className="text-[10px] font-mono text-foreground/50 uppercase tracking-wider">Commands</span>
             </div>
             <div className="py-1.5 max-h-64 overflow-y-auto">
               {filteredSlashCmds.map((cmd, idx) => {
@@ -543,19 +543,19 @@ export default function Omnibar({
                   <button
                     key={cmd.cmd}
                     className={`w-full px-4 py-2.5 text-left flex items-center gap-3 transition-colors ${
-                      idx === slashSelectedIdx ? 'bg-neutral-50' : 'hover:bg-neutral-50'
+                      idx === slashSelectedIdx ? 'bg-foreground/[0.05]' : 'hover:bg-foreground/[0.05]'
                     }`}
                     onClick={() => handleSlashSelect(cmd)}
                     onMouseEnter={() => setSlashSelectedIdx(idx)}
                   >
-                    <div className={`w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0 ${cmd.color}`}>
+                    <div className={`w-7 h-7 rounded-lg bg-foreground/[0.08] flex items-center justify-center flex-shrink-0 ${cmd.color}`}>
                       <Icon className="w-3.5 h-3.5" />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-semibold text-neutral-800">{cmd.label}</span>
-                      <span className="text-[10px] text-neutral-400 font-sans">{cmd.desc}</span>
+                      <span className="text-xs font-semibold text-foreground">{cmd.label}</span>
+                      <span className="text-[10px] text-foreground/60 font-sans">{cmd.desc}</span>
                     </div>
-                    <span className="ml-auto text-[9px] font-mono text-neutral-300 shrink-0">{cmd.cmd}</span>
+                    <span className="ml-auto text-[9px] font-mono text-foreground/40 shrink-0">{cmd.cmd}</span>
                   </button>
                 );
               })}
@@ -634,7 +634,7 @@ export default function Omnibar({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   onClick={resetComposer}
-                  className="p-1 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition shrink-0"
+                  className="p-1 rounded-full hover:bg-foreground/10 text-foreground/40 hover:text-foreground/70 transition shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </motion.button>
@@ -646,7 +646,7 @@ export default function Omnibar({
             id="pensieve-serendipity-trigger"
             onClick={onTriggerSerendipity}
             title="Serendipity: remember something forgotten"
-            className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-500 hover:text-amber-600 transition flex items-center gap-1 text-xs font-medium border border-amber-100 bg-amber-50/30 shrink-0"
+            className="p-1.5 rounded-lg text-amber-500 hover:text-amber-400 transition flex items-center gap-1 text-xs font-medium border border-amber-500/20 hover:bg-amber-500/10 bg-amber-500/5 shrink-0"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Serendipity</span>
@@ -660,20 +660,20 @@ export default function Omnibar({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="px-4 py-2 bg-neutral-50/80 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500 font-mono"
+              className="px-4 py-2 bg-foreground/[0.02] border-t border-border-subtle flex items-center justify-between text-xs text-foreground/60 font-mono"
             >
               <div className="flex items-center gap-2">
-                {detectedType.type === 'color' && <Palette className="w-3.5 h-3.5 text-neutral-400" />}
-                {detectedType.type === 'link' && <Link2 className="w-3.5 h-3.5 text-neutral-400" />}
-                {detectedType.type === 'quote' && <Quote className="w-3.5 h-3.5 text-neutral-400" />}
+                {detectedType.type === 'color' && <Palette className="w-3.5 h-3.5 text-foreground/40" />}
+                {detectedType.type === 'link' && <Link2 className="w-3.5 h-3.5 text-foreground/40" />}
+                {detectedType.type === 'quote' && <Quote className="w-3.5 h-3.5 text-foreground/40" />}
                 <span>
-                  Detected <strong className="text-neutral-700 capitalize">{detectedType.type}</strong>: 
+                  Detected <strong className="text-foreground font-semibold capitalize">{detectedType.type}</strong>: 
                   <span className="ml-1 opacity-80">{detectedType.value.substring(0, 40)}{detectedType.value.length > 40 ? '...' : ''}</span>
                 </span>
               </div>
               <button
                 onClick={() => handleCreateItem()}
-                className="flex items-center gap-1 font-sans text-[11px] font-medium bg-neutral-800 text-white px-2.5 py-1 rounded-lg hover:bg-neutral-900 transition"
+                className="flex items-center gap-1 font-sans text-[11px] font-medium bg-foreground text-background px-2.5 py-1 rounded-lg hover:bg-foreground/90 transition"
               >
                 Save <ArrowRight className="w-3 h-3" />
               </button>
@@ -688,19 +688,19 @@ export default function Omnibar({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="border-t border-neutral-100 bg-neutral-50/50"
+              className="border-t border-border-subtle bg-foreground/[0.02]"
             >
               {/* Type selector toolbar */}
               {!composerType && (
                 <div className="flex items-center justify-between px-4 py-3 gap-2 flex-wrap">
                   <div className="flex items-center gap-1">
-                    <span className="text-[11px] font-mono text-neutral-400 tracking-wider uppercase">Quick Add</span>
-                    <span className="text-[9px] font-mono text-neutral-300 ml-2 hidden sm:inline">· type / for commands</span>
+                    <span className="text-[11px] font-mono text-foreground/40 tracking-wider uppercase">Quick Add</span>
+                    <span className="text-[9px] font-mono text-foreground/30 ml-2 hidden sm:inline">· type / for commands</span>
                   </div>
                   <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                     <button
                       onClick={() => setComposerType('note')}
-                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
+                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/10 rounded-lg transition"
                     >
                       <FileText className="w-3.5 h-3.5 text-blue-500" />
                       <span>Note</span>
@@ -710,49 +710,49 @@ export default function Omnibar({
                         setComposerType('note');
                         setChecklistItems([{ text: '', done: false }]);
                       }}
-                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
+                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/10 rounded-lg transition"
                     >
                       <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />
                       <span>List</span>
                     </button>
                     <button
                       onClick={() => setComposerType('quote')}
-                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
+                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/10 rounded-lg transition"
                     >
                       <Quote className="w-3.5 h-3.5 text-amber-500" />
                       <span>Quote</span>
                     </button>
                     <button
                       onClick={() => setComposerType('film')}
-                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
+                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/10 rounded-lg transition"
                     >
                       <Film className="w-3.5 h-3.5 text-purple-500" />
                       <span>Film</span>
                     </button>
                     <button
                       onClick={() => setComposerType('album')}
-                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
+                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/10 rounded-lg transition"
                     >
                       <Disc className="w-3.5 h-3.5 text-indigo-500" />
                       <span>Album</span>
                     </button>
                     <button
                       onClick={() => setComposerType('color')}
-                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
+                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/10 rounded-lg transition"
                     >
                       <Palette className="w-3.5 h-3.5 text-purple-500" />
                       <span>Color</span>
                     </button>
                     <button
                       onClick={() => setComposerType('link')}
-                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
+                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/10 rounded-lg transition"
                     >
                       <Link2 className="w-3.5 h-3.5 text-teal-500" />
                       <span>Link</span>
                     </button>
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
+                      className="p-2 flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/10 rounded-lg transition"
                     >
                       <ImageIcon className="w-3.5 h-3.5 text-rose-500" />
                       <span>Image</span>
@@ -760,15 +760,15 @@ export default function Omnibar({
                     {isRecording ? (
                       <button
                         onClick={stopRecording}
-                        className="p-2 flex items-center gap-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition animate-pulse"
+                        className="p-2 flex items-center gap-1.5 text-xs font-medium text-red-500 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition animate-pulse"
                       >
-                        <Square className="w-3.5 h-3.5 text-red-600" />
+                        <Square className="w-3.5 h-3.5 text-red-500" />
                         <span>Stop ({recordingSeconds}s)</span>
                       </button>
                     ) : (
                       <button
                         onClick={startRecording}
-                        className="p-2 flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 rounded-lg transition"
+                        className="p-2 flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/10 rounded-lg transition"
                       >
                         <Mic className="w-3.5 h-3.5 text-amber-500" />
                         <span>Voice</span>
@@ -785,15 +785,15 @@ export default function Omnibar({
                     {/* Note Body */}
                     <textarea
                       placeholder="Write your note contents here..."
-                      className="w-full min-h-[100px] text-sm bg-transparent outline-none resize-none text-neutral-800 placeholder-neutral-400"
+                      className="w-full min-h-[100px] text-sm bg-transparent outline-none resize-none text-foreground placeholder-foreground/40"
                       value={noteBody}
                       onChange={(e) => setNoteBody(e.target.value)}
                     />
                     
                     {/* Checklist option */}
                     {checklistItems.length > 0 ? (
-                      <div className="border-t border-dashed border-neutral-200 pt-3 space-y-2">
-                        <span className="text-[11px] font-mono text-neutral-400 uppercase">Checklist Mode</span>
+                      <div className="border-t border-dashed border-border-subtle pt-3 space-y-2">
+                        <span className="text-[11px] font-mono text-foreground/40 uppercase">Checklist Mode</span>
                         {checklistItems.map((item, idx) => (
                           <div key={idx} className="flex items-center gap-2">
                             <input
@@ -804,14 +804,14 @@ export default function Omnibar({
                                 list[idx].done = e.target.checked;
                                 setChecklistItems(list);
                               }}
-                              className="rounded border-neutral-300 text-neutral-800 focus:ring-neutral-800 w-4 h-4"
+                              className="rounded border-border-subtle text-foreground bg-foreground/5 focus:ring-foreground w-4 h-4"
                             />
                             <input
                               type="text"
                               value={item.text}
                               onChange={(e) => updateChecklistItem(idx, e.target.value)}
                               placeholder="Task detail..."
-                              className="w-full text-xs bg-transparent outline-none text-neutral-700"
+                              className="w-full text-xs bg-transparent outline-none text-foreground"
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
@@ -824,7 +824,7 @@ export default function Omnibar({
                         <button
                           type="button"
                           onClick={addChecklistItem}
-                          className="text-[11px] font-sans font-medium text-neutral-500 hover:text-neutral-800"
+                          className="text-[11px] font-sans font-medium text-foreground/60 hover:text-foreground"
                         >
                           + Add checklist item
                         </button>
@@ -834,7 +834,7 @@ export default function Omnibar({
                         <button
                           type="button"
                           onClick={() => setChecklistItems([{ text: '', done: false }])}
-                          className="text-[11px] font-sans font-medium text-neutral-400 hover:text-neutral-600 flex items-center gap-1.5"
+                          className="text-[11px] font-sans font-medium text-foreground/50 hover:text-foreground/80 flex items-center gap-1.5"
                         >
                           <CheckSquare className="w-3.5 h-3.5" />
                           <span>Convert to checklist / add tasks</span>
@@ -845,7 +845,7 @@ export default function Omnibar({
                     <div className="flex justify-between items-center pt-2">
                       <button
                         onClick={resetComposer}
-                        className="text-xs text-neutral-500 hover:text-neutral-800"
+                        className="text-xs text-foreground/50 hover:text-foreground"
                       >
                         Cancel
                       </button>
@@ -853,7 +853,7 @@ export default function Omnibar({
                       {checklistItems.some(item => item.text.trim() !== '') ? (
                         <button
                           onClick={saveChecklistAsNote}
-                          className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
+                          className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-xl transition"
                         >
                           {noteBody.trim() ? "Save Note & Checklist" : "Save Checklist"}
                         </button>
@@ -863,8 +863,8 @@ export default function Omnibar({
                           disabled={!noteBody.trim() && !noteTitle.trim()}
                           className={`text-xs font-semibold px-4 py-2 rounded-xl transition ${
                             (noteBody.trim() || noteTitle.trim())
-                              ? 'bg-neutral-800 hover:bg-neutral-900 text-white cursor-pointer'
-                              : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
+                              ? 'bg-foreground hover:bg-foreground/90 text-background cursor-pointer'
+                              : 'bg-foreground/10 text-foreground/40 cursor-not-allowed'
                           }`}
                         >
                           {isUrl(noteBody) ? "Save Link" : hexRegex.test(noteBody.trim()) ? "Save Color Swatch" : "Save Note"}
@@ -878,27 +878,27 @@ export default function Omnibar({
                   <div className="space-y-3 pt-2">
                     <textarea
                       placeholder="Enter the quote text..."
-                      className="w-full min-h-[80px] text-sm bg-transparent outline-none resize-none text-neutral-800 placeholder-neutral-400 italic"
+                      className="w-full min-h-[80px] text-sm bg-transparent outline-none resize-none text-foreground placeholder-foreground/40 italic"
                       value={quoteBody}
                       onChange={(e) => setQuoteBody(e.target.value)}
                     />
                     <input
                       type="text"
                       placeholder="Author attribution (e.g., Albert Einstein)"
-                      className="w-full text-xs bg-transparent border-b border-neutral-200 pb-1 outline-none text-neutral-700 placeholder-neutral-400"
+                      className="w-full text-xs bg-transparent border-b border-border-subtle pb-1 outline-none text-foreground placeholder-foreground/40"
                       value={quoteAuthor}
                       onChange={(e) => setQuoteAuthor(e.target.value)}
                     />
                     <div className="flex justify-between items-center pt-2">
                       <button
                         onClick={resetComposer}
-                        className="text-xs text-neutral-500 hover:text-neutral-800"
+                        className="text-xs text-foreground/50 hover:text-foreground"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleCreateItem}
-                        className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
+                        className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-xl transition"
                       >
                         Save Quote
                       </button>
@@ -924,21 +924,21 @@ export default function Omnibar({
                           value={colorHex}
                           onChange={(e) => setColorHex(e.target.value)}
                           placeholder="#FF5733"
-                          className="text-sm font-mono font-medium outline-none border-b border-neutral-200 pb-0.5 text-neutral-800 uppercase"
+                          className="text-sm font-mono font-medium outline-none border-b border-border-subtle pb-0.5 text-foreground uppercase"
                         />
-                        <p className="text-[10px] font-mono text-neutral-400">Save color swatch with palette generation</p>
+                        <p className="text-[10px] font-mono text-foreground/40">Save color swatch with palette generation</p>
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
                       <button
                         onClick={resetComposer}
-                        className="text-xs text-neutral-500 hover:text-neutral-800"
+                        className="text-xs text-foreground/50 hover:text-foreground"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleCreateItem}
-                        className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
+                        className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-xl transition"
                       >
                         Save Swatch
                       </button>
@@ -948,12 +948,12 @@ export default function Omnibar({
 
                 {(composerType === 'link' || composerType === 'article') && (
                   <div className="space-y-3 pt-2">
-                    <div className="flex items-center bg-neutral-100 rounded-xl px-3 py-2 border border-neutral-200/50">
-                      <Link2 className="w-4 h-4 text-neutral-400 shrink-0 mr-2" />
+                    <div className="flex items-center bg-foreground/[0.04] rounded-xl px-3 py-2 border border-border-subtle">
+                      <Link2 className="w-4 h-4 text-foreground/40 shrink-0 mr-2" />
                       <input
                         type="text"
                         placeholder="https://example.com/some-interesting-read"
-                        className="w-full text-xs bg-transparent outline-none text-neutral-700"
+                        className="w-full text-xs bg-transparent outline-none text-foreground"
                         value={urlLink}
                         onChange={(e) => setUrlLink(e.target.value)}
                         onKeyDown={(e) => {
@@ -994,7 +994,7 @@ export default function Omnibar({
                       </button>
                       <button
                         onClick={handleCreateItem}
-                        className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
+                        className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-xl transition"
                       >
                         Process & Save Link
                       </button>
@@ -1004,7 +1004,7 @@ export default function Omnibar({
 
                 {composerType === 'image' && imagePreview && (
                   <div className="space-y-4 pt-2">
-                    <div className="relative w-full max-h-[220px] rounded-xl overflow-hidden border border-neutral-200 bg-neutral-100 flex items-center justify-center">
+                    <div className="relative w-full max-h-[220px] rounded-xl overflow-hidden border border-border-subtle bg-foreground/[0.04] flex items-center justify-center">
                       <img 
                         src={imagePreview} 
                         alt="Upload preview" 
@@ -1024,13 +1024,13 @@ export default function Omnibar({
                     <div className="flex justify-between items-center">
                       <button
                         onClick={resetComposer}
-                        className="text-xs text-neutral-500 hover:text-neutral-800"
+                        className="text-xs text-foreground/50 hover:text-foreground"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleCreateItem}
-                        className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
+                        className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
                         Analyze and Save
@@ -1047,18 +1047,18 @@ export default function Omnibar({
                         autoFocus
                         type="text"
                         placeholder="Movie title..."
-                        className="col-span-2 w-full text-sm bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:border-primary text-neutral-800 placeholder-neutral-400"
+                        className="col-span-2 w-full text-sm bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none focus:border-primary text-foreground placeholder-foreground/40"
                         value={filmTitle}
                         onChange={(e) => setFilmTitle(e.target.value)}
                       />
-                      <input type="text" placeholder="Year (e.g. 2010)" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={filmYear} onChange={e => setFilmYear(e.target.value)} />
-                      <input type="text" placeholder="Runtime (e.g. 148 min)" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={filmRuntime} onChange={e => setFilmRuntime(e.target.value)} />
-                      <input type="text" placeholder="Director" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={filmDirector} onChange={e => setFilmDirector(e.target.value)} />
-                      <input type="text" placeholder="Genre (e.g. Sci-Fi)" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={filmGenre} onChange={e => setFilmGenre(e.target.value)} />
-                      <input type="text" placeholder="Rating (e.g. 8.3/10)" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700 col-span-2" value={filmRating} onChange={e => setFilmRating(e.target.value)} />
+                      <input type="text" placeholder="Year (e.g. 2010)" className="text-xs bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none text-foreground placeholder-foreground/40" value={filmYear} onChange={e => setFilmYear(e.target.value)} />
+                      <input type="text" placeholder="Runtime (e.g. 148 min)" className="text-xs bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none text-foreground placeholder-foreground/40" value={filmRuntime} onChange={e => setFilmRuntime(e.target.value)} />
+                      <input type="text" placeholder="Director" className="text-xs bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none text-foreground placeholder-foreground/40" value={filmDirector} onChange={e => setFilmDirector(e.target.value)} />
+                      <input type="text" placeholder="Genre (e.g. Sci-Fi)" className="text-xs bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none text-foreground placeholder-foreground/40" value={filmGenre} onChange={e => setFilmGenre(e.target.value)} />
+                      <input type="text" placeholder="Rating (e.g. 8.3/10)" className="text-xs bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none text-foreground placeholder-foreground/40 col-span-2" value={filmRating} onChange={e => setFilmRating(e.target.value)} />
                     </div>
                     <div className="flex justify-between items-center pt-1">
-                      <button onClick={resetComposer} className="text-xs text-neutral-500 hover:text-neutral-800">Cancel</button>
+                      <button onClick={resetComposer} className="text-xs text-foreground/50 hover:text-foreground">Cancel</button>
                       <button
                         onClick={async () => {
                           if (!filmTitle.trim()) return;
@@ -1076,7 +1076,7 @@ export default function Omnibar({
                           setFilmTitle(''); setFilmYear(''); setFilmGenre(''); setFilmDirector(''); setFilmRating(''); setFilmRuntime('');
                           resetComposer();
                         }}
-                        className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
+                        className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
                       >
                         <Film className="w-3.5 h-3.5" /> Save Film
                       </button>
@@ -1091,16 +1091,16 @@ export default function Omnibar({
                       autoFocus
                       type="text"
                       placeholder="Album title..."
-                      className="w-full text-sm bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:border-primary text-neutral-800 placeholder-neutral-400"
+                      className="w-full text-sm bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none focus:border-primary text-foreground placeholder-foreground/40"
                       value={noteTitle}
                       onChange={e => setNoteTitle(e.target.value)}
                     />
                     <div className="grid grid-cols-2 gap-2">
-                      <input type="text" placeholder="Artist / Band" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={albumArtist} onChange={e => setAlbumArtist(e.target.value)} />
-                      <input type="text" placeholder="Year" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={albumYear} onChange={e => setAlbumYear(e.target.value)} />
+                      <input type="text" placeholder="Artist / Band" className="text-xs bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none text-foreground placeholder-foreground/40" value={albumArtist} onChange={e => setAlbumArtist(e.target.value)} />
+                      <input type="text" placeholder="Year" className="text-xs bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none text-foreground placeholder-foreground/40" value={albumYear} onChange={e => setAlbumYear(e.target.value)} />
                     </div>
                     <div className="flex justify-between items-center pt-1">
-                      <button onClick={resetComposer} className="text-xs text-neutral-500 hover:text-neutral-800">Cancel</button>
+                      <button onClick={resetComposer} className="text-xs text-foreground/50 hover:text-foreground">Cancel</button>
                       <button
                         onClick={async () => {
                           if (!noteTitle.trim()) return;
@@ -1115,7 +1115,7 @@ export default function Omnibar({
                           setNoteTitle(''); setAlbumArtist(''); setAlbumYear('');
                           resetComposer();
                         }}
-                        className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
+                        className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
                       >
                         <Disc className="w-3.5 h-3.5" /> Save Album
                       </button>
@@ -1130,17 +1130,17 @@ export default function Omnibar({
                       autoFocus
                       type="text"
                       placeholder="Product name..."
-                      className="w-full text-sm bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:border-primary text-neutral-800 placeholder-neutral-400"
+                      className="w-full text-sm bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none focus:border-primary text-foreground placeholder-foreground/40"
                       value={noteTitle}
                       onChange={e => setNoteTitle(e.target.value)}
                     />
                     <div className="grid grid-cols-2 gap-2">
-                      <input type="text" placeholder="Brand" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={productBrand} onChange={e => setProductBrand(e.target.value)} />
-                      <input type="text" placeholder="Price (e.g. 29.99)" className="text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={productPrice} onChange={e => setProductPrice(e.target.value)} />
-                      <input type="text" placeholder="Buy URL (optional)" className="col-span-2 text-xs bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 outline-none text-neutral-700" value={productBuyUrl} onChange={e => setProductBuyUrl(e.target.value)} />
+                      <input type="text" placeholder="Brand" className="text-xs bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none text-foreground placeholder-foreground/40" value={productBrand} onChange={e => setProductBrand(e.target.value)} />
+                      <input type="text" placeholder="Price (e.g. 29.99)" className="text-xs bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none text-foreground placeholder-foreground/40" value={productPrice} onChange={e => setProductPrice(e.target.value)} />
+                      <input type="text" placeholder="Buy URL (optional)" className="col-span-2 text-xs bg-foreground/[0.04] border border-border-subtle rounded-xl px-3 py-2 outline-none text-foreground placeholder-foreground/40" value={productBuyUrl} onChange={e => setProductBuyUrl(e.target.value)} />
                     </div>
                     <div className="flex justify-between items-center pt-1">
-                      <button onClick={resetComposer} className="text-xs text-neutral-500 hover:text-neutral-800">Cancel</button>
+                      <button onClick={resetComposer} className="text-xs text-foreground/50 hover:text-foreground">Cancel</button>
                       <button
                         onClick={async () => {
                           if (!noteTitle.trim()) return;
@@ -1156,7 +1156,7 @@ export default function Omnibar({
                           setNoteTitle(''); setProductBrand(''); setProductPrice(''); setProductBuyUrl('');
                           resetComposer();
                         }}
-                        className="bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
+                        className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
                       >
                         <ShoppingBag className="w-3.5 h-3.5" /> Save Product
                       </button>

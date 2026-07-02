@@ -11,7 +11,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 export type DbStrategy = 'appwrite' | 'supabase' | 'firebase' | 'box';
 
 // Re-export storage bucket utilities for use in other components
-export { processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured };
+export { processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured, isAppwriteConfigured };
 
 export function getDbStrategy(): DbStrategy {
   if (typeof window === 'undefined') return 'appwrite';

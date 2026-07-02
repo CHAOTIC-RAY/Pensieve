@@ -120,7 +120,7 @@ export default function LandingPage() {
             <div className="w-11 h-11 flex items-center justify-center p-2">
               <Logo className="w-full h-full" glow={false} />
             </div>
-            <div className="flex flex-col items-center text-[9px] font-bold text-foreground/45 font-mono my-4 uppercase gap-1.5">
+            <div className="flex flex-col items-center text-[9px] font-bold text-foreground/75 font-mono my-4 uppercase gap-1.5">
               {Array.from("PENSIEVE").map((char, i) => (
                 <span key={i} className="leading-none">{char}</span>
               ))}
@@ -155,7 +155,7 @@ export default function LandingPage() {
       {/* Top Header for Mobile/Navbar Fallback */}
       <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center justify-between backdrop-blur-md bg-background/30 border-b border-border-subtle/20 lg:hidden">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 flex items-center justify-center p-1 bg-background rounded-full border border-border-subtle">
+          <div className="w-8 h-8 flex items-center justify-center p-1">
             <Logo className="w-full h-full" glow={false} />
           </div>
           <span className="text-sm font-bold tracking-tight font-display">pensieve</span>
@@ -183,10 +183,10 @@ export default function LandingPage() {
             style={{ opacity: centerLogoOpacity, scale: centerLogoScale }}
             className="flex flex-col items-center gap-3 mb-4 md:mb-6"
           >
-            <div className="w-16 h-16 md:w-20 md:h-20 p-2 md:p-2.5 bg-background rounded-full shadow-xl border border-border-subtle">
+            <div className="w-16 h-16 md:w-20 md:h-20 p-2 md:p-2.5 flex items-center justify-center">
               <Logo className="w-full h-full" glow={true} />
             </div>
-            <span className="text-[10px] md:text-sm font-bold tracking-[0.4em] uppercase text-foreground/60 font-mono font-display">
+            <span className="text-[10px] md:text-sm font-bold tracking-[0.4em] uppercase text-foreground/85 font-mono font-display">
               PENSIEVE
             </span>
           </motion.div>
@@ -198,7 +198,7 @@ export default function LandingPage() {
             <h1 className="text-3xl md:text-5xl font-bold font-display tracking-tight leading-tight text-foreground px-2">
               What are you remembering today?
             </h1>
-            <p className="text-[10px] md:text-sm text-foreground/45 max-w-[280px] md:max-w-md mx-auto leading-relaxed font-sans">
+            <p className="text-[10px] md:text-sm text-foreground/75 max-w-[280px] md:max-w-md mx-auto leading-relaxed font-sans font-medium">
               Search your private workspace or type to save instantly. A fluid mind needs a fluid vault.
             </p>
           </motion.div>
@@ -237,7 +237,7 @@ export default function LandingPage() {
             <div className="text-center mb-16">
               <span className="text-[10px] font-mono text-primary font-bold uppercase tracking-[0.25em] bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">WORKSPACE PREVIEW</span>
               <h2 className="text-3xl md:text-4xl font-display font-black text-foreground mt-4">Effortless Mind Mapping</h2>
-              <p className="text-xs md:text-sm text-foreground/45 mt-2 max-w-lg mx-auto leading-relaxed">Everything you capture is instantly analyzed, beautifully structured, and preserved inside your local sandboxed database.</p>
+              <p className="text-xs md:text-sm text-foreground/75 mt-2 max-w-lg mx-auto leading-relaxed">Everything you capture is instantly analyzed, beautifully structured, and preserved inside your local sandboxed database.</p>
             </div>
             
             <div className="columns-1 sm:columns-2 md:columns-3 gap-6 space-y-6 max-w-4xl mx-auto">
@@ -379,7 +379,7 @@ export default function LandingPage() {
                   <Lock className="w-5 h-5" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground">Sovereign Encryption</h3>
-                <p className="text-xs text-foreground/50 leading-relaxed font-sans">Works entirely offline. All notes, cards, and bookmarks are stored and encrypted locally in IndexedDB. No centralized data leaks.</p>
+                <p className="text-xs text-foreground/80 leading-relaxed font-sans">Works entirely offline. All notes, cards, and bookmarks are stored and encrypted locally in IndexedDB. No centralized data leaks.</p>
               </div>
 
               <div className="p-6 rounded-3xl border border-black/5 bg-white/60 backdrop-blur-md space-y-4">
@@ -387,7 +387,7 @@ export default function LandingPage() {
                   <Cloud className="w-5 h-5" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground">Multi-Cloud Sync Engine</h3>
-                <p className="text-xs text-foreground/50 leading-relaxed font-sans">Seamless bi-directional delta synchronization to Appwrite, Firebase Firestore, or Supabase. Gracefully falls back to offline storage on loss of signal.</p>
+                <p className="text-xs text-foreground/80 leading-relaxed font-sans">Seamless bi-directional delta synchronization to Appwrite, Firebase Firestore, or Supabase. Gracefully falls back to offline storage on loss of signal.</p>
               </div>
 
               <div className="p-6 rounded-3xl border border-black/5 bg-white/60 backdrop-blur-md space-y-4">
@@ -395,7 +395,7 @@ export default function LandingPage() {
                   <Palette className="w-5 h-5" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground">Aesthetic Theme Studio</h3>
-                <p className="text-xs text-foreground/50 leading-relaxed font-sans">Indulge your mood. Change structural boundaries dynamically with presets like Editorial (warm serif), Brutalist (bold borders), or Cosmic Frost.</p>
+                <p className="text-xs text-foreground/80 leading-relaxed font-sans">Indulge your mood. Change structural boundaries dynamically with presets like Editorial (warm serif), Brutalist (bold borders), or Cosmic Frost.</p>
               </div>
             </div>
           </motion.div>
@@ -412,10 +412,10 @@ export default function LandingPage() {
                 <Mic className="w-6 h-6 animate-pulse" />
               </div>
               <h2 className="text-3xl md:text-4xl font-display font-black text-foreground">Instant Voice Capture</h2>
-              <p className="text-sm text-foreground/50 leading-relaxed font-sans">
+              <p className="text-sm text-foreground/80 leading-relaxed font-sans font-medium">
                 Speak your mind. Record brainstorming loops, ambient sounds, or flashes of genius directly from the Omnibar. Audio notes are compressed locally, archived as rich wave playback cards, and queued for offline indexing.
               </p>
-              <div className="flex items-center gap-2 text-xs font-mono text-foreground/45">
+              <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
                 <Volume2 className="w-4 h-4 text-amber-500" /> HTML5 MediaRecorder & WebAudio Nodes
               </div>
             </div>
@@ -426,7 +426,7 @@ export default function LandingPage() {
                   <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
                   <span className="text-xs font-mono text-red-500 font-bold uppercase">Recording Voice Note</span>
                 </div>
-                <span className="text-xs font-mono text-foreground/40">0:12 / 1:00</span>
+                <span className="text-xs font-mono text-foreground/70">0:12 / 1:00</span>
               </div>
               
               <div className="h-16 flex items-center justify-between gap-1.5 px-2">
@@ -442,7 +442,7 @@ export default function LandingPage() {
               </div>
               
               <div className="h-[1px] bg-black/10 dark:bg-white/10 w-full" />
-              <div className="text-xs text-foreground/50 font-sans italic">"Reviewing user interface transitions for the holographic milestone decks..."</div>
+              <div className="text-xs text-foreground/75 font-sans italic">"Reviewing user interface transitions for the holographic milestone decks..."</div>
             </div>
           </motion.div>
         </section>
@@ -459,7 +459,7 @@ export default function LandingPage() {
             <h2 className="text-4xl md:text-5xl font-display font-black text-foreground leading-tight">
               Rediscover your <br/> <span className="italic text-primary drop-shadow-[0_0_15px_rgba(232,180,184,0.35)]">Wandering Mind.</span>
             </h2>
-            <p className="text-xs md:text-sm text-foreground/60 max-w-xl mx-auto font-sans leading-relaxed">
+            <p className="text-xs md:text-sm text-foreground/85 max-w-xl mx-auto font-sans leading-relaxed">
               Earn actual collectible physical-style cards as you cultivate your vault. Tilt and pan cards to reveal rare holographic elements, golden borders, and mystical lore.
             </p>
 
@@ -559,14 +559,14 @@ export default function LandingPage() {
                 <div className="w-16 h-16 p-2.5 rounded-2xl">
                   <Logo className="w-full h-full" glow={true} />
                 </div>
-                <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-white/30 font-mono font-display">
+                <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-white/60 font-mono font-display">
                   PENSIEVE
                 </span>
               </div>
               <h2 className="text-5xl md:text-7xl font-display font-black text-white leading-none">
                 Begin your <br/> <span className="text-primary drop-shadow-[0_0_20px_rgba(168,85,247,0.5)] italic">Second Brain.</span>
               </h2>
-              <p className="text-xs md:text-base text-white/40 max-w-md mx-auto leading-relaxed font-sans">
+              <p className="text-xs md:text-base text-white/75 max-w-md mx-auto leading-relaxed font-sans">
                 Experience the absolute clarity of an unburdened mind. Your memory cards, completely sovereign to you.
               </p>
 

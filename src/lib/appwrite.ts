@@ -212,20 +212,7 @@ export async function processItemMediaForUpload(item: MindItem): Promise<MindIte
   const processedItem = { ...item };
   const timestamp = Date.now();
 
-  // Process image if it's a base64 data URL
-  if (processedItem.imageUrl && processedItem.imageUrl.startsWith('data:')) {
-    const fileName = `image_${processedItem.id || timestamp}.png`;
-    const fileId = await uploadBase64ToStorageBucket(processedItem.imageUrl, fileName);
-    if (fileId) {
-      const url = getStorageFileUrl(fileId);
-      if (url) {
-        processedItem.imageUrl = url;
-        // Store file ID for later deletion if item is deleted
-        (processedItem as any).imageFileId = fileId;
-      }
-    }
-  }
-
+  // Cards/generated images are saved inside the app - we do not upload them to the user's Appwrite Storage bucket
   // Process audio if it's a base64 data URL
   if (processedItem.audioUrl && processedItem.audioUrl.startsWith('data:')) {
     const fileName = `audio_${processedItem.id || timestamp}.webm`;
@@ -249,10 +236,7 @@ export async function processItemMediaForUpload(item: MindItem): Promise<MindIte
 export async function deleteItemMedia(item: MindItem): Promise<void> {
   const itemWithFileIds = item as any;
 
-  if (itemWithFileIds.imageFileId) {
-    await deleteFromStorageBucket(itemWithFileIds.imageFileId);
-  }
-
+  // We only delete audio files from the storage bucket since card images are preserved inside the app
   if (itemWithFileIds.audioFileId) {
     await deleteFromStorageBucket(itemWithFileIds.audioFileId);
   }
@@ -334,10 +318,7 @@ export async function saveAppwriteItems(userId: string, items: MindItem[]): Prom
         if (copy.bodyText && copy.bodyText.length > 5000) {
           copy.bodyText = copy.bodyText.substring(0, 5000) + '... [Truncated for sync]';
         }
-        // Strip large base64 images (should already be uploaded to bucket)
-        if (copy.imageUrl && copy.imageUrl.startsWith('data:') && copy.imageUrl.length > 30000) {
-          copy.imageUrl = '';
-        }
+        // Keep card images inside the app - do not strip base64 imageUrl during optimization
         // Strip large base64 audio (should already be uploaded to bucket)
         if (copy.audioUrl && copy.audioUrl.startsWith('data:') && copy.audioUrl.length > 30000) {
           copy.audioUrl = '';

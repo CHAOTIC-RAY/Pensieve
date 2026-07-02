@@ -17,7 +17,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     rarity: 'Common',
     icon: Sparkles,
     xp: 10,
-    image: '/src/assets/images/first_spark_art_1782894430119.jpg',
+    image: '/assets/images/first_spark_art_1782894430119.jpg',
     quote: "The important thing is not to stop questioning. Curiosity has its own reason for existing.",
     author: "Albert Einstein",
     lore: "Even the grandest constellation begins with a single burning particle of ambition."
@@ -29,7 +29,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     rarity: 'Common',
     icon: Compass,
     xp: 50,
-    image: '/src/assets/images/wandering_mind_art_1782894717720.jpg',
+    image: '/assets/images/wandering_mind_art_1782894717720.jpg',
     quote: "All that is gold does not glitter, not all those who wander are lost.",
     author: "J.R.R. Tolkien",
     lore: "In the quiet labyrinths of the wandering soul, the most beautiful paths are found."
@@ -41,7 +41,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     rarity: 'Rare',
     icon: Heart,
     xp: 100,
-    image: '/src/assets/images/curator_art_1782894792146.jpg',
+    image: '/assets/images/curator_art_1782894792146.jpg',
     quote: "Memory is the diary that we all carry about with us.",
     author: "Oscar Wilde",
     lore: "To preserve a moment is to immortalize a piece of the cosmos."
@@ -53,7 +53,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     rarity: 'Rare',
     icon: Palette,
     xp: 100,
-    image: '/src/assets/images/colorful_thinker_art_1782894805753.jpg',
+    image: '/assets/images/colorful_thinker_art_1782894805753.jpg',
     quote: "I found I could say things with color and shapes that I couldn't say any other way.",
     author: "Georgia O'Keeffe",
     lore: "A mind that thinks in hues can paint the void with starlight."
@@ -65,7 +65,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     rarity: 'Rare',
     icon: Bookmark,
     xp: 150,
-    image: '/src/assets/images/knowledge_seeker_art_1782894817660.jpg',
+    image: '/assets/images/knowledge_seeker_art_1782894817660.jpg',
     quote: "The only true wisdom is in knowing you know nothing.",
     author: "Socrates",
     lore: "Gathering fragments of the truth to assemble the ultimate grimoire of reality."
@@ -77,7 +77,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     rarity: 'Rare',
     icon: Clock,
     xp: 200,
-    image: '/src/assets/images/time_weaver_art_1782895575062.jpg',
+    image: '/assets/images/time_weaver_art_1782895575062.jpg',
     quote: "Yesterday is but today's memory, and tomorrow is today's dream.",
     author: "Kahlil Gibran",
     lore: "To master time is to see the past, present, and future woven as one single tapestry."
@@ -89,7 +89,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     rarity: 'Epic',
     icon: Brain,
     xp: 300,
-    image: '/src/assets/images/deep_thinker_art_1782894457729.jpg',
+    image: '/assets/images/deep_thinker_art_1782894457729.jpg',
     quote: "The mind is not a vessel to be filled, but a fire to be kindled.",
     author: "Plutarch",
     lore: "Allowing synthetic sparks to merge with human grace, uncovering hidden geometries."
@@ -101,7 +101,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     rarity: 'Epic',
     icon: MessageSquare,
     xp: 350,
-    image: '/src/assets/images/cosmic_synthesis_art_1782895593620.jpg',
+    image: '/assets/images/cosmic_synthesis_art_1782895593620.jpg',
     quote: "The cosmos is within us. We are made of star-stuff. We are a way for the universe to know itself.",
     author: "Carl Sagan",
     lore: "When mind and machine hum in harmony, the secrets of the cosmos lay bare."
@@ -113,7 +113,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     rarity: 'Legendary',
     icon: Archive,
     xp: 500,
-    image: '/src/assets/images/hoarder_art_1782894471697.jpg',
+    image: '/assets/images/hoarder_art_1782894471697.jpg',
     quote: "An index to the world's ancient wisdom is worth more than all the gold of the dragon.",
     author: "Ancient Proverb",
     lore: "He who holds a thousand scrolls is wealthy beyond measure, for knowledge never decays."
@@ -125,7 +125,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     rarity: 'Legendary',
     icon: Zap,
     xp: 600,
-    image: '/src/assets/images/grand_alchemist_art_1782895609598.jpg',
+    image: '/assets/images/grand_alchemist_art_1782895609598.jpg',
     quote: "True alchemy is not the transmuting of lead into gold, but the transformation of the mind.",
     author: "Hermes Trismegistus",
     lore: "By altering the canvas, you change the reflection; your perspective is your magic wand."
@@ -677,7 +677,7 @@ export const ACHIEVEMENTS: Achievement[] = (() => {
         rarity: theme.rarity,
         icon: theme.icon,
         xp: theme.xp,
-        image: `/src/assets/images/generated_${themeIdx}_${i}.jpg`, // logical path for reference
+        image: `/assets/images/generated_${themeIdx}_${i}.jpg`, // logical path for reference
         quote,
         author,
         lore

@@ -19,6 +19,7 @@ export type UserSettings = {
   reduceMotion: boolean;                  // Disable animations
   hideImages: boolean;                    // Hide all thumbnails/covers globally
   immersiveMode?: boolean;                // Request fullscreen
+  autoNightMode?: boolean;               // Automatically detect and set night mode (6 PM - 6 AM)
 };
 
 export const SETTINGS_KEY = 'app_user_settings';
@@ -159,7 +160,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
   backgroundImage: '',
   reduceMotion: false,
   hideImages: false,
-  immersiveMode: false
+  immersiveMode: false,
+  autoNightMode: false
 };
 
 // Lazy font loader
@@ -190,6 +192,17 @@ export function getFontDisplayValue(comboId: string): string {
 export function applyTheme(settings: UserSettings) {
   const root = document.documentElement;
   
+  // Handle auto night mode based on local hour (6 PM to 6 AM)
+  let appliedThemeMode = settings.themeMode;
+  if (settings.autoNightMode) {
+    const hour = new Date().getHours();
+    if (hour >= 18 || hour < 6) {
+      appliedThemeMode = 'dark';
+    } else {
+      appliedThemeMode = 'light';
+    }
+  }
+  
   // Accent & Dimensions
   root.style.setProperty('--primary', settings.themeColor);
   root.style.setProperty('--radius-base', settings.borderRadius + 'px');
@@ -201,7 +214,7 @@ export function applyTheme(settings: UserSettings) {
   root.style.setProperty('--font-display', getFontDisplayValue(settings.fontCombo));
   
   // Data attributes
-  root.setAttribute('data-theme', settings.themeMode);
+  root.setAttribute('data-theme', appliedThemeMode);
   root.setAttribute('data-ui-style', settings.uiStyle || 'modern');
   root.setAttribute('data-hide-images', settings.hideImages ? 'true' : 'false');
   

@@ -5,6 +5,7 @@
 
 import { CreateMLCEngine } from '@mlc-ai/web-llm';
 import { resolveModelById } from './litertModelResolver';
+import { getMlcAppConfig } from './mlcFetchProxy';
 
 // Local storage keys to persist user preferences
 const LOCAL_AI_ENABLED_KEY = 'pensieve_local_ai_enabled';
@@ -101,16 +102,20 @@ export async function initLocalAiModel(
       // Initialize WebLLM engine
       // If it's a vision model, we use the vision-specific init if needed, 
       // but WebLLM's CreateMLCEngine handles Phi-3.5-vision as well.
-      const engine = await CreateMLCEngine(modelId, {
-        initProgressCallback: (report) => {
-          console.log('[WebLLM Init]', report);
-          const rawProgress = report.progress || 0;
-          onProgress({
-            progress: rawProgress,
-            text: report.text || 'Downloading weights...'
-          });
+      const engine = await CreateMLCEngine(
+        modelId,
+        {
+          initProgressCallback: (report) => {
+            console.log('[WebLLM Init]', report);
+            const rawProgress = report.progress || 0;
+            onProgress({
+              progress: rawProgress,
+              text: report.text || 'Downloading weights...'
+            });
+          },
+          appConfig: getMlcAppConfig()
         }
-      });
+      );
       activeEngine = engine;
       activeModelId = modelId;
       return true;
@@ -121,14 +126,18 @@ export async function initLocalAiModel(
       
       // In web, we delegate gemma-style models to WebLLM or fallback smoothly to a lightweight WebLLM profile 
       // of Gemma 2B for standard WebGPU rendering.
-      const engine = await CreateMLCEngine('gemma-2b-it-q4f16_1-MLC', {
-        initProgressCallback: (report) => {
-          onProgress({
-            progress: report.progress || 0.5,
-            text: report.text || 'Warming Gemma 3 LiteRT pipeline...'
-          });
+      const engine = await CreateMLCEngine(
+        'gemma-2b-it-q4f16_1-MLC',
+        {
+          initProgressCallback: (report) => {
+            onProgress({
+              progress: report.progress || 0.5,
+              text: report.text || 'Warming Gemma 3 LiteRT pipeline...'
+            });
+          },
+          appConfig: getMlcAppConfig()
         }
-      });
+      );
       activeEngine = engine;
       activeModelId = modelId;
       return true;

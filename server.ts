@@ -239,6 +239,61 @@ app.all("/api/hf-proxy/*", async (req, res) => {
   }
 });
 
+// General GET/HEAD CORS Proxy for model weights and WASM files
+app.get("/api/proxy", async (req, res) => {
+  try {
+    const targetUrl = req.query.url as string;
+    if (!targetUrl) {
+      res.status(400).json({ error: "url parameter is required" });
+      return;
+    }
+
+    console.log(`[General GET Proxy] ${req.method} ${targetUrl}`);
+
+    const headers: Record<string, string> = {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    };
+
+    const response = await fetch(targetUrl, {
+      method: "GET",
+      headers,
+    });
+
+    const contentType = response.headers.get("content-type");
+    const contentLength = response.headers.get("content-length");
+    const acceptRanges = response.headers.get("accept-ranges");
+
+    if (contentType) res.setHeader("content-type", contentType);
+    if (contentLength) res.setHeader("content-length", contentLength);
+    if (acceptRanges) res.setHeader("accept-ranges", acceptRanges);
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader(
+      "Access-Control-Expose-Headers",
+      "Content-Length, Content-Type"
+    );
+
+    if (!response.body) {
+      res.sendStatus(response.status);
+      return;
+    }
+
+    const reader = (response.body as any).getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        res.end();
+        break;
+      }
+      res.write(value);
+    }
+  } catch (error: any) {
+    console.error("[General GET Proxy Error]", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 1B. MLC / LiteRT Weights CORS Streaming Proxy endpoint
 app.post("/api/mlc-fetch", async (req, res) => {
   try {
