@@ -46,6 +46,38 @@ const MOCK_ITEMS: StoreItem[] = [
     effectId: 'widget-weather'
   },
   {
+    $id: 'item-border-neon',
+    name: 'Neon Avatar Pulse',
+    type: 'effect',
+    description: 'Surround your identity with a breathing neon glow. Fully customizable color.',
+    price: 250,
+    effectId: 'avatar-glow'
+  },
+  {
+    $id: 'item-search-glass',
+    name: 'Crystal Search',
+    type: 'effect',
+    description: 'Transform your search bar into a refractive crystal slab.',
+    price: 350,
+    effectId: 'search-glass'
+  },
+  {
+    $id: 'item-icon-royal',
+    name: 'Royal Crest Icon',
+    type: 'other',
+    description: 'Replace your default avatar with a premium golden neural crest.',
+    price: 450,
+    effectId: 'icon-royal'
+  },
+  {
+    $id: 'item-rank-insignia',
+    name: 'Neural Rank Insignia',
+    type: 'effect',
+    description: 'A dynamic, evolving avatar border that grows stronger as you gain XP. Bronze, Silver, Gold, Platinum, and Neural tiers.',
+    price: 0,
+    effectId: 'rank-insignia'
+  },
+  {
     $id: '1',
     name: 'Neon Search Glow',
     type: 'effect',

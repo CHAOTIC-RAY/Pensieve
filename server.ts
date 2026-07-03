@@ -14,6 +14,13 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
+// Set COOP/COEP headers to enable SharedArrayBuffer (required for local AI / WebLLM)
+app.use((_req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+  next();
+});
+
 // Set up larger limits for base64 image uploading
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));

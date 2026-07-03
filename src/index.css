@@ -723,6 +723,150 @@ html:fullscreen {
   100% { top: 200%; }
 }
 
+/* Store Effects & CRT Overlay */
+.crt-active::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 999999;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.crt-active::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: rgba(18, 16, 16, 0.1);
+  opacity: 0;
+  z-index: 999999;
+  pointer-events: none;
+  animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.27861; }
+  5% { opacity: 0.34769; }
+  10% { opacity: 0.23604; }
+  15% { opacity: 0.90626; }
+  20% { opacity: 0.18128; }
+  25% { opacity: 0.83891; }
+  30% { opacity: 0.65583; }
+  35% { opacity: 0.57807; }
+  40% { opacity: 0.26559; }
+  45% { opacity: 0.84693; }
+  50% { opacity: 0.96019; }
+  55% { opacity: 0.08523; }
+  60% { opacity: 0.71056; }
+  65% { opacity: 0.73477; }
+  70% { opacity: 0.85823; }
+  75% { opacity: 0.05194; }
+  80% { opacity: 0.26191; }
+  85% { opacity: 0.98798; }
+  90% { opacity: 0.263; }
+  95% { opacity: 0.44779; }
+  100% { opacity: 0.18533; }
+}
+
+/* Custom Search Styling */
+[data-search-glow="true"] #pensieve-omnibar-container {
+  box-shadow: 0 0 20px -2px var(--primary), 0 0 40px -10px var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+[data-search-glass="true"] #pensieve-omnibar-container {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Custom Avatar Borders */
+.avatar-container {
+  border: var(--avatar-border-width, 2px) var(--avatar-style, solid) var(--avatar-border, transparent);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-avatar-style="glow"] .avatar-container {
+  box-shadow: 0 0 15px var(--avatar-border, var(--primary));
+  border-style: solid;
+}
+
+/* Tiered Level Borders */
+.avatar-container {
+  position: relative;
+}
+
+/* Default Bronze */
+[data-user-tier="bronze"] .avatar-container {
+  border-color: #cd7f32;
+  box-shadow: 0 0 5px rgba(205, 127, 50, 0.2);
+}
+
+/* Silver (Lvl 5+) */
+[data-user-tier="silver"] .avatar-container {
+  border-color: #a0a0a0;
+  box-shadow: 0 0 10px rgba(160, 160, 160, 0.3);
+  background: linear-gradient(to bottom right, #f0f0f0, #a0a0a0) border-box;
+}
+
+/* Gold (Lvl 15+) */
+[data-user-tier="gold"] .avatar-container {
+  border-color: #ffd700;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+  border-width: 3px !important;
+}
+
+/* Platinum (Lvl 25+) */
+[data-user-tier="platinum"] .avatar-container {
+  border-color: #e5e4e2;
+  box-shadow: 0 0 20px rgba(229, 228, 226, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.5);
+  border-width: 4px !important;
+  animation: border-pulse 3s infinite;
+}
+
+/* Neural (Lvl 50+) */
+[data-user-tier="neural"] .avatar-container {
+  border-color: transparent;
+  background: linear-gradient(45deg, #6366f1, #a855f7, #ec4899) border-box;
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.6);
+  border-width: 5px !important;
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+}
+
+[data-user-tier="neural"] .avatar-container::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  background: linear-gradient(45deg, #6366f1, #a855f7, #ec4899);
+  border-radius: inherit;
+  z-index: -1;
+  animation: neural-rotation 5s linear infinite;
+}
+
+@keyframes border-pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes neural-rotation {
+  from { filter: hue-rotate(0deg); }
+  to { filter: hue-rotate(360deg); }
+}
+
 /* Glitch Name Tag */
 .nametag-glitch .user-name-display {
   position: relative;

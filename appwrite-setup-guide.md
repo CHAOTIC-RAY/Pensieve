@@ -113,7 +113,38 @@ Pensieve includes an optional Marketplace where you can spend earned XP on visua
     * Set the **Any** role to **Read** permission for the store collection so everyone can see the items.
     * Only admins should have **Create/Update/Delete** permissions.
 
-4.  **Configuration**:
+4.  **Custom Effect Injection (Advanced)**:
+    Pensieve uses a dynamic "attribute-driven" styling system. When a store item is equipped, its `effectId` is applied as a `data-active-effect` attribute on the `<html>` element. You can "inject" your own code and styles by adding CSS selectors to your project that target these IDs.
+
+    **Example: Creating a "Matrix" Effect**
+    - **Step 1**: Add an item to your `store-items` collection with `effectId: "effect-matrix"`.
+    - **Step 2**: Add this CSS to your `index.css`:
+    ```css
+    /* Target the active effect */
+    [data-active-effect="effect-matrix"] body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(0deg, rgba(0, 255, 0, 0.03) 50%, transparent 50%);
+      background-size: 100% 4px;
+      pointer-events: none;
+      z-index: 1000;
+      animation: matrix-scroll 20s linear infinite;
+    }
+    
+    @keyframes matrix-scroll {
+      from { background-position: 0 0; }
+      to { background-position: 0 100%; }
+    }
+    ```
+
+    **Available Injection Points**:
+    - `[data-active-effect="ID"]`: Global effect wrapper.
+    - `[data-search-glow="true"] #pensieve-omnibar-container`: Customize the search bar.
+    - `[data-avatar-style="glow"] .avatar-container`: Customize the user profile avatar.
+    - `[data-ui-style="glass"]`: Global glass UI overrides.
+
+5.  **Configuration**:
     * Set the following environment variables in your `.env` or project settings:
       * `VITE_STORE_APPWRITE_ENDPOINT`
       * `VITE_STORE_APPWRITE_PROJECT_ID`

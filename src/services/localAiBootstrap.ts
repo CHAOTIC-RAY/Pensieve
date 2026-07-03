@@ -66,6 +66,12 @@ export function shouldAutoBootstrapLocalAi(): boolean {
  */
 export async function checkWebGpuSupport(): Promise<string | null> {
   if (typeof window === 'undefined') return 'Not running in a browser context.';
+  
+  // WebLLM/MLC requires SharedArrayBuffer for high-performance multi-threaded inference
+  if (typeof SharedArrayBuffer === 'undefined') {
+    return 'Your browser has disabled high-performance multi-threading (SharedArrayBuffer). This usually occurs when security headers (COOP/COEP) are missing from the server.';
+  }
+
   if (!('gpu' in navigator)) {
     return 'Your browser or device does not support WebGPU. Please use Chrome 113+ or Edge 113+ with hardware acceleration enabled.';
   }
@@ -84,7 +90,9 @@ export async function checkWebGpuSupport(): Promise<string | null> {
  * Warms and downloads the selected model.
  */
 export async function bootstrapLocalAiOnLaunch(force: boolean = false): Promise<void> {
+  console.log(`[LocalAI Bootstrap] Launching (force=${force})...`);
   if (!force && !shouldAutoBootstrapLocalAi()) {
+    console.log('[LocalAI Bootstrap] Auto-bootstrap skipped: local AI is disabled.');
     updateStatus('idle', 0, 'On-device local AI is currently disabled. Enable it in the settings.');
     return;
   }

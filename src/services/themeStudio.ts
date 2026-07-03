@@ -2,6 +2,22 @@ export type UserSettings = {
   xp?: number;
   unlockedEffects?: string[];
   activeEffect?: string | null;
+  
+  // Customization Overrides (from Store or Settings)
+  avatarBorderColor?: string;
+  avatarBorderSize?: number;
+  avatarBorderStyle?: 'solid' | 'dashed' | 'double' | 'glow';
+  avatarIcon?: string;
+  
+  searchBarGlow?: boolean;
+  searchBarGlass?: boolean;
+  
+  pinnedWidgets?: string[]; // IDs of widgets to show (e.g. 'weather', 'clock', 'xp-mini')
+
+  // Level System
+  level?: number;
+  levelProgress?: number; // 0 to 100
+
   // Theme
   themeMode: 'light' | 'dark';           // Light/dark mode
   themeColor: string;                    // Hex accent color, e.g. '#f43f5e'
@@ -170,8 +186,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
   autoNightMode: false,
   mobileTabs: ['favorites', 'note', 'link'],
   xp: 100, // starting XP
-  unlockedEffects: [],
-  activeEffect: null,
+  unlockedEffects: ['rank-insignia'],
+  activeEffect: 'rank-insignia',
 };
 
 // Lazy font loader
@@ -203,7 +219,7 @@ export function getFontDisplayValue(comboId: string): string {
 export function applyTheme(settings: UserSettings) {
   const root = document.documentElement;
   
-  // Handle auto night mode based on local hour (6 PM to 6 AM)
+  // Handle auto night mode
   let appliedThemeMode = settings.themeMode;
   if (settings.autoNightMode) {
     const hour = new Date().getHours();
@@ -228,6 +244,35 @@ export function applyTheme(settings: UserSettings) {
   root.setAttribute('data-theme', appliedThemeMode);
   root.setAttribute('data-ui-style', settings.uiStyle || 'modern');
   root.setAttribute('data-hide-images', settings.hideImages ? 'true' : 'false');
+  
+  // Custom Overrides
+  const levelInfo = calculateLevel(settings.xp || 0);
+  root.setAttribute('data-user-level', levelInfo.level.toString());
+  root.setAttribute('data-user-tier', levelInfo.tier.toLowerCase());
+  
+  if (settings.avatarBorderColor) root.style.setProperty('--avatar-border', settings.avatarBorderColor);
+  if (settings.avatarBorderSize) root.style.setProperty('--avatar-border-width', settings.avatarBorderSize + 'px');
+  root.setAttribute('data-avatar-style', settings.avatarBorderStyle || 'solid');
+  
+  root.setAttribute('data-search-glow', settings.searchBarGlow ? 'true' : 'false');
+  root.setAttribute('data-search-glass', settings.searchBarGlass ? 'true' : 'false');
+
+  // Handle Active Effects from Store
+  const effectId = settings.activeEffect;
+  root.setAttribute('data-active-effect', effectId || 'none');
+  
+  // Special Handling for CRT
+  if (effectId === 'effect-crt') {
+    document.body.classList.add('crt-active');
+  } else {
+    document.body.classList.remove('crt-active');
+  }
+
+  // Special Handling for Glass UI (Store Version)
+  if (effectId === 'theme-glass') {
+    root.setAttribute('data-ui-style', 'glass');
+    root.style.setProperty('--blur-strength', '40px');
+  }
   
   // Background Image
   if (settings.backgroundImage) {
@@ -268,6 +313,25 @@ export function loadSettings(): UserSettings {
   } catch {
     return DEFAULT_SETTINGS;
   }
+}
+
+/**
+ * Calculates user level based on XP.
+ * Formula: Each level requires 500 XP.
+ */
+export function calculateLevel(xp: number = 0) {
+  const level = Math.floor(xp / 500) + 1;
+  const currentLevelXp = xp % 500;
+  const progress = (currentLevelXp / 500) * 100;
+  
+  // Tier name
+  let tier = 'Bronze';
+  if (level >= 50) tier = 'Neural';
+  else if (level >= 25) tier = 'Platinum';
+  else if (level >= 15) tier = 'Gold';
+  else if (level >= 5) tier = 'Silver';
+
+  return { level, progress, tier };
 }
 
 export function saveSettings(settings: UserSettings) {

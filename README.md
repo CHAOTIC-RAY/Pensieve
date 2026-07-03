@@ -1,16 +1,17 @@
 <div align="center">
-  <img src="./Logo.svg" width="80" height="80" alt="Pensieve Logo" />
+  <img src="./Logo.svg" width="100" height="100" alt="Pensieve Logo" />
   <h1>Pensieve</h1>
   <p><strong>Your Neural Vault. Your Second Brain. Entirely Sovereign.</strong></p>
   
   <p>
-    <img src="https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react" alt="React" />
-    <img src="https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript" alt="TypeScript" />
-    <img src="https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=flat-square&logo=tailwind-css" alt="Tailwind" />
-    <img src="https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite" alt="Vite" />
-    <img src="https://img.shields.io/badge/Firebase-Auth-FFCA28?style=flat-square&logo=firebase" alt="Firebase" />
-    <img src="https://img.shields.io/badge/Appwrite-Cloud-FD366E?style=flat-square&logo=appwrite" alt="Appwrite" />
+    <img src="https://img.shields.io/badge/React-18-blue?style=for-the-badge&logo=react" alt="React" />
+    <img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=for-the-badge&logo=tailwind-css" alt="Tailwind" />
+    <img src="https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite" alt="Vite" />
+    <img src="https://img.shields.io/badge/Appwrite-Cloud-FD366E?style=for-the-badge&logo=appwrite" alt="Appwrite" />
   </p>
+
+  <p><i>Capture thoughts, organize digital memories, and own your data.</i></p>
 </div>
 
 ---
@@ -26,25 +27,25 @@ Whether you're saving a fleeting thought, a beautiful quote, or a complex resear
 ## ✨ Key Features
 
 ### 🛡️ Sovereign Data & Sync
-- **Local-First Engine**: All data is stored and encrypted locally in IndexedDB.
-- **Appwrite Integration**: Secure, real-time synchronization across devices using your own Appwrite instance.
-- **Firebase Auth**: Enterprise-grade security with Google Identity Platform.
+- **Local-First Engine**: All data is stored and encrypted locally in IndexedDB using Dexie.js.
+- **Appwrite Integration**: Secure, real-time synchronization across devices using your own Appwrite instance. Host your own personal cloud.
+- **Privacy First**: No telemetry, no hidden trackers. Your thoughts stay yours.
 
 ### 🤖 Intelligence (On-Device & Cloud)
 - **Local WebGPU AI**: Run 1.5B+ parameter models (LiteRT) directly in your browser. Private summarization and tagging—no data leaves your machine.
-- **Gemini Pro Fallback**: High-performance cloud AI for complex reasoning and deep content analysis.
-- **Auto-Scraping**: Paste a URL, and Pensieve automatically extracts titles, descriptions, and metadata.
+- **Gemini Pro Fallback**: High-performance cloud AI for complex reasoning, image analysis, and deep content extraction.
+- **Omnibar Intelligence**: Auto-detects content types (URLs, Colors, Quotes, Movie Titles) as you type.
 
-### 🎨 Premium User Experience
-- **Editorial UI**: A clean, high-contrast interface focused on typography and negative space.
-- **Notion-Style Inspector**: A powerful rich text editor optimized for both desktop and mobile.
-- **Universal Search**: Lightning-fast fuzzy search across all your saved thoughts.
-- **Responsive Navigation**: Full gesture support for mobile, mimicking native Android/iOS experiences.
+### 🎨 Hyper-Customizable Interface
+- **Marketplace & XP Economy**: Earn experience points (XP) for every thought captured. Spend them in the Marketplace to unlock premium upgrades.
+- **Visual Effects**: Unlock CRT scanline overlays, Matrix digital rain, and advanced "Glass UI" themes.
+- **Profile Customization**: Customize your avatar with Royal Crests, Glowing Borders, and custom styles.
+- **Omnibar Styles**: Transform your search experience with Crystal Glass effects and Neural Glows.
 
-### 🕹️ Gamified Growth
-- **XP Economy**: Earn experience points for every thought captured and organized.
-- **Marketplace**: Spend your XP on custom visual effects, CRT monitor scanlines, and premium "Glass UI" themes.
-- **Achievements**: Unlock collectible physical-style cards as you hit milestones in your neural journey.
+### 📌 Neural Widgets
+- **Pinned Widgets**: Keep critical information always visible with the persistent widget system.
+- **Neural XP Tracker**: Watch your progress in real-time as you grow your neural vault.
+- **Local Time & Weather**: Context-aware widgets that adapt to your environment.
 
 ---
 
@@ -68,12 +69,11 @@ Whether you're saving a fleeting thought, a beautiful quote, or a complex resear
    ```
 
 3. **Configure Environment Variables**:
-   Create a `.env` file in the root directory and add your keys:
+   Create a `.env` file in the root directory. See `.env.example` for all required keys.
    ```env
    GEMINI_API_KEY=your_gemini_key
    VITE_FIREBASE_API_KEY=your_firebase_key
    VITE_STORE_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
-   # See GUIDE.md for full Appwrite setup
    ```
 
 4. **Run Development Server**:
@@ -83,25 +83,23 @@ Whether you're saving a fleeting thought, a beautiful quote, or a complex resear
 
 ---
 
-## 🛠️ Architecture
+## 📖 Guides & Resources
 
-- **Frontend**: React 18, Vite, Tailwind CSS, Framer Motion
-- **Backend**: Express (API Proxying), Appwrite (Real-time DB & Storage)
-- **Authentication**: Firebase Auth
-- **AI**: Google Gemini (Cloud), LiteRT / WebLLM (On-device)
-
----
-
-## 📖 Documentation
-
-- [Appwrite Setup Guide](./appwrite-setup-guide.md) - Learn how to host your own cloud storage.
-- [AI Configuration](./docs/ai.md) - Tuning the local and cloud AI models.
+- **[Setup Guide](./appwrite-setup-guide.md)**: Detailed instructions for Appwrite database and storage setup.
+- **[Store Customization](./appwrite-setup-guide.md#4-custom-effect-injection-advanced)**: Learn how to inject custom CSS effects through store items.
+- **[Gamification System](./docs/gamification.md)**: Understanding XP, Levels, and Achievements.
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+We welcome contributions! Whether it's a bug fix, a new store effect, or a core feature improvement, please feel free to open a PR.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ---
 
@@ -113,4 +111,5 @@ This project is licensed under the Apache-2.0 License - see the [LICENSE](LICENS
 
 <div align="center">
   <p>Built with ❤️ for the unburdened mind.</p>
+  <p><strong>Neural Vault v2.4.0</strong></p>
 </div>

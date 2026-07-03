@@ -25,7 +25,9 @@ export const isWebLiteRtSupported = (): boolean => {
 
 export function isLocalAiEnabled(): boolean {
   if (typeof window === 'undefined') return false;
-  return localStorage.getItem(LOCAL_AI_ENABLED_KEY) === 'true';
+  const isEnabled = localStorage.getItem(LOCAL_AI_ENABLED_KEY) === 'true';
+  const strategy = localStorage.getItem('pensieve_ai_strategy');
+  return isEnabled || strategy === 'local';
 }
 
 export function setLocalAiEnabled(enabled: boolean): void {

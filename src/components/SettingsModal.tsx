@@ -213,10 +213,17 @@ export default function SettingsModal({
       generateSettingsQrCode()
         .then((url) => setQrCodeDataUrl(url))
         .catch((err) => console.error("Error generating settings QR code:", err));
+      
+      // Proactively trigger bootstrap if we are in local strategy but engine is still idle (Standby)
+      if (aiStrategy === 'local' && bootstrapState.phase === 'idle') {
+        console.log('[SettingsModal] Local AI strategy active but engine is idle. Proactively bootstrapping...');
+        bootstrapLocalAiOnLaunch(true);
+      }
     }
   }, [
     isOpen,
-    activeTab,
+    aiStrategy,
+    bootstrapState.phase,
     appwriteEndpoint,
     appwriteProjectId,
     appwriteDatabaseId,

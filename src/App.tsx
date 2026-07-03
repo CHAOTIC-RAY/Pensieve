@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag, X, Database } from 'lucide-react';
+import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag, Store, X, Database } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from './lib/firebase';
 import { DbStrategy, getDbStrategy, loadDbItems, saveDbItems, processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured, isAppwriteConfigured } from './services/dbStrategyService';
@@ -36,7 +36,7 @@ import {
 import { subscribeToBootstrap, bootstrapLocalAiOnLaunch } from './services/localAiBootstrap';
 import { fetchModelManifest, ModelManifestEntry } from './services/litertModelResolver';
 import { 
-  UserSettings, loadSettings, saveSettings, applyTheme as applyStudioTheme 
+  UserSettings, loadSettings, saveSettings, applyTheme as applyStudioTheme, calculateLevel
 } from './services/themeStudio';
 
 import SettingsModal from './components/SettingsModal';
@@ -45,6 +45,7 @@ import AdminPanel from './components/AdminPanel';
 import { useAchievements } from './hooks/useAchievements';
 import AchievementsModal from './components/AchievementsModal';
 import AchievementToast from './components/AchievementToast';
+import PinnedWidgets from './components/PinnedWidgets';
 
 const GalaxyBackground = () => {
   return (
@@ -729,7 +730,7 @@ export default function App() {
             onClick={() => setIsStoreOpen(true)}
             className="md:hidden flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full font-bold text-[10px] tracking-wider uppercase font-mono shadow-sm active:scale-95 transition-transform"
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Store className="w-3.5 h-3.5" />
             Store
           </button>
           
@@ -739,13 +740,26 @@ export default function App() {
               setSettingsTab('profile');
               setIsSettingsOpen(true);
             }}
-            className={`w-7 h-7 rounded-full bg-gradient-to-tr ${profileGradient} border border-white/20 dark:border-white/5 ring-2 ring-black/[0.03] dark:ring-white/[0.03] shadow-sm cursor-pointer flex items-center justify-center text-[10px] font-bold text-neutral-800`}
+            className={`w-7 h-7 rounded-full bg-gradient-to-tr ${profileGradient} border-white/20 dark:border-white/5 shadow-sm cursor-pointer flex items-center justify-center text-[10px] font-bold text-neutral-800 avatar-container`}
             title={profileName}
           >
-            {profileName.trim().split(/\s+/).map(p => p[0]).join('').slice(0, 2).toUpperCase() || '?'}
+            {userSettings.avatarIcon ? (
+              <span className="text-[10px]">
+                {userSettings.avatarIcon === 'icon-royal' ? '👑' : '?'}
+              </span>
+            ) : (
+              profileName.trim().split(/\s+/).map(p => p[0]).join('').slice(0, 2).toUpperCase() || '?'
+            )}
+            
+            {/* Level Badge */}
+            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-foreground text-background flex items-center justify-center text-[7px] font-black border border-background shadow-sm">
+              {calculateLevel(userSettings.xp || 0).level}
+            </div>
           </div>
         </div>
       </header>
+
+      <PinnedWidgets settings={userSettings} />
 
       <SettingsModal 
         isOpen={isSettingsOpen}
@@ -843,7 +857,7 @@ export default function App() {
             title="Marketplace"
             className="w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] bg-amber-500/10 border-amber-500/20 text-amber-500 hover:scale-105 active:scale-95"
           >
-            <ShoppingBag className="w-5 h-5" />
+            <Store className="w-5 h-5" />
           </button>
           {/* Achievements Button */}
           <button
@@ -918,9 +932,20 @@ export default function App() {
                 setSettingsTab('profile');
                 setIsSettingsOpen(true);
               }}
-              className={`w-11 h-11 rounded-full bg-gradient-to-tr ${profileGradient} border border-white/20 dark:border-white/5 ring-4 ring-black/[0.03] dark:ring-white/[0.03] shadow-[0_4px_12px_rgba(0,0,0,0.1)] flex-shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center text-xs font-bold text-neutral-800`}
+              className={`w-11 h-11 rounded-full bg-gradient-to-tr ${profileGradient} border-white/20 dark:border-white/5 shadow-[0_4px_12px_rgba(0,0,0,0.1)] flex-shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center text-xs font-bold text-neutral-800 avatar-container`}
             >
-               {profileName.trim().split(/\s+/).map(p => p[0]).join('').slice(0, 2).toUpperCase() || '?'}
+               {userSettings.avatarIcon ? (
+                <span className="text-xl">
+                  {userSettings.avatarIcon === 'icon-royal' ? '👑' : '?'}
+                </span>
+              ) : (
+                profileName.trim().split(/\s+/).map(p => p[0]).join('').slice(0, 2).toUpperCase() || '?'
+              )}
+              
+              {/* Level Badge */}
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-foreground text-background flex items-center justify-center text-[10px] font-black border-2 border-background shadow-md">
+                {calculateLevel(userSettings.xp || 0).level}
+              </div>
             </div>
             <div className="absolute top-14 right-0 hidden group-hover:flex flex-col bg-card-bg/95 backdrop-blur-md border border-border-subtle p-3 rounded-2xl shadow-premium z-50 pointer-events-none min-w-[200px]">
               <span className="text-sm font-semibold text-foreground truncate user-name-display" data-name={profileName}>{profileName}</span>
