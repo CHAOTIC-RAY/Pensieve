@@ -76,6 +76,7 @@ import {
   PRESET_COLORS,
   saveSettings,
   loadGoogleFont,
+  calculateLevel,
 } from "../services/themeStudio";
 import { MindItem } from "../types";
 
@@ -546,6 +547,7 @@ export default function SettingsModal({
   // Mobile collapsible sections
   const [mobileExpanded, setMobileExpanded] = useState<Record<string, boolean>>(
     {
+      profile: false,
       ai: false,
       sync: false,
       apis: false,
@@ -839,6 +841,7 @@ export default function SettingsModal({
     };
 
     const initials = getInitials(profileName || "");
+    const levelInfo = calculateLevel(userSettings.xp || 0);
 
     const handleSignOut = async () => {
       try {
@@ -901,37 +904,73 @@ export default function SettingsModal({
         </div>
 
         {/* Profile Card & Avatar Preview */}
-        <div className="p-5 rounded-2xl bg-foreground/[0.02] border border-border-subtle flex flex-col sm:flex-row items-center justify-between gap-5">
-          <div className="flex flex-col sm:flex-row items-center gap-5">
-            <div
-              className={`w-16 h-16 rounded-full flex items-center justify-center font-display text-xl font-bold tracking-tight shadow-md shrink-0 ${currentGradientClass}`}
-            >
-              {initials}
+        <div className="p-5 rounded-2xl bg-foreground/[0.02] border border-border-subtle flex flex-col sm:flex-row items-center justify-between gap-5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl -mr-16 -mt-16 rounded-full" />
+          
+          <div className="flex flex-col sm:flex-row items-center gap-5 relative z-10">
+            <div className="relative">
+              <div
+                className={`w-16 h-16 rounded-full flex items-center justify-center font-display text-xl font-bold tracking-tight shadow-md shrink-0 avatar-container ${currentGradientClass}`}
+              >
+                {userSettings.avatarIcon ? (
+                  <span className="text-2xl">
+                    {userSettings.avatarIcon === 'icon-royal' ? '👑' : '?'}
+                  </span>
+                ) : (
+                  initials
+                )}
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center text-[10px] font-black border-2 border-background shadow-md">
+                {levelInfo.level}
+              </div>
             </div>
             <div className="text-center sm:text-left space-y-1">
-              <h4 className="text-sm font-bold text-text-heading">
-                {profileName}
-              </h4>
+              <div className="flex items-center justify-center sm:justify-start gap-2">
+                <h4 className="text-sm font-bold text-text-heading">
+                  {profileName}
+                </h4>
+                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-foreground text-background uppercase tracking-tighter">
+                  {levelInfo.tier}
+                </span>
+              </div>
               <p className="text-xs text-foreground/50 font-mono">
                 {profileEmail}
               </p>
               <div className="flex flex-wrap gap-2 pt-1 items-center justify-center sm:justify-start">
                 <span className="text-[10px] font-mono bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/15 font-semibold">
-                  Private Workspace
+                  Lvl {levelInfo.level}
                 </span>
                 <span className="text-[10px] font-mono bg-foreground/5 text-foreground/60 px-2 py-0.5 rounded-full border border-border-subtle font-semibold">
-                  Synchronized
+                  {userSettings.xp || 0} Total XP
                 </span>
               </div>
             </div>
           </div>
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl transition-colors text-xs font-bold active:scale-95 duration-200"
+            className="relative z-10 flex items-center gap-2 px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl transition-colors text-xs font-bold active:scale-95 duration-200"
           >
             <LogOut className="w-4 h-4" />
             Sign Out
           </button>
+        </div>
+
+        {/* Level Progress (Newly added) */}
+        <div className="p-5 rounded-2xl bg-foreground/[0.01] border border-border-subtle/50 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">Neural Growth Progress</span>
+            <span className="text-[10px] font-bold font-mono text-primary">{Math.round(levelInfo.progress)}% to Lvl {levelInfo.level + 1}</span>
+          </div>
+          <div className="w-full h-2 bg-foreground/5 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${levelInfo.progress}%` }}
+              className="h-full bg-primary shadow-[0_0_12px_rgba(var(--primary-rgb),0.4)]"
+            />
+          </div>
+          <p className="text-[9px] text-foreground/40 text-center font-medium">
+            Gain XP by capturing thoughts, organizing items, and hitting milestones.
+          </p>
         </div>
 
         {/* Input Settings Form */}
@@ -2916,6 +2955,38 @@ export default function SettingsModal({
 
             {/* Accordion Categories */}
             <div className="p-4 space-y-3">
+              {/* 0. User Profile (Newly added for mobile) */}
+              <div className="border border-border-subtle rounded-2xl overflow-hidden bg-card-bg/50 backdrop-blur-sm">
+                <button
+                  onClick={() => toggleMobileSection("profile")}
+                  className="w-full px-5 py-4 flex items-center justify-between bg-card-bg hover:bg-foreground/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3 text-text-heading font-semibold text-sm">
+                    <User className="w-4.5 h-4.5 text-rose-400" />
+                    My Neural Profile
+                  </div>
+                  {mobileExpanded.profile ? (
+                    <ChevronUp className="w-4 h-4 text-foreground/60" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-foreground/60" />
+                  )}
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {mobileExpanded.profile && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden border-t border-border-subtle bg-modal-bg/30"
+                    >
+                      <div className="p-5">{renderUserProfileContent()}</div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               {/* 1. Appearance / Theme Studio (Main section) */}
               <div className="border border-border-subtle rounded-2xl overflow-hidden bg-card-bg/50 backdrop-blur-sm">
                 <button
