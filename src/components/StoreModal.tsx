@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { X, Sparkles, Store, Zap, Crown } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { X, Sparkles, Store, Zap, Crown, Loader2, Check, Lock, Info, ChevronRight, Eye, Package, Palette } from 'lucide-react';
 import { StoreItem, fetchStoreItems } from '../services/storeService';
 import { UserSettings, saveSettings } from '../services/themeStudio';
 
@@ -8,13 +8,90 @@ interface StoreModalProps {
   isOpen: boolean;
   onClose: () => void;
   userSettings: UserSettings;
+  onUpdateSettings?: (settings: UserSettings) => void;
 }
 
-export default function StoreModal({ isOpen, onClose, userSettings }: StoreModalProps) {
+// Neat visual change descriptions for each item
+const EFFECT_CHANGES: Record<string, { impact: string; details: string[] }> = {
+  'theme-glass': {
+    impact: 'Workspace Cards & Panels',
+    details: [
+      'Converts solid card backgrounds to stunning frosted semi-transparent layers.',
+      'Enables native hardware-accelerated background glass blurs.',
+      'Enhances depth, light-refracting borders, and high-contrast text contrast.',
+      'Blends perfectly with both ambient light and glowing dark modes.'
+    ]
+  },
+  'effect-crt': {
+    impact: 'Vault Interface & Overlay',
+    details: [
+      'Overlays horizontal, nostalgic scanlines across the entire app workspace.',
+      'Applies a retro phosphor pixel glow with a soft, realistic screen flicker.',
+      'Transforms display panels with a classic terminal terminal phosphor vibe.',
+      'Perfect for immersive vintage cybernetic or terminal aesthetic enthusiasts.'
+    ]
+  },
+  'widget-weather': {
+    impact: 'Command Bar / Status Header',
+    details: [
+      'Injects a weather diagnostics module directly into your search omnibar.',
+      'Visual weather conditions (Sun, Rain, Storms) animate based on focus level.',
+      'Features a dynamic, smooth ambient pulse synchronized with workspace activity.',
+      'Integrates localized temperature status tied directly to your focus streak.'
+    ]
+  },
+  'avatar-glow': {
+    impact: 'Header Profile Identity',
+    details: [
+      'Surrounds your avatar profile frame with a high-fidelity neon aura.',
+      'Implements a multi-layered breathing color shadow light pulse.',
+      'Highlights your avatar and level in the global header interface.',
+      'Dynamically synchronizes with your currently active dashboard accent color.'
+    ]
+  },
+  'search-glass': {
+    impact: 'Global Search Command Bar',
+    details: [
+      'Upgrades your primary input field into a refractive crystal slab.',
+      'Triggers a full spectrum light-sweep animation whenever focused.',
+      'Applies a crisp crystal-like border accent when actively typing thoughts.',
+      'Improves field prominence for rapid navigation and command triggers.'
+    ]
+  },
+  'icon-royal': {
+    impact: 'User Profile Identity',
+    details: [
+      'Replaces default username initials with a premium Golden Crown emblem.',
+      'Renders a majestic royal amber radial glow behind your profile avatar.',
+      'Features custom gold visual accents on the settings card.',
+      'Establishes ultimate cerebral distinction across all workspace modules.'
+    ]
+  },
+  'rank-insignia': {
+    impact: 'Evolving Profile Badges',
+    details: [
+      'Equips an evolving holographic crest frame surrounding your profile.',
+      'Badge complexity and layout automatically upgrades as you level up.',
+      'Cycles through Bronze, Silver, Gold, Platinum, and Neural tiers.',
+      'Provides instant visual prestige of your focus achievements.'
+    ]
+  },
+  'search-neon': {
+    impact: 'Global Search Command Bar',
+    details: [
+      'Wraps your search bar in a high-intensity cyan neon energy aura.',
+      'Casts soft, atmospheric ambient light diffusion onto nearby containers.',
+      'Adds a lightning-fast sweep effect when executing search queries.',
+      'Delivers exceptional visibility, perfect for high-tech dark themes.'
+    ]
+  }
+};
+
+export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSettings }: StoreModalProps) {
   const [items, setItems] = useState<StoreItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'market' | 'owned'>('market');
-  const [previewEffect, setPreviewEffect] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -22,44 +99,9 @@ export default function StoreModal({ isOpen, onClose, userSettings }: StoreModal
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = '';
-        // Reset preview styles
-        const root = document.documentElement;
-        root.setAttribute('data-active-effect', userSettings.activeEffect || 'none');
-        if (userSettings.activeEffect === 'effect-crt') {
-          document.body.classList.add('crt-active');
-        } else {
-          document.body.classList.remove('crt-active');
-        }
-        root.setAttribute('data-ui-style', userSettings.uiStyle || 'modern');
       };
     }
   }, [isOpen]);
-
-  // History handling to allow "Back" to close modal on mobile
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const state = { modal: 'store' };
-    try {
-      window.history.pushState(state, '');
-    } catch (e) {
-      console.warn('History pushState failed', e);
-    }
-    
-    const handlePopState = () => onClose();
-    window.addEventListener('popstate', handlePopState);
-    
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      if (window.history.state?.modal === 'store') {
-        try {
-          window.history.back();
-        } catch (e) {
-          console.warn('History back failed', e);
-        }
-      }
-    };
-  }, [isOpen, onClose]);
 
   const loadStore = async () => {
     setLoading(true);
@@ -71,28 +113,6 @@ export default function StoreModal({ isOpen, onClose, userSettings }: StoreModal
   const currentXp = userSettings.xp || 0;
   const unlocked = userSettings.unlockedEffects || [];
   const activeEffect = userSettings.activeEffect;
-
-  const handlePreview = (item: StoreItem | null) => {
-    const root = document.documentElement;
-    const effId = item?.effectId || userSettings.activeEffect;
-    
-    setPreviewEffect(item?.effectId || null);
-    
-    // Temporarily apply to root for preview
-    root.setAttribute('data-active-effect', effId || 'none');
-    
-    if (effId === 'effect-crt') {
-      document.body.classList.add('crt-active');
-    } else {
-      document.body.classList.remove('crt-active');
-    }
-
-    if (effId === 'theme-glass') {
-      root.setAttribute('data-ui-style', 'glass');
-    } else {
-      root.setAttribute('data-ui-style', userSettings.uiStyle || 'modern');
-    }
-  };
 
   const handlePurchase = (item: StoreItem) => {
     if (currentXp < item.price) {
@@ -122,7 +142,11 @@ export default function StoreModal({ isOpen, onClose, userSettings }: StoreModal
       newSettings.activeEffect = item.effectId;
     }
 
-    saveSettings(newSettings);
+    if (onUpdateSettings) {
+      onUpdateSettings(newSettings);
+    } else {
+      saveSettings(newSettings);
+    }
   };
 
   const handleEquip = (item: StoreItem) => {
@@ -132,11 +156,183 @@ export default function StoreModal({ isOpen, onClose, userSettings }: StoreModal
     } else {
       newSettings.activeEffect = item.effectId;
     }
-    saveSettings(newSettings);
+    
+    if (onUpdateSettings) {
+      onUpdateSettings(newSettings);
+    } else {
+      saveSettings(newSettings);
+    }
   };
 
   const marketItems = items.filter(i => !unlocked.includes(i.effectId));
   const ownedItems = items.filter(i => unlocked.includes(i.effectId));
+
+  // Render a beautiful interactive animation preview inside the detail view
+  const renderEffectAnimation = (effectId: string) => {
+    switch (effectId) {
+      case 'theme-glass':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-gradient-to-tr from-rose-500 via-indigo-600 to-cyan-500 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-neutral-950/10 backdrop-blur-[2px]" />
+            <div className="absolute w-28 h-28 bg-rose-400/30 rounded-full blur-xl animate-pulse -top-4 -left-4" />
+            <div className="absolute w-36 h-36 bg-cyan-400/25 rounded-full blur-2xl animate-bounce bottom-2 right-2" />
+            <div className="relative z-10 w-full max-w-[200px] p-4 rounded-xl border border-white/20 bg-white/10 backdrop-blur-md shadow-2xl flex flex-col gap-2">
+              <div className="w-16 h-3 bg-white/40 rounded" />
+              <div className="w-full h-2 bg-white/20 rounded" />
+              <div className="w-3/4 h-2 bg-white/20 rounded" />
+              <div className="flex justify-between items-center mt-2">
+                <div className="w-10 h-5 bg-white/30 rounded" />
+                <div className="w-5 h-5 bg-white/40 rounded-full" />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'effect-crt':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-950 border border-emerald-500/20 flex flex-col justify-between p-4 font-mono text-[9px] text-emerald-400">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/[0.04] to-transparent animate-[scanline_4s_linear_infinite] pointer-events-none" />
+            {/* Horizontal scanline simulation */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] pointer-events-none" />
+            <div className="flex justify-between border-b border-emerald-500/20 pb-1.5">
+              <span>[NEURAL CORE DIRECT_V9]</span>
+              <span className="animate-pulse flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> LIVE
+              </span>
+            </div>
+            <div className="space-y-1 my-auto">
+              <p className="text-emerald-300 font-bold">SYSTEM STATUS: READY</p>
+              <p className="opacity-70">&gt; DECRYPTING VAULT SUCCESS</p>
+              <p className="opacity-55">&gt; MONITORING CORE FLOW...</p>
+            </div>
+            <div className="border-t border-emerald-500/20 pt-1.5 flex justify-between opacity-50 text-[8px]">
+              <span>SECURE_SHELL_256</span>
+              <span>198.162.0.1</span>
+            </div>
+            <style>{`
+              @keyframes scanline {
+                0% { transform: translateY(-100%); }
+                100% { transform: translateY(100%); }
+              }
+            `}</style>
+          </div>
+        );
+
+      case 'widget-weather':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-900 border border-border-subtle flex flex-col items-center justify-center p-4">
+            <div className="absolute inset-0 bg-gradient-to-tr from-sky-950/40 via-neutral-950 to-indigo-950/40" />
+            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-xl animate-[spin_8s_linear_infinite]">
+                    ☀️
+                  </div>
+                  <div className="absolute -bottom-1 -right-2 text-lg animate-bounce">
+                    ☁️
+                  </div>
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-bold text-white">Atmosphere Cloud</div>
+                  <div className="text-[10px] text-sky-400 font-mono">Sunny with Mind Storms</div>
+                </div>
+              </div>
+              <div className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-[9px] font-mono text-neutral-300 animate-pulse">
+                CEREBRAL TEMPERATURE: 72°F
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'avatar-glow':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-950 flex items-center justify-center">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-violet-600 blur-md animate-pulse scale-125 opacity-70" />
+              <div className="absolute inset-0 rounded-full bg-indigo-500 blur-xl animate-ping scale-110 opacity-30" />
+              <div className="absolute inset-0 rounded-full bg-cyan-400 blur-md animate-pulse scale-105 opacity-60" />
+              <div className="relative w-20 h-20 rounded-full bg-neutral-900 border-2 border-violet-400 flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(139,92,246,0.6)]">
+                👤
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'search-glass':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-gradient-to-r from-neutral-950 via-slate-900 to-neutral-950 flex flex-col items-center justify-center p-6 gap-2">
+            <div className="relative w-full max-w-[240px] p-3 rounded-2xl border border-white/20 bg-white/[0.04] backdrop-blur-md shadow-[0_0_15px_rgba(255,255,255,0.05)] overflow-hidden">
+              <div className="absolute inset-y-0 w-16 bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent skew-x-12 animate-[sweep_3s_ease-in-out_infinite] pointer-events-none" />
+              <div className="flex items-center gap-2">
+                <span className="text-cyan-400 text-xs">🔍</span>
+                <div className="w-28 h-2 bg-white/25 rounded" />
+              </div>
+            </div>
+            <p className="text-[9px] text-cyan-400/60 font-mono uppercase tracking-widest animate-pulse mt-2">Prismatic light Sweep</p>
+            <style>{`
+              @keyframes sweep {
+                0% { left: -100%; }
+                50% { left: 100%; }
+                100% { left: 100%; }
+              }
+            `}</style>
+          </div>
+        );
+
+      case 'icon-royal':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-900 border border-amber-500/10 flex items-center justify-center">
+            <div className="absolute w-24 h-24 rounded-full bg-amber-500/10 blur-xl animate-pulse" />
+            <div className="relative flex flex-col items-center space-y-2">
+              <div className="relative w-20 h-20 rounded-full bg-gradient-to-b from-amber-300 via-amber-500 to-amber-600 p-0.5 shadow-[0_0_25px_rgba(245,158,11,0.3)]">
+                <div className="w-full h-full bg-neutral-950 rounded-full flex items-center justify-center text-4xl animate-bounce">
+                  👑
+                </div>
+              </div>
+              <span className="text-[9px] font-bold text-amber-400 font-mono tracking-widest uppercase">ROYAL STATUS ACTIVATE</span>
+            </div>
+          </div>
+        );
+
+      case 'rank-insignia':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-950 flex flex-col items-center justify-center gap-3">
+            <div className="flex items-center gap-4">
+              <div className="relative w-14 h-14 rounded-full p-1 bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 animate-[spin_10s_linear_infinite]">
+                <div className="w-full h-full bg-neutral-900 rounded-full flex items-center justify-center text-white font-mono text-[9px]">
+                  GOLD
+                </div>
+              </div>
+              <div className="text-lg text-neutral-400">→</div>
+              <div className="relative w-14 h-14 rounded-full p-1 bg-gradient-to-r from-violet-600 via-cyan-400 to-indigo-600 animate-pulse">
+                <div className="w-full h-full bg-neutral-900 rounded-full flex items-center justify-center text-white font-mono text-[9px] font-black">
+                  NEURAL
+                </div>
+              </div>
+            </div>
+            <p className="text-[9px] font-mono text-neutral-400 uppercase tracking-wider">Evolving Rank Crest</p>
+          </div>
+        );
+
+      case 'search-neon':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-950 flex flex-col items-center justify-center p-6">
+            <div className="w-full max-w-[220px] p-3 rounded-xl border border-cyan-500/50 bg-neutral-900 shadow-[0_0_15px_rgba(6,182,212,0.4)] flex items-center gap-2">
+              <span className="text-cyan-400 animate-pulse text-xs">⚡</span>
+              <div className="w-24 h-2 bg-cyan-400/30 rounded" />
+            </div>
+            <p className="text-[9px] text-cyan-400 font-mono uppercase tracking-widest mt-3">Neon energy field</p>
+          </div>
+        );
+
+      default:
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-900 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+          </div>
+        );
+    }
+  };
 
   return (
     <>
@@ -144,10 +340,7 @@ export default function StoreModal({ isOpen, onClose, userSettings }: StoreModal
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={() => {
-          handlePreview(null);
-          onClose();
-        }}
+        onClick={onClose}
         className="fixed inset-0 bg-neutral-950/40 dark:bg-neutral-950/80 backdrop-blur-[8px] z-[200000]"
       />
       
@@ -166,44 +359,20 @@ export default function StoreModal({ isOpen, onClose, userSettings }: StoreModal
                 <Store className="w-6 h-6 text-indigo-500" />
               </div>
               <div>
-                <h2 className="text-2xl font-black font-display tracking-tight text-foreground flex items-center gap-2">
-                  Marketplace
-                  <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
+                <h2 className="text-xl md:text-2xl font-black font-display tracking-tight text-foreground flex items-center gap-2">
+                  {activeTab === 'market' ? 'Marketplace' : 'My Inventory'}
                 </h2>
-                <p className="text-xs text-foreground/45 font-mono uppercase tracking-widest">Neural Enhancements</p>
+                <p className="text-[10px] md:text-xs text-foreground/45 font-mono uppercase tracking-widest">
+                  {activeTab === 'market' ? 'Neural Enhancements' : 'Owned Enhancements'}
+                </p>
               </div>
             </div>
             
-            <div className="flex items-center gap-6">
-              <nav className="hidden md:flex items-center bg-foreground/5 p-1 rounded-2xl border border-border-subtle/50">
-                <button 
-                  onClick={() => setActiveTab('market')}
-                  className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'market' ? 'bg-background text-foreground shadow-sm' : 'text-foreground/40 hover:text-foreground'}`}
-                >
-                  Market
-                </button>
-                <button 
-                  onClick={() => setActiveTab('owned')}
-                  className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'owned' ? 'bg-background text-foreground shadow-sm' : 'text-foreground/40 hover:text-foreground'}`}
-                >
-                  Owned
-                </button>
-              </nav>
-
-              <div className="flex items-center gap-3">
-                <div className="hidden sm:flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-2xl text-amber-500 shadow-sm">
-                  <Crown className="w-4 h-4" />
-                  <span className="text-sm font-black font-mono">{currentXp} XP</span>
-                </div>
-                <button 
-                  onClick={() => {
-                    handlePreview(null);
-                    onClose();
-                  }}
-                  className="p-2.5 hover:bg-foreground/5 rounded-2xl transition-all active:scale-90 text-foreground/40 hover:text-foreground border border-transparent hover:border-border-subtle"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+            <div className="flex items-center gap-2 md:gap-3">
+              {/* XP Balance Badge */}
+              <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 md:px-4 py-1.5 md:py-2 rounded-xl md:rounded-2xl text-amber-500 shadow-sm">
+                <Crown className="w-3.5 h-3.5 md:w-4 h-4" />
+                <span className="text-xs md:text-sm font-black font-mono">{currentXp} XP</span>
               </div>
             </div>
           </div>
@@ -218,7 +387,7 @@ export default function StoreModal({ isOpen, onClose, userSettings }: StoreModal
           </div>
 
           {/* Body */}
-          <div className="p-6 md:p-10 overflow-y-auto custom-scrollbar flex-1 space-y-8 no-scrollbar">
+          <div className="p-4 md:p-10 overflow-y-auto custom-scrollbar flex-1 space-y-8 no-scrollbar bg-foreground/[0.01]">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-24 opacity-40">
                 <div className="relative">
@@ -242,89 +411,63 @@ export default function StoreModal({ isOpen, onClose, userSettings }: StoreModal
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 pb-20">
                 {(activeTab === 'market' ? marketItems : ownedItems).map(item => {
                   const isOwned = unlocked.includes(item.effectId);
                   const isEquipped = activeEffect === item.effectId;
-                  const isPreviewing = previewEffect === item.effectId;
                   const canAfford = currentXp >= item.price;
 
                   return (
                     <motion.div 
                       layout
                       key={item.$id || item.effectId} 
-                      className={`group p-6 rounded-[2rem] border transition-all duration-500 relative overflow-hidden ${
+                      onClick={() => setSelectedItem(item)}
+                      className={`group p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border transition-all duration-500 relative overflow-hidden flex flex-col h-full cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
                         isEquipped 
                           ? 'border-indigo-500/40 bg-indigo-500/[0.03] shadow-[0_20px_50px_rgba(99,102,241,0.08)]' 
                           : isOwned
                           ? 'border-border-subtle bg-foreground/[0.01] hover:bg-foreground/[0.03]'
-                          : isPreviewing
-                          ? 'border-amber-500/40 bg-amber-500/[0.03] shadow-lg'
                           : 'border-border-subtle/50 bg-background hover:border-indigo-500/20 hover:shadow-xl transition-shadow'
                       }`}
                     >
                       {/* Decoration */}
-                      {(isEquipped || isPreviewing) && (
-                        <div className={`absolute -top-12 -right-12 w-24 h-24 blur-2xl rounded-full ${isPreviewing ? 'bg-amber-500/10' : 'bg-indigo-500/10'}`} />
+                      {isEquipped && (
+                        <div className="absolute -top-12 -right-12 w-24 h-24 blur-2xl rounded-full bg-indigo-500/10" />
                       )}
 
-                      <div className="space-y-4">
+                      <div className="flex-1 space-y-3 md:space-y-4">
                         <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <span className="text-[9px] font-bold font-mono text-indigo-500/60 uppercase tracking-[0.2em]">
+                          <div className="space-y-0.5 md:space-y-1">
+                            <span className="text-[8px] md:text-[9px] font-bold font-mono text-indigo-500/60 uppercase tracking-[0.2em]">
                               {item.type}
                             </span>
-                            <h3 className="font-bold text-lg text-foreground tracking-tight">{item.name}</h3>
+                            <h3 className="text-sm md:text-lg font-black text-text-heading tracking-tight leading-tight line-clamp-1 md:line-clamp-none">
+                              {item.name}
+                            </h3>
                           </div>
                           {!isOwned && (
-                            <div className={`px-3 py-1 rounded-full border text-xs font-black font-mono flex items-center gap-1.5 ${canAfford ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-foreground/5 text-foreground/30 border-foreground/10'}`}>
+                            <div className={`px-2 py-0.5 md:px-3 md:py-1 rounded-full border text-[9px] md:text-xs font-black font-mono flex items-center gap-1 ${canAfford ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-foreground/5 text-foreground/30 border-foreground/10'}`}>
                               {item.price}
                             </div>
                           )}
                         </div>
-                        
-                        <p className="text-sm text-foreground/50 leading-relaxed min-h-[3rem]">
+
+                        <p className="text-[10px] md:text-sm text-foreground/50 leading-relaxed min-h-[2rem] md:min-h-[3rem] line-clamp-2 md:line-clamp-3">
                           {item.description}
                         </p>
+                      </div>
 
-                        <div className="pt-4 flex flex-col gap-2">
-                          {isOwned ? (
-                            <button
-                              onClick={() => handleEquip(item)}
-                              className={`w-full py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${
-                                isEquipped 
-                                  ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 scale-[0.98]' 
-                                  : 'bg-foreground/5 hover:bg-foreground/10 text-foreground/70'
-                              }`}
-                            >
-                              {isEquipped ? 'Active' : 'Activate'}
-                            </button>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => handlePurchase(item)}
-                                disabled={!canAfford}
-                                className={`w-full py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${
-                                  canAfford
-                                    ? 'bg-foreground text-background shadow-lg hover:opacity-90 active:scale-95'
-                                    : 'bg-foreground/5 text-foreground/20 cursor-not-allowed'
-                                }`}
-                              >
-                                {canAfford ? 'Purchase Upgrade' : 'Locked'}
-                              </button>
-                              
-                              <button
-                                onClick={() => handlePreview(isPreviewing ? null : item)}
-                                className={`w-full py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                                  isPreviewing 
-                                    ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' 
-                                    : 'text-foreground/30 hover:text-foreground/60'
-                                }`}
-                              >
-                                {isPreviewing ? 'Stop Preview' : 'Preview Effect'}
-                              </button>
-                            </>
-                          )}
+                      <div className="mt-4 md:mt-6">
+                        <div className={`w-full py-2 md:py-3 rounded-xl md:rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-300 text-center ${
+                          isEquipped 
+                            ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 scale-[0.98]' 
+                            : isOwned
+                            ? 'bg-foreground/5 text-foreground/70'
+                            : canAfford
+                            ? 'bg-foreground text-background shadow-lg'
+                            : 'bg-foreground/5 text-foreground/20'
+                        }`}>
+                          {isEquipped ? 'Active' : isOwned ? 'Owned' : canAfford ? 'View Upgrade' : 'Locked'}
                         </div>
                       </div>
                     </motion.div>
@@ -333,9 +476,232 @@ export default function StoreModal({ isOpen, onClose, userSettings }: StoreModal
               </div>
             )}
           </div>
+
+          {/* Sticky Close & Inventory Buttons for All Screens */}
+          <div className="sticky bottom-0 left-0 right-0 p-4 border-t border-border-subtle bg-background/95 dark:bg-card-bg/95 backdrop-blur-md z-30 flex items-center justify-center gap-3">
+            <button
+              onClick={() => setActiveTab(activeTab === 'market' ? 'owned' : 'market')}
+              className={`flex-1 py-3 px-4 font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border cursor-pointer h-12 ${
+                activeTab === 'owned'
+                  ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-500'
+                  : 'bg-foreground/5 border-border-subtle text-foreground/70 hover:bg-foreground/10'
+              }`}
+            >
+              <Package className="w-4 h-4" />
+              {activeTab === 'market' ? 'My Inventory' : 'Marketplace'}
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 px-4 bg-foreground text-background font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer h-12"
+            >
+              <X className="w-4 h-4" />
+              Close Marketplace
+            </button>
+          </div>
+
+          {/* Detail View Overlay */}
+          <AnimatePresence>
+            {selectedItem && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[200020] flex items-center justify-center p-4 md:p-6"
+              >
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setSelectedItem(null)}
+                  className="absolute inset-0 bg-background/85 backdrop-blur-md"
+                />
+                
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0, y: 15 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.95, opacity: 0, y: 15 }}
+                  className="w-full max-w-3xl bg-card-bg border border-border-subtle rounded-[2rem] md:rounded-[2.5rem] shadow-2xl relative overflow-hidden z-10 flex flex-col h-[85vh] md:h-auto md:max-h-[80vh]"
+                >
+                  {/* Close button - Top Right */}
+                  <button 
+                    onClick={() => setSelectedItem(null)}
+                    className="absolute top-5 right-5 w-10 h-10 rounded-full bg-foreground/5 hover:bg-foreground/10 flex items-center justify-center text-foreground/60 transition-colors z-20"
+                    aria-label="Close detail view"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+
+                  <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 md:space-y-0 md:flex md:flex-row md:gap-8 custom-scrollbar">
+                    {/* Left Column: Custom Interactive Preview Container */}
+                    <div className="w-full md:w-[45%] flex flex-col space-y-4">
+                      <span className="text-[10px] font-bold font-mono text-foreground/40 uppercase tracking-widest">
+                        Neural Core Simulation
+                      </span>
+                      
+                      <div className="relative border border-border-subtle/70 rounded-2xl p-1 bg-neutral-950/40 shadow-inner flex items-center justify-center overflow-hidden aspect-video md:aspect-square">
+                        {renderEffectAnimation(selectedItem.effectId)}
+                      </div>
+
+                      <div className="rounded-xl bg-foreground/[0.02] border border-border-subtle/50 p-3 flex items-start gap-2.5">
+                        <Info className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                        <span className="text-[10px] md:text-xs text-foreground/50 leading-relaxed">
+                          This preview represents a physical rendering of the neural upgrade inside a virtual sandbox. Applying it will activate the styling.
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Descriptions and Neat List of Changes */}
+                    <div className="w-full md:w-[55%] flex flex-col justify-between space-y-6">
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black font-mono text-indigo-500 uppercase tracking-[0.3em] bg-indigo-500/10 px-2 py-0.5 rounded">
+                              {selectedItem.type}
+                            </span>
+                            <span className="text-[10px] font-bold font-mono text-amber-500 uppercase tracking-widest">
+                              Premium Neural Grade
+                            </span>
+                          </div>
+                          <h3 className="text-2xl md:text-3xl font-black text-text-heading tracking-tight leading-none pt-1">
+                            {selectedItem.name}
+                          </h3>
+                        </div>
+
+                        <p className="text-xs md:text-sm text-foreground/65 leading-relaxed">
+                          {selectedItem.description}
+                        </p>
+
+                        {/* Neat Explanations of what the effect changes */}
+                        <div className="space-y-3 pt-2">
+                          <div className="text-[10px] font-black font-mono uppercase tracking-[0.15em] text-foreground/40 flex items-center gap-1.5 border-b border-border-subtle/30 pb-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>System Modifications</span>
+                          </div>
+                          
+                          <div className="text-[11px] font-bold text-foreground/80 font-mono">
+                            Target Element: <span className="text-indigo-400">
+                              {EFFECT_CHANGES[selectedItem.effectId]?.impact || 'Global Workspace UI'}
+                            </span>
+                          </div>
+
+                          <ul className="space-y-2">
+                            {(EFFECT_CHANGES[selectedItem.effectId]?.details || [
+                              'Integrates custom high-fidelity styling components to your central workspace.',
+                              'Activates responsive transitions when triggering related commands.',
+                              'Designed to consume zero CPU overhead with native GPU compositions.'
+                            ]).map((detail, index) => (
+                              <li key={index} className="flex items-start gap-2 text-[11px] md:text-xs text-foreground/50 leading-relaxed">
+                                <span className="text-indigo-500 font-mono text-sm leading-none mt-px select-none">▪</span>
+                                <span>{detail}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Custom Neon Search Glow Color Customizer */}
+                        {unlocked.includes(selectedItem.effectId) && selectedItem.effectId === 'search-neon' && (
+                          <div className="space-y-2 pt-3 border-t border-border-subtle/30">
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60">
+                              Neon Glow Color Customization
+                            </label>
+                            <div className="flex items-center gap-2">
+                              {['#00ffff', '#f43f5e', '#10b981', '#fbbf24', '#a855f7', '#3b82f6'].map((color) => {
+                                const isColorSelected = (userSettings.searchNeonColor || userSettings.themeColor || '#8b5cf6').toLowerCase() === color.toLowerCase();
+                                return (
+                                  <button
+                                    key={color}
+                                    onClick={() => {
+                                      const newSettings = { ...userSettings, searchNeonColor: color };
+                                      if (onUpdateSettings) {
+                                        onUpdateSettings(newSettings);
+                                      } else {
+                                        saveSettings(newSettings);
+                                      }
+                                    }}
+                                    className={`w-7 h-7 rounded-full border shadow-sm transition-all flex-shrink-0 hover:scale-110 ${
+                                      isColorSelected ? 'ring-2 ring-indigo-500 ring-offset-2 border-white' : 'border-border-subtle'
+                                    }`}
+                                    style={{ backgroundColor: color }}
+                                  />
+                                );
+                              })}
+                              
+                              {/* Custom Color Input */}
+                              <div className="relative w-7 h-7 rounded-full border border-border-subtle bg-gradient-to-tr from-rose-400 via-violet-400 to-emerald-400 shadow-sm overflow-hidden group hover:scale-110 transition-all">
+                                <input
+                                  type="color"
+                                  value={userSettings.searchNeonColor || userSettings.themeColor || '#8b5cf6'}
+                                  onChange={(e) => {
+                                    const newSettings = { ...userSettings, searchNeonColor: e.target.value };
+                                    if (onUpdateSettings) {
+                                      onUpdateSettings(newSettings);
+                                    } else {
+                                      saveSettings(newSettings);
+                                    }
+                                  }}
+                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                  title="Custom neon search color"
+                                />
+                                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                                  <Palette className="w-3.5 h-3.5 text-white drop-shadow" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Pricing and Action Row */}
+                      <div className="pt-4 border-t border-border-subtle/50 flex flex-col sm:flex-row items-center gap-4">
+                        <div className="flex-1 w-full flex justify-between sm:flex-col items-center sm:items-start">
+                          <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Required Power</span>
+                          <span className="text-xl font-black text-amber-500 font-mono flex items-center gap-1">
+                            <Crown className="w-5 h-5 text-amber-500" />
+                            {selectedItem.price} XP
+                          </span>
+                        </div>
+
+                        <div className="w-full sm:w-auto flex-1 flex gap-3">
+                          {unlocked.includes(selectedItem.effectId) ? (
+                            <button
+                              onClick={() => {
+                                handleEquip(selectedItem);
+                                setSelectedItem(null);
+                              }}
+                              className={`w-full py-3.5 px-6 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                                activeEffect === selectedItem.effectId
+                                  ? 'bg-indigo-500 text-white shadow-lg'
+                                  : 'bg-foreground text-background shadow-xl hover:opacity-90'
+                              }`}
+                            >
+                              {activeEffect === selectedItem.effectId ? 'Unequip Style' : 'Equip Enhancement'}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                handlePurchase(selectedItem);
+                                if (currentXp >= selectedItem.price) setSelectedItem(null);
+                              }}
+                              disabled={currentXp < selectedItem.price}
+                              className={`w-full py-3.5 px-6 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                                currentXp >= selectedItem.price
+                                  ? 'bg-foreground text-background shadow-xl hover:opacity-90 active:scale-95'
+                                  : 'bg-foreground/10 text-foreground/30 cursor-not-allowed border border-border-subtle'
+                              }`}
+                            >
+                              {currentXp >= selectedItem.price ? 'Unlock Upgrade' : 'Insufficient XP'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </div>
     </>
   );
 }
-

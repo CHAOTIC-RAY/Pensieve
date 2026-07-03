@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { generateSettingsQrCode, applySettings, getSerializedSettings } from "../utils/settingsQr";
 import QrScanner from "./QrScanner";
-import { QrCode, ScanLine } from "lucide-react";
+import { QrCode, ScanLine, Plug } from "lucide-react";
 import {
   Brain,
   X,
@@ -79,11 +79,12 @@ import {
   calculateLevel,
 } from "../services/themeStudio";
 import { MindItem } from "../types";
+import CloudPlugins from "./CloudPlugins";
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: "intelligence" | "sync" | "db" | "ui" | "profile" | "mobile-link";
+  initialTab?: "intelligence" | "sync" | "db" | "ui" | "profile" | "mobile-link" | "plugins";
   localAiEnabled: boolean;
   setLocalAiEnabledState: (val: boolean) => void;
   localModelId: string;
@@ -102,6 +103,7 @@ interface SettingsModalProps {
   setAiStrategyState: (val: AiStrategy) => void;
   dbStrategy: DbStrategy;
   setDbStrategyState: (val: DbStrategy) => void;
+  onItemCreated: (newItem: Omit<MindItem, 'id' | 'createdAt'>) => Promise<string>;
 }
 
 export default function SettingsModal({
@@ -125,10 +127,11 @@ export default function SettingsModal({
   dbStrategy,
   setDbStrategyState,
   initialTab,
+  onItemCreated,
 }: SettingsModalProps) {
   const { achievements } = useAchievements(items);
   const [activeTab, setActiveTab] = useState<
-    "intelligence" | "sync" | "db" | "ui" | "profile" | "mobile-link"
+    "intelligence" | "sync" | "db" | "ui" | "profile" | "mobile-link" | "plugins"
   >(initialTab || "ui");
   // Appwrite Configuration States
   const [appwriteEndpoint, setAppwriteEndpoint] = useState("");
@@ -547,12 +550,13 @@ export default function SettingsModal({
   // Mobile collapsible sections
   const [mobileExpanded, setMobileExpanded] = useState<Record<string, boolean>>(
     {
-      profile: false,
+      milestones: false,
       ai: false,
       sync: false,
       apis: false,
       db: false,
-      ui: true,
+      ui: false,
+      plugins: false,
     },
   );
 
@@ -1099,55 +1103,79 @@ export default function SettingsModal({
           </div>
         </div>
 
-        {/* Milestones / Achievements Section */}
-        <div className="space-y-4 pt-6 border-t border-border-subtle">
-          <h4 className="text-xs font-mono uppercase tracking-wider text-foreground/65 flex items-center gap-1.5">
-            <Trophy className="w-3.5 h-3.5 text-amber-500" />
-            Milestones &amp; Collectibles ({achievements.filter(a => a.unlockedAt).length} / {achievements.length})
-          </h4>
-          <p className="text-[11px] text-foreground/50 leading-relaxed">
-            Your milestones unlocked through thinking, organizing, and using serendipity.
-          </p>
-          <div className="grid grid-cols-2 gap-4 pt-2">
-            {achievements.map((ach) => {
-              const Icon = ach.icon || Trophy;
-              const isUnlocked = !!ach.unlockedAt;
-              return (
-                <div 
-                  key={ach.id}
-                  className={`p-4 rounded-2xl border transition-all duration-300 flex items-center gap-3.5 ${
-                    isUnlocked 
-                      ? "bg-amber-500/5 border-amber-500/25 shadow-sm" 
-                      : "bg-foreground/[0.01] border-border-subtle opacity-60"
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                    isUnlocked ? "bg-amber-500 text-white" : "bg-foreground/5 text-foreground/30"
-                  }`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 font-sans">
-                      <span className="text-xs font-bold text-text-heading truncate">{ach.title}</span>
-                      {ach.rarity && (
-                        <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider shrink-0 ${
-                          ach.rarity === 'Legendary' ? 'bg-amber-500/20 text-amber-600' :
-                          ach.rarity === 'Epic' ? 'bg-purple-500/20 text-purple-600' :
-                          ach.rarity === 'Rare' ? 'bg-blue-500/20 text-blue-600' :
-                          'bg-foreground/10 text-foreground/60'
-                        }`}>
-                          {ach.rarity}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[10px] text-foreground/50 truncate leading-relaxed">
-                      {ach.description}
-                    </p>
+        {/* Milestones / Achievements Section (Collapsible) */}
+        <div className="pt-6 border-t border-border-subtle">
+          <button
+            onClick={() => setMobileExpanded(prev => ({ ...prev, milestones: !prev.milestones }))}
+            className="w-full flex items-center justify-between group transition-colors"
+          >
+            <h4 className="text-xs font-mono uppercase tracking-wider text-foreground/65 flex items-center gap-1.5 group-hover:text-amber-500">
+              <Trophy className={`w-3.5 h-3.5 transition-colors ${mobileExpanded.milestones ? 'text-amber-500' : 'text-foreground/50'}`} />
+              Milestones &amp; Collectibles ({achievements.filter(a => a.unlockedAt).length} / {achievements.length})
+            </h4>
+            {mobileExpanded.milestones ? (
+              <ChevronUp className="w-4 h-4 text-foreground/40" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-foreground/40" />
+            )}
+          </button>
+
+          <AnimatePresence initial={false}>
+            {mobileExpanded.milestones && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="space-y-4 pt-4">
+                  <p className="text-[11px] text-foreground/50 leading-relaxed">
+                    Your milestones unlocked through thinking, organizing, and using serendipity.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    {achievements.map((ach) => {
+                      const Icon = ach.icon || Trophy;
+                      const isUnlocked = !!ach.unlockedAt;
+                      return (
+                        <div 
+                          key={ach.id}
+                          className={`p-4 rounded-2xl border transition-all duration-300 flex items-center gap-3.5 ${
+                            isUnlocked 
+                              ? "bg-amber-500/5 border-amber-500/25 shadow-sm" 
+                              : "bg-foreground/[0.01] border-border-subtle opacity-60"
+                          }`}
+                        >
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                            isUnlocked ? "bg-amber-500 text-white" : "bg-foreground/5 text-foreground/30"
+                          }`}>
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 font-sans">
+                              <span className="text-xs font-bold text-text-heading truncate">{ach.title}</span>
+                              {ach.rarity && (
+                                <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider shrink-0 ${
+                                  ach.rarity === 'Legendary' ? 'bg-amber-500/20 text-amber-600' :
+                                  ach.rarity === 'Epic' ? 'bg-purple-500/20 text-purple-600' :
+                                  ach.rarity === 'Rare' ? 'bg-blue-500/20 text-blue-600' :
+                                  'bg-foreground/10 text-foreground/60'
+                                }`}>
+                                  {ach.rarity}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-foreground/50 truncate leading-relaxed">
+                              {ach.description}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     );
@@ -2549,6 +2577,58 @@ export default function SettingsModal({
           </div>
         </section>
 
+        {/* Neon Search Glow Customizer in Settings */}
+        {userSettings.unlockedEffects?.includes('search-neon') && (
+          <section className="space-y-3 pt-1">
+            <div className="flex items-center justify-between">
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
+                Neon Search Glow Color
+              </label>
+              {userSettings.activeEffect === 'search-neon' ? (
+                <span className="text-[10px] font-bold text-emerald-500 font-mono">ACTIVE EFFECT</span>
+              ) : (
+                <button
+                  onClick={() => handleUpdateSingleSetting("activeEffect", "search-neon")}
+                  className="text-[10px] font-bold text-primary hover:underline font-mono"
+                >
+                  EQUIP NEON EFFECT
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {['#00ffff', '#f43f5e', '#10b981', '#fbbf24', '#a855f7', '#3b82f6'].map((color) => {
+                const isColorSelected = (userSettings.searchNeonColor || userSettings.themeColor || '#8b5cf6').toLowerCase() === color.toLowerCase();
+                return (
+                  <button
+                    key={color}
+                    onClick={() => handleUpdateSingleSetting("searchNeonColor", color)}
+                    className={`w-10 h-10 rounded-full border shadow-sm transition-all flex-shrink-0 hover:scale-105 ${
+                      isColorSelected
+                        ? "border-white scale-102 ring-4 ring-primary/30"
+                        : "border-border-subtle hover:border-foreground/30"
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                );
+              })}
+              
+              {/* Custom Native Picker */}
+              <div className="relative flex-shrink-0 w-10 h-10 rounded-full border border-border-subtle bg-gradient-to-tr from-rose-400 via-violet-400 to-emerald-400 shadow-sm overflow-hidden group hover:scale-105 transition-all">
+                <input
+                  type="color"
+                  value={userSettings.searchNeonColor || userSettings.themeColor || '#8b5cf6'}
+                  onChange={(e) => handleUpdateSingleSetting("searchNeonColor", e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  title="Choose custom neon glow color"
+                />
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <Palette className="w-4 h-4 text-white drop-shadow-md" />
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* 4. Typography / FontComboSelector */}
         <section className="space-y-3 relative group">
           <div className="flex items-center justify-between">
@@ -2946,45 +3026,25 @@ export default function SettingsModal({
           {/* Mobile View: Full screen dedicated panel with collapsible accordion sections */}
           <div className="md:hidden fixed inset-0 z-50 bg-modal-bg flex flex-col w-full h-full overflow-y-auto pb-24 text-foreground">
             {/* Mobile Header */}
-            <div className="sticky top-0 bg-modal-bg/90 backdrop-blur-md px-6 py-4 border-b border-border-subtle flex items-center justify-center z-10 shrink-0">
+            <div className="sticky top-0 bg-modal-bg/90 backdrop-blur-md px-6 py-4 border-b border-border-subtle flex items-center justify-between z-10 shrink-0">
+              <div className="w-10" /> {/* Spacer */}
               <h2 className="text-base font-bold text-text-heading flex items-center gap-2">
                 <Settings2 className="w-5 h-5 text-text-heading" />
                 Preferences
               </h2>
+              <button 
+                onClick={onClose}
+                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-foreground/5 text-foreground/40 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
             </div>
 
             {/* Accordion Categories */}
             <div className="p-4 space-y-3">
-              {/* 0. User Profile (Newly added for mobile) */}
-              <div className="border border-border-subtle rounded-2xl overflow-hidden bg-card-bg/50 backdrop-blur-sm">
-                <button
-                  onClick={() => toggleMobileSection("profile")}
-                  className="w-full px-5 py-4 flex items-center justify-between bg-card-bg hover:bg-foreground/[0.02] transition-colors"
-                >
-                  <div className="flex items-center gap-3 text-text-heading font-semibold text-sm">
-                    <User className="w-4.5 h-4.5 text-rose-400" />
-                    My Neural Profile
-                  </div>
-                  {mobileExpanded.profile ? (
-                    <ChevronUp className="w-4 h-4 text-foreground/60" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-foreground/60" />
-                  )}
-                </button>
-
-                <AnimatePresence initial={false}>
-                  {mobileExpanded.profile && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden border-t border-border-subtle bg-modal-bg/30"
-                    >
-                      <div className="p-5">{renderUserProfileContent()}</div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+              {/* User Profile (Always visible for mobile) */}
+              <div className="p-5 rounded-3xl bg-card-bg/50 backdrop-blur-md border border-border-subtle shadow-premium mb-4">
+                {renderUserProfileContent()}
               </div>
 
               {/* 1. Appearance / Theme Studio (Main section) */}
@@ -3146,6 +3206,43 @@ export default function SettingsModal({
                   )}
                 </AnimatePresence>
               </div>
+
+              {/* 6. Cloud Connection Plugins */}
+              <div className="border border-border-subtle rounded-2xl overflow-hidden bg-card-bg/50 backdrop-blur-sm">
+                <button
+                  onClick={() => toggleMobileSection("plugins")}
+                  className="w-full px-5 py-4 flex items-center justify-between bg-card-bg hover:bg-foreground/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3 text-text-heading font-semibold text-sm">
+                    <Plug className="w-4.5 h-4.5 text-foreground/80" />
+                    <span>Cloud Plugins</span>
+                    <span className="text-[9px] bg-rose-500/10 border border-rose-500/20 text-rose-500 font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider font-mono">
+                      Experimental
+                    </span>
+                  </div>
+                  {mobileExpanded.plugins ? (
+                    <ChevronUp className="w-4 h-4 text-foreground/60" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-foreground/60" />
+                  )}
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {mobileExpanded.plugins && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden border-t border-border-subtle bg-modal-bg/30"
+                    >
+                      <div className="p-5">
+                        <CloudPlugins onItemCreated={onItemCreated} onTriggerToast={triggerToast} />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
 
@@ -3209,7 +3306,10 @@ export default function SettingsModal({
                   }`}
                 >
                   <Brain className="w-4 h-4 text-indigo-400" />
-                  Intelligence
+                  <span>Intelligence</span>
+                  <span className="text-[9px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider font-mono">
+                    Beta
+                  </span>
                 </button>
                 <button
                   onClick={() => setActiveTab("sync")}
@@ -3232,6 +3332,20 @@ export default function SettingsModal({
                 >
                   <Database className="w-4 h-4 text-orange-400" />
                   Databases
+                </button>
+                <button
+                  onClick={() => setActiveTab("plugins")}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors shrink-0 ${
+                    activeTab === "plugins"
+                      ? "bg-card-bg text-text-heading shadow-sm border border-border-subtle/30"
+                      : "text-foreground/70 hover:bg-foreground/5"
+                  }`}
+                >
+                  <Plug className="w-4 h-4 text-amber-400" />
+                  <span>Cloud Plugins</span>
+                  <span className="text-[9px] bg-rose-500/10 border border-rose-500/20 text-rose-500 font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider font-mono">
+                    Experimental
+                  </span>
                 </button>
                 <button
                   onClick={() => setActiveTab("mobile-link")}
@@ -3283,6 +3397,9 @@ export default function SettingsModal({
                 {activeTab === "db" && renderDatabasesContent()}
                 {activeTab === "ui" && renderUIAppearanceContent()}
                 {activeTab === "mobile-link" && renderMobileLinkContent()}
+                {activeTab === "plugins" && (
+                  <CloudPlugins onItemCreated={onItemCreated} onTriggerToast={triggerToast} />
+                )}
               </div>
             </div>
           </motion.div>

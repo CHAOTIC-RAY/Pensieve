@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag, Store, X, Database } from 'lucide-react';
+import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag, Store, X, Database, Plug } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from './lib/firebase';
 import { DbStrategy, getDbStrategy, loadDbItems, saveDbItems, processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured, isAppwriteConfigured } from './services/dbStrategyService';
@@ -41,6 +41,7 @@ import {
 
 import SettingsModal from './components/SettingsModal';
 import StoreModal from './components/StoreModal';
+import PluginModal from './components/PluginModal';
 import AdminPanel from './components/AdminPanel';
 import { useAchievements } from './hooks/useAchievements';
 import AchievementsModal from './components/AchievementsModal';
@@ -145,8 +146,17 @@ export default function App() {
 
   useEffect(() => {
     const handleStore = () => setIsStoreOpen(true);
+    const handlePlugin = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setPluginModalName(customEvent.detail?.plugin || '');
+      setIsPluginModalOpen(true);
+    };
     window.addEventListener('pensieve_trigger_store', handleStore);
-    return () => window.removeEventListener('pensieve_trigger_store', handleStore);
+    window.addEventListener('pensieve_trigger_plugin', handlePlugin);
+    return () => {
+      window.removeEventListener('pensieve_trigger_store', handleStore);
+      window.removeEventListener('pensieve_trigger_plugin', handlePlugin);
+    };
   }, []);
   
   useEffect(() => {
@@ -223,6 +233,8 @@ export default function App() {
   };
   const [isSerendipityOpen, setIsSerendipityOpen] = useState(false);
   const [isStoreOpen, setIsStoreOpen] = useState(false);
+  const [isPluginModalOpen, setIsPluginModalOpen] = useState(false);
+  const [pluginModalName, setPluginModalName] = useState('');
   const [isSyncing, setIsSyncing] = useState(true);
   const [isMobileToolbarOpen, setIsMobileToolbarOpen] = useState<'filters' | 'organize' | 'layout' | null>(null);
 
@@ -246,7 +258,7 @@ export default function App() {
   const [localVisionModelId, setLocalVisionModelIdState] = useState(getSelectedVisionModelId());
   const [bootstrapState, setBootstrapState] = useState({ phase: 'idle', progress: 0, message: '' });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<"intelligence" | "sync" | "db" | "ui" | "profile">("ui");
+  const [settingsTab, setSettingsTab] = useState<"intelligence" | "sync" | "db" | "ui" | "profile" | "mobile-link" | "plugins">("ui");
   const [availableModels, setAvailableModels] = useState<ModelManifestEntry[]>([]);
   const [sidebarPosition, setSidebarPosition] = useState<'left' | 'right'>('left');
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -782,6 +794,7 @@ export default function App() {
         setAiStrategyState={setAiStrategyState}
         dbStrategy={dbStrategy}
         setDbStrategyState={setDbStrategyState}
+        onItemCreated={handleItemCreated}
       />
 
       <AchievementsModal
@@ -796,6 +809,16 @@ export default function App() {
             isOpen={isStoreOpen}
             onClose={() => setIsStoreOpen(false)}
             userSettings={userSettings}
+          />
+        )}
+        {isPluginModalOpen && (
+          <PluginModal
+            isOpen={isPluginModalOpen}
+            onClose={() => {
+              setIsPluginModalOpen(false);
+              setPluginModalName('');
+            }}
+            onItemCreated={handleItemCreated}
           />
         )}
       </AnimatePresence>
@@ -876,6 +899,22 @@ export default function App() {
               </span>
             )}
           </button>
+
+          {/* Cloud Connection Plugins */}
+          <button
+            onClick={() => {
+              setSettingsTab('plugins');
+              setIsSettingsOpen(true);
+            }}
+            title="Cloud Plugins"
+            className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border relative shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),_0_4px_8px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 ${
+              isSettingsOpen && settingsTab === 'plugins'
+                ? 'bg-amber-500/20 border-amber-500/30 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                : 'bg-foreground/5 border-foreground/10 text-foreground/70 hover:bg-amber-500/10 hover:text-amber-500'
+            }`}
+          >
+            <Plug className="w-5 h-5" />
+          </button>
           
           {/* Settings / Preferences Button */}
           <button
@@ -885,7 +924,7 @@ export default function App() {
             }}
             title="Preferences"
             className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),_0_4px_8px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 ${
-              isSettingsOpen 
+              isSettingsOpen && settingsTab !== 'plugins'
                 ? 'bg-primary/20 border-primary/30 text-primary' 
                 : 'bg-foreground/5 border-foreground/10 text-foreground/70 hover:bg-foreground/10 hover:text-foreground'
             }`}

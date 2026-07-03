@@ -11,6 +11,7 @@ export type UserSettings = {
   
   searchBarGlow?: boolean;
   searchBarGlass?: boolean;
+  searchNeonColor?: string;
   
   pinnedWidgets?: string[]; // IDs of widgets to show (e.g. 'weather', 'clock', 'xp-mini')
 
@@ -216,6 +217,15 @@ export function getFontDisplayValue(comboId: string): string {
   return combo ? combo.displayFont : '"Space Grotesk", sans-serif';
 }
 
+function hexToRgb(hex: string): string {
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  const fullHex = hex.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+  return result 
+    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+    : '139, 92, 246'; // default #8b5cf6 RGB
+}
+
 export function applyTheme(settings: UserSettings) {
   const root = document.documentElement;
   
@@ -232,6 +242,12 @@ export function applyTheme(settings: UserSettings) {
   
   // Accent & Dimensions
   root.style.setProperty('--primary', settings.themeColor);
+  root.style.setProperty('--primary-rgb', hexToRgb(settings.themeColor));
+  
+  const neonColor = settings.searchNeonColor || settings.themeColor || '#8b5cf6';
+  root.style.setProperty('--search-neon-color', neonColor);
+  root.style.setProperty('--search-neon-color-rgb', hexToRgb(neonColor));
+
   root.style.setProperty('--radius-base', settings.borderRadius + 'px');
   root.style.setProperty('--blur-strength', settings.blurStrength + 'px');
   

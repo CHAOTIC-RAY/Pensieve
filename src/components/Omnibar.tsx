@@ -7,7 +7,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, FileText, CheckSquare, Quote, 
   Palette, Link2, Image as ImageIcon, ArrowRight, X, Sparkles, Mic, Square,
-  Film, Disc, ShoppingBag, Hash, Github, Slash
+  Film, Disc, ShoppingBag, Hash, Github, Slash, Plug
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MindItem, MindItemType } from '../types';
@@ -24,6 +24,7 @@ const SLASH_COMMANDS = [
   { cmd: '/product', label: 'Product', desc: 'Save a product card', icon: ShoppingBag, color: 'text-orange-500', type: 'product' as MindItemType },
   { cmd: '/tag', label: 'Tag', desc: 'Search by tag', icon: Hash, color: 'text-neutral-500', type: null },
   { cmd: '/store', label: 'Store', desc: 'Open the Effects Marketplace', icon: ShoppingBag, color: 'text-amber-500', type: null, isAction: true },
+  { cmd: '/plugin', label: 'Plugin', desc: 'Open Cloud Plugin (e.g. /plugin drive)', icon: Plug, color: 'text-amber-500', type: null, isAction: true },
 ];
 
 interface OmnibarProps {
@@ -172,6 +173,10 @@ export default function Omnibar({
     onSearchChange('');
     if ((cmd as any).isAction && cmd.cmd === '/store') {
       window.dispatchEvent(new CustomEvent('pensieve_trigger_store'));
+      return;
+    }
+    if ((cmd as any).isAction && cmd.cmd === '/plugin') {
+      window.dispatchEvent(new CustomEvent('pensieve_trigger_plugin', { detail: { plugin: '' } }));
       return;
     }
     if (cmd.type) {
@@ -447,6 +452,16 @@ export default function Omnibar({
     }
 
     if (e.key === 'Enter') {
+      if (searchQuery.trim().startsWith('/plugin')) {
+        e.preventDefault();
+        const parts = searchQuery.trim().split(/\s+/);
+        const pluginNameArg = parts.slice(1).join(' ').trim();
+        window.dispatchEvent(new CustomEvent('pensieve_trigger_plugin', { detail: { plugin: pluginNameArg } }));
+        onSearchChange('');
+        setShowSlashMenu(false);
+        setSlashFilter('');
+        return;
+      }
       if (detectedType) {
         handleCreateItem();
       } else if (!composerType && searchQuery.trim() !== '') {

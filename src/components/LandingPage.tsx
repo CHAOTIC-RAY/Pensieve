@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   motion, 
   useScroll, 
@@ -6,7 +6,7 @@ import {
   useSpring,
   useMotionValueEvent
 } from 'motion/react';
-import { ArrowRight, Search, Sparkles, Heart, Palette, Compass, Trophy, Activity, Lock, Cloud, Mic, Volume2, LogIn, Github, Play, Check, CircleCheck as CheckCircle2, Quote as QuoteIcon, FileText, Zap, Maximize2, ShoppingBag, Shield, Layers } from 'lucide-react';
+import { ArrowRight, Search, Sparkles, Heart, Palette, Compass, Trophy, Activity, Lock, Cloud, Mic, Volume2, LogIn, Github, Play, Check, CircleCheck as CheckCircle2, Quote as QuoteIcon, FileText, Zap, Maximize2, ShoppingBag, Shield, Layers, Plug } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import SparkleCursor from './SparkleCursor';
@@ -18,6 +18,14 @@ export default function LandingPage() {
   const [email, setEmail] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [searchPlaceholder, setSearchPlaceholder] = useState("Save a note, link, or search...");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -42,26 +50,36 @@ export default function LandingPage() {
   const omnibarY = useTransform(smoothProgress, [0, 0.15, 0.8], [0, -180, -180]);
   const omnibarScale = useTransform(smoothProgress, [0, 0.15], [1, 0.95]);
 
-  // Content grid fades in - TRIGGER EARLIER & FINISH FASTER
-  const gridOpacity = useTransform(smoothProgress, [0.08, 0.15], [0, 1]);
-  const gridY = useTransform(smoothProgress, [0.08, 0.15], [40, 0]);
+  // Shift transform ranges on mobile to eliminate delay/blank screen feeling
+  const gridRange = isMobile ? [0.03, 0.08] : [0.08, 0.15];
+  const featuresRange = isMobile ? [0.10, 0.18] : [0.18, 0.28];
+  const voiceRange = isMobile ? [0.22, 0.30] : [0.32, 0.42];
+  const serendipityRange = isMobile ? [0.34, 0.42] : [0.48, 0.58];
+
+  // Content grid fades in
+  const gridOpacity = useTransform(smoothProgress, gridRange, [0, 1]);
+  const gridY = useTransform(smoothProgress, gridRange, [30, 0]);
 
   // Additional features section fades in
-  const featuresOpacity = useTransform(smoothProgress, [0.18, 0.28], [0, 1]);
-  const featuresY = useTransform(smoothProgress, [0.18, 0.28], [40, 0]);
+  const featuresOpacity = useTransform(smoothProgress, featuresRange, [0, 1]);
+  const featuresY = useTransform(smoothProgress, featuresRange, [30, 0]);
 
   // Voice Note section fades in
-  const voiceOpacity = useTransform(smoothProgress, [0.32, 0.42], [0, 1]);
-  const voiceY = useTransform(smoothProgress, [0.32, 0.42], [40, 0]);
+  const voiceOpacity = useTransform(smoothProgress, voiceRange, [0, 1]);
+  const voiceY = useTransform(smoothProgress, voiceRange, [30, 0]);
 
   // Serendipity section
-  const serendipityOpacity = useTransform(smoothProgress, [0.48, 0.58], [0, 1]);
-  const serendipityScale = useTransform(smoothProgress, [0.48, 0.58], [0.97, 1]);
+  const serendipityOpacity = useTransform(smoothProgress, serendipityRange, [0, 1]);
+  const serendipityScale = useTransform(smoothProgress, serendipityRange, [0.97, 1]);
 
   // Last scroll zoom transitions (Forge-style full screen)
   const lastScrollWidth = useTransform(smoothProgress, [0.85, 0.98], ['90%', '100%']);
   const lastScrollRadius = useTransform(smoothProgress, [0.85, 0.98], ['48px', '0px']);
-  const lastScrollPadding = useTransform(smoothProgress, [0.85, 0.98], ['4rem', '8rem']);
+  const lastScrollPadding = useTransform(
+    smoothProgress, 
+    [0.85, 0.98], 
+    isMobile ? ['1.5rem', '1.5rem'] : ['4rem', '8rem']
+  );
 
   // Sparkle intensity increases at the end (lower threshold = more sparkles)
   const sparkleIntensity = useTransform(smoothProgress, [0, 0.8, 1], [0.75, 0.75, 0.1]);
@@ -178,6 +196,12 @@ export default function LandingPage() {
 
         {/* Hero Section Sticky Container to prevent overlap */}
         <section className="sticky top-0 h-[100svh] flex flex-col items-center justify-center text-center px-4 pointer-events-none select-none">
+          {/* Light purple fade at the bottom of the first screen */}
+          <motion.div 
+            style={{ opacity: heroOpacity }}
+            className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-purple-500/[0.08] via-purple-500/[0.03] to-transparent pointer-events-none"
+          />
+
           {/* Centered Large Logo on first scroll */}
           <motion.div 
             style={{ opacity: centerLogoOpacity, scale: centerLogoScale }}
@@ -385,11 +409,16 @@ export default function LandingPage() {
 
               {/* Feature 2 */}
               <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-550 border border-emerald-500/20">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-555 border border-emerald-500/20">
                   <Zap className="w-5 h-5" />
                 </div>
-                <h3 className="text-xl font-bold font-display tracking-tight text-foreground">On-Device WebLLM AI</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Run a 1.5B parameter language model entirely locally using WebLLM and WebGPU. 100% private semantic search and AI summarization—no data ever leaves your device.</p>
+                <h3 className="text-xl font-bold font-display tracking-tight text-foreground flex items-center gap-2">
+                  On-Device LiteRT & WebGPU
+                  <span className="text-[10px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-550 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">
+                    Beta
+                  </span>
+                </h3>
+                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Run a 1.5B parameter language model entirely locally using Google LiteRT and WebGPU. 100% private semantic search and AI summarization—no data ever leaves your device.</p>
               </div>
               
               {/* Feature 3 */}
@@ -403,7 +432,7 @@ export default function LandingPage() {
 
               {/* Feature 4 */}
               <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-550 border border-amber-500/20">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-555 border border-amber-500/20">
                   <ShoppingBag className="w-5 h-5" />
                 </div>
                 <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Effects Marketplace</h3>
@@ -412,7 +441,7 @@ export default function LandingPage() {
 
               {/* Feature 5 */}
               <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-550 border border-teal-500/20">
+                <div className="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-555 border border-teal-500/20">
                   <Shield className="w-5 h-5" />
                 </div>
                 <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Firebase Auth & Security</h3>
@@ -421,11 +450,25 @@ export default function LandingPage() {
 
               {/* Feature 6 */}
               <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-550 border border-purple-500/20">
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-555 border border-purple-500/20">
                   <Layers className="w-5 h-5" />
                 </div>
                 <h3 className="text-xl font-bold font-display tracking-tight text-foreground">XP Economy & Gamification</h3>
                 <p className="text-sm text-foreground/80 leading-relaxed font-sans">Build habits with interactive milestones. Track progress via the comprehensive XP system and custom physical-style collectible achievement cards.</p>
+              </div>
+
+              {/* Feature 7 - Experimental Cloud Connections */}
+              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-555 border border-rose-500/20 animate-pulse">
+                  <Plug className="w-5 h-5" />
+                </div>
+                <h3 className="text-xl font-bold font-display tracking-tight text-foreground flex items-center gap-2">
+                  Cloud Connections
+                  <span className="text-[10px] bg-rose-500/10 border border-rose-500/20 text-rose-500 font-bold px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
+                    Experimental
+                  </span>
+                </h3>
+                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Connect Google Photos, Google Drive, or Microsoft OneDrive plugin. Safely browse and import external photos, files, and documents directly into your memory vault.</p>
               </div>
             </div>
           </motion.div>
@@ -584,19 +627,19 @@ export default function LandingPage() {
             {/* Soft ambient glow */}
             <div className="absolute top-1/4 left-1/4 w-[380px] h-[380px] bg-primary/10 blur-[130px] rounded-full pointer-events-none" />
             
-            <div className="max-w-2xl mx-auto space-y-8 relative z-10">
-              <div className="flex flex-col items-center gap-4 mb-4">
-                <div className="w-16 h-16 p-2.5 rounded-2xl">
+            <div className="max-w-2xl mx-auto px-6 sm:px-0 space-y-6 md:space-y-8 relative z-10 w-full flex flex-col items-center justify-center">
+              <div className="flex flex-col items-center gap-3 mb-2">
+                <div className="w-12 h-12 md:w-16 md:h-16 p-2 rounded-2xl">
                   <Logo className="w-full h-full" glow={true} />
                 </div>
-                <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-white/60 font-mono font-display">
+                <span className="text-[9px] md:text-[10px] font-bold tracking-[0.4em] uppercase text-white/60 font-mono font-display">
                   PENSIEVE
                 </span>
               </div>
-              <h2 className="text-5xl md:text-7xl font-display font-black text-white leading-none">
+              <h2 className="text-4xl sm:text-5xl md:text-7xl font-display font-black text-white leading-tight sm:leading-none text-center">
                 Begin your <br/> <span className="text-primary drop-shadow-[0_0_20px_rgba(168,85,247,0.5)] italic">Second Brain.</span>
               </h2>
-              <p className="text-xs md:text-base text-white/75 max-w-md mx-auto leading-relaxed font-sans">
+              <p className="text-xs sm:text-sm md:text-base text-white/75 max-w-md mx-auto leading-relaxed font-sans text-center">
                 Experience the absolute clarity of an unburdened mind. Your memory cards, completely sovereign to you.
               </p>
 

@@ -692,22 +692,22 @@ html:fullscreen {
 /* Store Effects */
 
 /* Neon Search Glow */
-.search-neon .search-container {
-  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.5), 0 0 30px rgba(var(--primary-rgb), 0.3) !important;
-  border-color: rgba(var(--primary-rgb), 0.8) !important;
+.search-neon #pensieve-omnibar-box {
+  box-shadow: 0 0 12px rgba(var(--search-neon-color-rgb), 0.4), 0 0 24px rgba(var(--search-neon-color-rgb), 0.2) !important;
+  border-color: var(--search-neon-color) !important;
   transition: all 0.3s ease;
 }
 
-.search-neon .search-container:focus-within {
-  box-shadow: 0 0 25px rgba(var(--primary-rgb), 0.8), 0 0 50px rgba(var(--primary-rgb), 0.5) !important;
+.search-neon #pensieve-omnibar-box:focus-within {
+  box-shadow: 0 0 20px rgba(var(--search-neon-color-rgb), 0.6), 0 0 35px rgba(var(--search-neon-color-rgb), 0.3) !important;
 }
 
 /* Cyberpunk Scanline */
-.search-scanline .search-container {
+.search-scanline #pensieve-omnibar-box {
   position: relative;
   overflow: hidden;
 }
-.search-scanline .search-container::after {
+.search-scanline #pensieve-omnibar-box::after {
   content: "";
   position: absolute;
   top: -100%;
@@ -779,12 +779,12 @@ html:fullscreen {
 }
 
 /* Custom Search Styling */
-[data-search-glow="true"] #pensieve-omnibar-container {
-  box-shadow: 0 0 20px -2px var(--primary), 0 0 40px -10px var(--primary) !important;
+[data-search-glow="true"] #pensieve-omnibar-box {
+  box-shadow: 0 0 12px -2px var(--primary), 0 0 24px -6px var(--primary) !important;
   border-color: var(--primary) !important;
 }
 
-[data-search-glass="true"] #pensieve-omnibar-container {
+[data-search-glass="true"] #pensieve-omnibar-box {
   background: rgba(255, 255, 255, 0.1) !important;
   backdrop-filter: blur(20px) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
