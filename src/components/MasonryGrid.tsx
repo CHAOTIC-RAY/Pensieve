@@ -16,6 +16,7 @@ interface MasonryGridProps {
   onDeleteItem: (item: MindItem) => void;
   onToggleTopMind: (item: MindItem) => void;
   onUpdateChecklist: (item: MindItem, updatedContent: string) => void;
+  onOpenReader?: (item: MindItem) => void;
 }
 
 export default function MasonryGrid({ 
@@ -24,7 +25,8 @@ export default function MasonryGrid({
   onToggleFavorite, 
   onDeleteItem,
   onToggleTopMind,
-  onUpdateChecklist
+  onUpdateChecklist,
+  onOpenReader
 }: MasonryGridProps) {
   const [columnCount, setColumnCount] = useState(3);
 
@@ -123,6 +125,7 @@ export default function MasonryGrid({
                       onToggleTopMind(item);
                     }}
                     onUpdateChecklist={onUpdateChecklist}
+                    onOpenReader={onOpenReader}
                   />
                 </motion.div>
               ))}

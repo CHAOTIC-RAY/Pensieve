@@ -5,6 +5,8 @@ import {
   AlertCircle, ChevronRight, CheckCircle2, Eye, EyeOff, Sparkles, FolderDown
 } from 'lucide-react';
 import { MindItem } from '../types';
+import { auth } from '../lib/firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 interface CloudPluginsProps {
   onItemCreated: (newItem: Omit<MindItem, 'id' | 'createdAt'>) => Promise<string>;
@@ -42,6 +44,116 @@ interface MockFile {
 export default function CloudPlugins({ onItemCreated, onTriggerToast, initialActiveExplorer }: CloudPluginsProps) {
   const [plugins, setPlugins] = useState<CloudPlugin[]>([]);
   const [activeExplorer, setActiveExplorer] = useState<'googleDrive' | 'googlePhotos' | 'oneDrive' | null>(initialActiveExplorer || null);
+
+  const [realDriveFiles, setRealDriveFiles] = useState<MockFile[] | null>(null);
+  const [realPhotosFiles, setRealPhotosFiles] = useState<MockFile[] | null>(null);
+  const [isLoadingRealFiles, setIsLoadingRealFiles] = useState(false);
+
+  const fetchRealCloudFiles = async (type: 'googleDrive' | 'googlePhotos', token: string) => {
+    setIsLoadingRealFiles(true);
+    try {
+      if (type === 'googleDrive') {
+        const response = await fetch(
+          'https://www.googleapis.com/drive/v3/files?pageSize=15&fields=files(id,name,mimeType,size,modifiedTime,webViewLink)&q=trashed=false',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.files && data.files.length > 0) {
+            const mapped: MockFile[] = data.files.map((file: any) => {
+              const isDoc = file.mimeType.includes('document') || file.mimeType.includes('word');
+              const isSheet = file.mimeType.includes('spreadsheet') || file.mimeType.includes('excel');
+              const isPdf = file.mimeType.includes('pdf');
+              const isImage = file.mimeType.includes('image');
+              
+              let fileType: 'pdf' | 'document' | 'spreadsheet' | 'image' = 'document';
+              if (isPdf) fileType = 'pdf';
+              else if (isSheet) fileType = 'spreadsheet';
+              else if (isImage) fileType = 'image';
+              
+              const category = isDoc ? 'Documents' : isSheet ? 'Finance' : isPdf ? 'Reference' : isImage ? 'Scenic' : 'Cloud Files';
+              const sizeInKb = file.size ? `${(parseInt(file.size) / 1024).toFixed(0)} KB` : '150 KB';
+              
+              return {
+                id: file.id,
+                name: file.name,
+                type: fileType,
+                category,
+                size: sizeInKb,
+                modifiedAt: file.modifiedTime ? file.modifiedTime.split('T')[0] : new Date().toISOString().split('T')[0],
+                url: file.webViewLink || 'https://drive.google.com',
+                content: `Google Drive file imported from the cloud.\nMimeType: ${file.mimeType}\nID: ${file.id}`
+              };
+            });
+            setRealDriveFiles(mapped);
+          } else {
+            setRealDriveFiles([]);
+          }
+        }
+      } else if (type === 'googlePhotos') {
+        const response = await fetch(
+          'https://photoslibrary.googleapis.com/v1/mediaItems?pageSize=15',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.mediaItems && data.mediaItems.length > 0) {
+            const mapped: MockFile[] = data.mediaItems.map((item: any) => {
+              return {
+                id: item.id,
+                name: item.filename || 'Cloud Photo.jpg',
+                type: 'image',
+                category: 'Photos',
+                size: '2.5 MB',
+                modifiedAt: new Date().toISOString().split('T')[0],
+                url: item.baseUrl || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b',
+                content: `Google Photos media item.\nFilename: ${item.filename}\nBaseURL: ${item.baseUrl}`
+              };
+            });
+            setRealPhotosFiles(mapped);
+          } else {
+            setRealPhotosFiles([]);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Real API fetch failed/blocked, falling back to rich interactive mock environment', err);
+    } finally {
+      setIsLoadingRealFiles(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeExplorer) return;
+    
+    const storageKey = activeExplorer === 'googleDrive' 
+      ? 'pensieve_plugin_google_drive' 
+      : activeExplorer === 'googlePhotos' 
+        ? 'pensieve_plugin_google_photos' 
+        : null;
+        
+    if (!storageKey) return;
+    
+    const connStr = localStorage.getItem(storageKey);
+    if (!connStr) return;
+    
+    try {
+      const conn = JSON.parse(connStr);
+      if (conn.accessToken) {
+        fetchRealCloudFiles(activeExplorer as 'googleDrive' | 'googlePhotos', conn.accessToken);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [activeExplorer]);
 
   useEffect(() => {
     if (initialActiveExplorer) {
@@ -269,13 +381,80 @@ export default function CloudPlugins({ onItemCreated, onTriggerToast, initialAct
   }, [importedFileIds]);
 
   // Handle Connecting to Plugin
-  const triggerConnection = (pluginId: string) => {
-    // Fill realistic emails based on type
-    const defaultEmail = pluginId === 'oneDrive' ? '2003Ray.Dark@outlook.com' : '2003Ray.Dark@gmail.com';
-    setAuthEmail(defaultEmail);
-    setPassword('••••••••••••');
-    setAuthStep('consent');
-    setShowAuthModal(pluginId);
+  const triggerConnection = async (pluginId: string) => {
+    if (pluginId === 'oneDrive') {
+      const defaultEmail = '2003Ray.Dark@outlook.com';
+      setAuthEmail(defaultEmail);
+      setPassword('••••••••••••');
+      setAuthStep('consent');
+      setShowAuthModal(pluginId);
+      return;
+    }
+
+    try {
+      setAuthStep('connecting');
+      setShowAuthModal(pluginId);
+
+      const provider = new GoogleAuthProvider();
+      if (pluginId === 'googleDrive') {
+        provider.addScope('https://www.googleapis.com/auth/drive.readonly');
+      } else if (pluginId === 'googlePhotos') {
+        provider.addScope('https://www.googleapis.com/auth/photoslibrary.readonly');
+      }
+
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken;
+      const user = result.user;
+
+      if (user) {
+        setAuthEmail(user.email || '2003Ray.Dark@gmail.com');
+        
+        // Save connection state with accessToken
+        const connectionObj = {
+          email: user.email || '2003Ray.Dark@gmail.com',
+          accessToken: token || '',
+          connectedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        };
+        
+        const storageKey = pluginId === 'googleDrive' 
+          ? 'pensieve_plugin_google_drive' 
+          : 'pensieve_plugin_google_photos';
+
+        localStorage.setItem(storageKey, JSON.stringify(connectionObj));
+
+        // Fetch real files in the background if possible
+        if (token) {
+          fetchRealCloudFiles(pluginId as 'googleDrive' | 'googlePhotos', token);
+        }
+
+        setAuthStep('success');
+        
+        // Trigger visual toast
+        const pName = plugins.find(p => p.id === pluginId)?.name || 'Plugin';
+        if (onTriggerToast) {
+          onTriggerToast(`${pName} connected via Firebase successfully!`, 'success');
+        }
+
+        setTimeout(() => {
+          setShowAuthModal(null);
+          setAuthStep('consent');
+        }, 1500);
+      } else {
+        throw new Error('No user returned from Google Authentication');
+      }
+    } catch (err: any) {
+      console.error('Firebase Auth for Google Plugin failed:', err);
+      // Fallback: If popups are blocked in iframe or authorization fails, show traditional/offline fallback consent screen
+      const defaultEmail = '2003Ray.Dark@gmail.com';
+      setAuthEmail(defaultEmail);
+      setPassword('••••••••••••');
+      setAuthStep('consent');
+      
+      if (onTriggerToast) {
+        onTriggerToast('Auth popup blocked or cancelled. Showing backup sandbox link mode.', 'warning');
+      }
+    }
   };
 
   const handleFinalizeConnection = () => {
@@ -325,6 +504,12 @@ export default function CloudPlugins({ onItemCreated, onTriggerToast, initialAct
         : 'pensieve_plugin_one_drive';
 
     localStorage.removeItem(storageKey);
+    
+    if (pluginId === 'googleDrive') {
+      setRealDriveFiles(null);
+    } else if (pluginId === 'googlePhotos') {
+      setRealPhotosFiles(null);
+    }
     
     if (onTriggerToast) {
       onTriggerToast(`Disconnected from ${pluginId === 'googleDrive' ? 'Google Drive' : pluginId === 'googlePhotos' ? 'Google Photos' : 'OneDrive'} Plugin`, 'info');
@@ -423,20 +608,28 @@ export default function CloudPlugins({ onItemCreated, onTriggerToast, initialAct
   const currentPlugin = plugins.find(p => p.id === activeExplorer);
   const { title: explorerTitle, color: explorerColor, pluginName = '' } = getExplorerTitleAndTheme();
 
+  // Choose files list based on connection status and fetched files
+  let filesToDisplay: MockFile[] = [];
+  if (activeExplorer === 'googleDrive') {
+    filesToDisplay = realDriveFiles !== null && realDriveFiles.length > 0 ? realDriveFiles : (currentPlugin?.mockFiles || []);
+  } else if (activeExplorer === 'googlePhotos') {
+    filesToDisplay = realPhotosFiles !== null && realPhotosFiles.length > 0 ? realPhotosFiles : (currentPlugin?.mockFiles || []);
+  } else {
+    filesToDisplay = currentPlugin?.mockFiles || [];
+  }
+
   // Categories list
-  const categories = currentPlugin 
-    ? ['All', ...Array.from(new Set(currentPlugin.mockFiles.map(f => f.category)))]
+  const categories = filesToDisplay.length > 0
+    ? ['All', ...Array.from(new Set(filesToDisplay.map(f => f.category)))]
     : ['All'];
 
   // Filtered files list
-  const filteredFiles = currentPlugin
-    ? currentPlugin.mockFiles.filter(f => {
-        const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              f.content.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCat = selectedCategory === 'All' || f.category === selectedCategory;
-        return matchesSearch && matchesCat;
-      })
-    : [];
+  const filteredFiles = filesToDisplay.filter(f => {
+    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          f.content.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCat = selectedCategory === 'All' || f.category === selectedCategory;
+    return matchesSearch && matchesCat;
+  });
 
   return (
     <div className="space-y-6">
@@ -640,7 +833,13 @@ export default function CloudPlugins({ onItemCreated, onTriggerToast, initialAct
           <div className="flex flex-col lg:flex-row gap-4 h-[420px] overflow-hidden">
             {/* Files Grid */}
             <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-3">
-              {filteredFiles.length === 0 ? (
+              {isLoadingRealFiles ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-foreground/[0.01] rounded-2xl border border-dashed border-border-subtle/50">
+                  <RefreshCw className="w-8 h-8 text-primary animate-spin mb-3" />
+                  <p className="text-xs font-semibold text-text-heading">Querying Real-Time Cloud Index...</p>
+                  <p className="text-[10px] text-foreground/45 mt-1">Establishing connection to Google API endpoints...</p>
+                </div>
+              ) : filteredFiles.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-foreground/[0.01] rounded-2xl border border-dashed border-border-subtle/50">
                   <FolderDown className="w-10 h-10 text-foreground/20 mb-2 animate-pulse" />
                   <p className="text-xs font-semibold text-text-heading">No files match your query</p>
@@ -872,6 +1071,23 @@ export default function CloudPlugins({ onItemCreated, onTriggerToast, initialAct
                   <div className="p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[8px] text-foreground/60 leading-relaxed font-mono">
                     ⚠️ <strong>Plugin Sandbox Scope:</strong> Authorizing this plugin will NOT sync or backup notes, quotes, or cards created inside Pensieve. Drive storage operates as an isolated explorer.
                   </div>
+
+                  {/* Cloudflare Pages / Custom Domain Deployment Guideline */}
+                  {(showAuthModal === 'googleDrive' || showAuthModal === 'googlePhotos') && (
+                    <div className="p-2.5 rounded-lg bg-sky-500/5 border border-sky-500/20 text-[8px] text-foreground/60 leading-relaxed font-mono space-y-1">
+                      <div className="font-bold text-sky-500 flex items-center gap-1">
+                        🌐 <span>Cloudflare & Production Deployment Guide:</span>
+                      </div>
+                      <p>
+                        To ensure real-time Google OAuth popups work on your deployed custom domain (e.g., <code>*.pages.dev</code>):
+                      </p>
+                      <ol className="list-decimal pl-3 space-y-0.5">
+                        <li>Go to your <strong>Firebase Console</strong> &gt; Authentication &gt; Settings &gt; Authorized Domains.</li>
+                        <li>Add your Cloudflare Pages URL or custom domain to the list.</li>
+                        <li>In the <strong>Google Cloud Console</strong> &gt; Credentials, ensure <code>https://&lt;your-project&gt;.firebaseapp.com/__/auth/handler</code> is present as an Authorized Redirect URI.</li>
+                      </ol>
+                    </div>
+                  )}
 
                   <div className="pt-2 flex gap-2">
                     <button

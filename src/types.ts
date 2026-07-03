@@ -29,6 +29,7 @@ export interface MindItem {
   createdAt: string; // ISO String
   isArchived?: boolean;
   isFavorite?: boolean;
+  readLater?: boolean;
   isTopMind?: boolean; // Focus-mode pinning
   analyzing?: boolean; // True while Gemini is parsing/scraping in background
   dominantColor?: string; // Close color group (e.g. "blue", "red")

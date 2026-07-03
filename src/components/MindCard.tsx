@@ -23,6 +23,7 @@ interface MindCardProps {
   onToggleTopMind?: (e: React.MouseEvent) => void;
   onUpdateChecklist?: (item: MindItem, updatedContent: string) => void;
   onUpdateItem?: (item: MindItem) => Promise<void>;
+  onOpenReader?: (item: MindItem) => void;
 }
 
 // Film genre gradient map
@@ -72,6 +73,7 @@ export default function MindCard({
   onToggleTopMind,
   onUpdateChecklist,
   onUpdateItem,
+  onOpenReader,
 }: MindCardProps) {
   const [copied, setCopied] = React.useState(false);
   const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number } | null>(null);
@@ -119,6 +121,13 @@ export default function MindCard({
     setContextMenu(null);
     if (!onUpdateItem) return;
     await onUpdateItem({ ...item, isWatched: !item.isWatched, watchedAt: !item.isWatched ? new Date().toISOString() : undefined });
+  };
+
+  const handleToggleReadLater = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setContextMenu(null);
+    if (!onUpdateItem) return;
+    await onUpdateItem({ ...item, readLater: !item.readLater });
   };
 
   const handleAddTag = async (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -238,6 +247,19 @@ export default function MindCard({
         >
         {/* Top action rail - only visible on hover */}
         <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1.5 z-20">
+          {(item.type === 'article' || item.type === 'link') && onUpdateItem && (
+            <button
+              onClick={handleToggleReadLater}
+              title={item.readLater ? 'Remove from Read Later' : 'Read Later'}
+              className={`p-1.5 rounded-full backdrop-blur-md border shadow-sm hover:scale-105 transition cursor-pointer ${
+                item.readLater 
+                  ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
+                  : 'bg-card-bg/90 text-foreground/50 hover:text-amber-500 border-border-subtle hover:bg-card-bg'
+              }`}
+            >
+              <Clock className={`w-3.5 h-3.5 ${item.readLater ? 'fill-amber-500 text-amber-500' : ''}`} />
+            </button>
+          )}
           {onToggleTopMind && (
             <button
               onClick={(e) => { e?.stopPropagation(); onToggleTopMind(e); }}
@@ -425,19 +447,32 @@ export default function MindCard({
                 </p>
               )}
               <div className="flex items-center justify-between pt-1 border-t border-card-border mt-1">
-                <span className="text-[10px] font-mono text-card-desc max-w-[70%] truncate opacity-80">
+                <span className="text-[10px] font-mono text-card-desc max-w-[60%] truncate opacity-80">
                   {item.url}
                 </span>
-                <a 
-                  href={item.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="p-1 rounded-md text-card-desc hover:text-card-title hover:bg-card-footer transition"
-                  title="Open page in a new tab"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                </a>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenReader?.(item);
+                    }}
+                    className="p-1.5 rounded-md text-indigo-500 hover:text-indigo-600 hover:bg-indigo-500/10 transition flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                    title="Open in Reader Mode"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Read</span>
+                  </button>
+                  <a 
+                    href={item.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1 rounded-md text-card-desc hover:text-card-title hover:bg-card-footer transition cursor-pointer"
+                    title="Open page in a new tab"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -492,14 +527,27 @@ export default function MindCard({
                 </p>
               )}
               <div className="flex items-center justify-between pt-1 border-t border-card-border mt-1 text-[10px] font-mono">
-                <span className="text-card-desc max-w-[65%] truncate opacity-80">
+                <span className="text-card-desc max-w-[50%] truncate opacity-80">
                   {item.url}
                 </span>
-                {item.readingTime && (
-                  <span className="text-indigo-400 font-semibold shrink-0">
-                    {item.readingTime} min read
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenReader?.(item);
+                    }}
+                    className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 transition flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                    title="Open in Reader Mode"
+                  >
+                    <BookOpen className="w-3 h-3" />
+                    <span>Read</span>
+                  </button>
+                  {item.readingTime && (
+                    <span className="text-indigo-400 font-semibold shrink-0">
+                      {item.readingTime} min read
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1085,6 +1133,30 @@ export default function MindCard({
                 <Copy className="w-3.5 h-3.5 text-neutral-400" />
                 {copied ? 'Copied!' : 'Copy to Clipboard'}
               </button>
+            )}
+
+             {/* Toggle Read Later */}
+            {(item.type === 'article' || item.type === 'link') && (
+              <>
+                <button
+                  className="w-full px-4 py-2.5 text-left text-xs font-semibold text-indigo-600 hover:bg-indigo-50/50 flex items-center gap-2.5 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setContextMenu(null);
+                    onOpenReader?.(item);
+                  }}
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Open Reader Mode</span>
+                </button>
+                <button
+                  className="w-full px-4 py-2.5 text-left text-xs font-medium text-neutral-700 hover:bg-neutral-50 flex items-center gap-2.5 transition-colors"
+                  onClick={handleToggleReadLater}
+                >
+                  <Clock className={`w-3.5 h-3.5 ${item.readLater ? 'text-amber-500 fill-amber-500' : 'text-neutral-400'}`} />
+                  {item.readLater ? 'Remove from Read Later' : 'Read Later'}
+                </button>
+              </>
             )}
 
             {/* Mark as Read */}

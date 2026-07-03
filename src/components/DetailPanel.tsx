@@ -3,8 +3,8 @@ import {
   X, Calendar, Star, Sparkles, Plus, Trash2, 
   ExternalLink, BookOpen, Copy, Check, Palette, Eye, Quote as QuoteIcon, Utensils,
   Film, Disc, ShoppingBag, CheckCircle2, Type, AlignLeft, AlignCenter, AlignRight,
-  Bookmark, Link as LinkIcon, MessageSquare, Tag, Hash, Compass, Award, ChevronLeft
-, Mic } from 'lucide-react';
+  Bookmark, Link as LinkIcon, MessageSquare, Tag, Hash, Compass, Award, ChevronLeft,
+  Clock, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import { MindItem, NoteStyle } from '../types';
@@ -15,6 +15,7 @@ interface DetailPanelProps {
   onUpdateItem: (item: MindItem) => Promise<void>;
   onDeleteItem: (item: MindItem) => Promise<void>;
   onSetVibeFilter?: (type: 'color' | 'tag', value: string, label: string) => void;
+  onOpenReader?: (item: MindItem) => void;
 }
 
 export default function DetailPanel({ 
@@ -22,7 +23,8 @@ export default function DetailPanel({
   onClose, 
   onUpdateItem, 
   onDeleteItem,
-  onSetVibeFilter
+  onSetVibeFilter,
+  onOpenReader
 }: DetailPanelProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -123,6 +125,11 @@ export default function DetailPanel({
                   <Star className="w-3 h-3 fill-rose-500 text-rose-500" /> Favorite
                 </span>
               )}
+              {item.readLater && (
+                <span className="flex items-center gap-1 text-[10px] font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded-full ml-2">
+                  <Clock className="w-3 h-3 fill-amber-500 text-amber-500" /> Read Later
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button 
@@ -165,7 +172,7 @@ export default function DetailPanel({
             )}
 
             {/* Notion Style Title */}
-            <div>
+            <div className="space-y-4">
               <input
                 type="text"
                 value={title}
@@ -174,6 +181,29 @@ export default function DetailPanel({
                 placeholder="Untitled"
                 className="font-sans font-black text-4xl md:text-5xl text-foreground tracking-tight leading-tight bg-transparent border-none outline-none w-full placeholder-foreground/20"
               />
+
+              {(item.type === 'article' || item.type === 'link') && (
+                <div className="w-full bg-indigo-500/5 border border-indigo-500/15 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <h4 className="text-xs font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <BookOpen className="w-4 h-4" />
+                      Distraction-Free Reader Mode
+                    </h4>
+                    <p className="text-[11px] text-foreground/60 leading-relaxed">
+                      Read the stripped, clean text of this webpage with premium customizable styling.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      onOpenReader?.(item);
+                    }}
+                    className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all shadow-sm active:scale-98 cursor-pointer shrink-0"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Open Reader</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Quote Author (if applicable) */}

@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag, Store, X, Database, Plug } from 'lucide-react';
+import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag, Store, X, Database, Plug, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from './lib/firebase';
 import { DbStrategy, getDbStrategy, loadDbItems, saveDbItems, processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured, isAppwriteConfigured } from './services/dbStrategyService';
@@ -18,6 +18,7 @@ import Omnibar from './components/Omnibar';
 import { useSearch } from './hooks/useSearch';
 import MasonryGrid from './components/MasonryGrid';
 import DetailPanel from './components/DetailPanel';
+import ReaderMode from './components/ReaderMode';
 import SerendipityView from './components/SerendipityView';
 import MindCard from './components/MindCard';
 import { 
@@ -184,6 +185,7 @@ export default function App() {
     const categorySearchQueries: Record<string, string> = {
       all: '',
       favorites: 'favorite',
+      'read-later': 'read later',
       note: 'notes',
       link: 'bookmarks',
       image: 'images',
@@ -230,6 +232,11 @@ export default function App() {
   const selectedItem = items.find(i => i.id === selectedItemId) || null;
   const setSelectedItem = (item: MindItem | null) => {
     setSelectedItemId(item ? item.id : null);
+  };
+  const [readerItemId, setReaderItemId] = useState<string | null>(null);
+  const readerItem = items.find(i => i.id === readerItemId) || null;
+  const setReaderItem = (item: MindItem | null) => {
+    setReaderItemId(item ? item.id : null);
   };
   const [isSerendipityOpen, setIsSerendipityOpen] = useState(false);
   const [isStoreOpen, setIsStoreOpen] = useState(false);
@@ -411,7 +418,8 @@ export default function App() {
   const filteredItems = searchedItems.filter(item => {
     // 1. Category Filter
     if (activeCategory === 'favorites' && !item.isFavorite) return false;
-    if (activeCategory !== 'all' && activeCategory !== 'favorites' && item.type !== activeCategory) return false;
+    if (activeCategory === 'read-later' && !(item.readLater && (item.type === 'article' || item.type === 'link'))) return false;
+    if (activeCategory !== 'all' && activeCategory !== 'favorites' && activeCategory !== 'read-later' && item.type !== activeCategory) return false;
 
     // 2. Color Filter
     if (activeColorFilter && item.dominantColor !== activeColorFilter) return false;
@@ -851,6 +859,7 @@ export default function App() {
           {[
             { id: 'all', label: 'All Saved', icon: Aperture },
             { id: 'favorites', label: 'Favorites', icon: Heart },
+            { id: 'read-later', label: 'Read Later', icon: Clock },
             { id: 'note', label: 'Notes', icon: BookOpen },
             { id: 'link', label: 'Bookmarks', icon: ExternalLink }
           ].map((cat) => {
@@ -1066,6 +1075,7 @@ export default function App() {
                 {[
                   { id: 'all', label: 'All', icon: Aperture, count: items.length },
                   { id: 'favorites', label: 'Favorites', icon: Heart, count: items.filter(i => i.isFavorite).length },
+                  { id: 'read-later', label: 'Read Later', icon: Clock, count: items.filter(i => i.readLater && (i.type === 'article' || i.type === 'link')).length },
                   { id: 'note', label: 'Notes', icon: BookOpen, count: items.filter(i => i.type === 'note').length },
                   { id: 'link', label: 'Bookmarks', icon: ExternalLink, count: items.filter(i => i.type === 'link').length },
                   { id: 'image', label: 'Images', icon: Camera, count: items.filter(i => i.type === 'image').length },
@@ -1081,7 +1091,7 @@ export default function App() {
                 ].map((cat) => {
                   const Icon = cat.icon;
                   const isActive = activeCategory === cat.id;
-                  if (cat.count === 0 && cat.id !== 'all' && cat.id !== 'favorites') return null;
+                  if (cat.count === 0 && cat.id !== 'all' && cat.id !== 'favorites' && cat.id !== 'read-later') return null;
                   return (
                     <button
                       key={cat.id}
@@ -1285,6 +1295,7 @@ export default function App() {
             onDeleteItem={handleDeleteItem}
             onUpdateChecklist={handleUpdateChecklist}
             onToggleTopMind={handleToggleTopMind}
+            onOpenReader={setReaderItem}
           />
         )}
 
@@ -1323,6 +1334,7 @@ export default function App() {
                       }}
                       onUpdateChecklist={handleUpdateChecklist}
                       onUpdateItem={handleUpdateItem}
+                      onOpenReader={setReaderItem}
                     />
                   </motion.div>
                 ))}
@@ -1408,6 +1420,7 @@ export default function App() {
                               }}
                               onUpdateChecklist={handleUpdateChecklist}
                               onUpdateItem={handleUpdateItem}
+                              onOpenReader={setReaderItem}
                             />
                             
                             {/* Fast Organize Actions Overlay */}
@@ -1453,6 +1466,7 @@ export default function App() {
           ...(userSettings.mobileTabs || ['favorites', 'note', 'link']).map(tabId => {
             const mappings: Record<string, any> = {
               favorites: { label: 'Favs', icon: Heart },
+              'read-later': { label: 'Later', icon: Clock },
               note: { label: 'Notes', icon: BookOpen },
               link: { label: 'Links', icon: ExternalLink },
               image: { label: 'Images', icon: Camera },
@@ -1512,6 +1526,18 @@ export default function App() {
             onUpdateItem={handleUpdateItem}
             onDeleteItem={handleDeleteItem}
             onSetVibeFilter={(type, val, label) => setVibeFilter({ type, value: val, label })}
+            onOpenReader={setReaderItem}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Distraction-Free Webpage Reader Overlay */}
+      <AnimatePresence>
+        {readerItem && (
+          <ReaderMode 
+            item={readerItem} 
+            onClose={() => setReaderItem(null)} 
+            onUpdateItem={handleUpdateItem} 
           />
         )}
       </AnimatePresence>

@@ -46,7 +46,37 @@ export default function SparkleCursor({ intensity = 0.4 }: { intensity?: number 
   }, []);
 
   useEffect(() => {
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    let time = 0;
+    let animationFrameId: number;
+    let isTouching = false;
+
+    const autoAnimate = () => {
+      if (isMobile && !isTouching) {
+        time += 0.02; // speed of auto movement
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        
+        // Figure-8 pattern, centered slightly above middle
+        const nx = w / 2 + Math.sin(time) * (w * 0.35);
+        const ny = h / 2.5 + Math.sin(time * 2) * (h * 0.2);
+        
+        setMousePos({ x: nx, y: ny });
+        
+        // Slightly higher chance of sparkles for mobile auto mode
+        if (Math.random() < intensity + 0.1) {
+          addSparkle(nx, ny);
+        }
+      }
+      animationFrameId = requestAnimationFrame(autoAnimate);
+    };
+
+    if (isMobile) {
+      animationFrameId = requestAnimationFrame(autoAnimate);
+    }
+
     const handleMouseMove = (e: MouseEvent) => {
+      if (isMobile) return;
       setMousePos({ x: e.clientX, y: e.clientY });
       
       // Calculate chance based on intensity and scroll speed
@@ -59,8 +89,33 @@ export default function SparkleCursor({ intensity = 0.4 }: { intensity?: number 
       }
     };
 
+    let touchTimeout: any;
+    const handleTouch = (e: TouchEvent) => {
+      isTouching = true;
+      clearTimeout(touchTimeout);
+      const touch = e.touches[0];
+      if (touch) {
+        setMousePos({ x: touch.clientX, y: touch.clientY });
+        if (Math.random() < intensity + 0.2) {
+          addSparkle(touch.clientX, touch.clientY);
+        }
+      }
+      touchTimeout = setTimeout(() => { isTouching = false; }, 3000);
+    };
+
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    if (isMobile) {
+      window.addEventListener('touchstart', handleTouch, { passive: true });
+      window.addEventListener('touchmove', handleTouch, { passive: true });
+    }
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      clearTimeout(touchTimeout);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchstart', handleTouch);
+      window.removeEventListener('touchmove', handleTouch);
+    };
   }, [addSparkle, intensity, scrollSpeed]);
 
   return (
