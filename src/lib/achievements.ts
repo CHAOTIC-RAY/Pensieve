@@ -660,6 +660,19 @@ const THEMES = [
 export const ACHIEVEMENTS: Achievement[] = (() => {
   const list: Achievement[] = [...BASE_ACHIEVEMENTS];
   
+  const baseImages = [
+    '/assets/images/first_spark_art_1782894430119.jpg',
+    '/assets/images/wandering_mind_art_1782894717720.jpg',
+    '/assets/images/curator_art_1782894792146.jpg',
+    '/assets/images/colorful_thinker_art_1782894805753.jpg',
+    '/assets/images/knowledge_seeker_art_1782894817660.jpg',
+    '/assets/images/time_weaver_art_1782895575062.jpg',
+    '/assets/images/deep_thinker_art_1782894457729.jpg',
+    '/assets/images/cosmic_synthesis_art_1782895593620.jpg',
+    '/assets/images/hoarder_art_1782894471697.jpg',
+    '/assets/images/grand_alchemist_art_1782895609598.jpg'
+  ];
+
   // Generate 100 achievements (10 themes * 10 items)
   THEMES.forEach((theme, themeIdx) => {
     for (let i = 0; i < 10; i++) {
@@ -670,6 +683,8 @@ export const ACHIEVEMENTS: Achievement[] = (() => {
       const author = theme.authors[i];
       const lore = theme.lores[i];
       
+      const imageUrl = baseImages[(themeIdx + i) % baseImages.length];
+      
       list.push({
         id,
         title,
@@ -677,7 +692,7 @@ export const ACHIEVEMENTS: Achievement[] = (() => {
         rarity: theme.rarity,
         icon: theme.icon,
         xp: theme.xp,
-        image: `/assets/images/generated_${themeIdx}_${i}.jpg`, // logical path for reference
+        image: imageUrl,
         quote,
         author,
         lore

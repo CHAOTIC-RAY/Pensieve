@@ -133,6 +133,45 @@ export default function SettingsModal({
   onOpenAchievements
 }: SettingsModalProps) {
   const { achievements } = useAchievements(items);
+  
+  const [pwaPrompt, setPwaPrompt] = useState<any>((window as any).deferredPrompt);
+  const [pwaInstalled, setPwaInstalled] = useState<boolean>(
+    (window as any).isAppInstalled || 
+    window.matchMedia('(display-mode: standalone)').matches || 
+    (window.navigator as any).standalone || 
+    false
+  );
+
+  useEffect(() => {
+    const handlePromptReady = () => {
+      setPwaPrompt((window as any).deferredPrompt);
+    };
+    const handleInstalled = () => {
+      setPwaInstalled(true);
+      setPwaPrompt(null);
+    };
+
+    window.addEventListener('pwa-prompt-ready', handlePromptReady);
+    window.addEventListener('pwa-installed', handleInstalled);
+
+    return () => {
+      window.removeEventListener('pwa-prompt-ready', handlePromptReady);
+      window.removeEventListener('pwa-installed', handleInstalled);
+    };
+  }, []);
+
+  const triggerPwaInstall = async () => {
+    const prompt = pwaPrompt || (window as any).deferredPrompt;
+    if (!prompt) return;
+    prompt.prompt();
+    const { outcome } = await prompt.userChoice;
+    if (outcome === 'accepted') {
+      setPwaInstalled(true);
+      setPwaPrompt(null);
+      (window as any).deferredPrompt = null;
+    }
+  };
+
   const [activeTab, setActiveTab] = useState<
     "intelligence" | "db" | "ui" | "profile" | "mobile-link" | "plugins"
   >(initialTab || "ui");
@@ -3096,6 +3135,76 @@ export default function SettingsModal({
                 );
               })}
             </div>
+          </div>
+        </section>
+
+        {/* 10. Web App (PWA) Install Section */}
+        <section className="space-y-3 pt-2 border-t border-border-subtle">
+          <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
+            Web App Integration (PWA)
+          </label>
+          <div className="bg-card-bg/50 border border-border-subtle rounded-2xl p-5 space-y-4">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 bg-primary/10 text-primary rounded-xl shrink-0">
+                <MonitorSmartphone className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-text-heading">
+                  Pensieve Web Application Status
+                </h4>
+                <p className="text-[11px] text-foreground/60 leading-normal">
+                  Install Pensieve on your device to enable standalone layout, offline synchronization, secure local caching, and a full immersive interface.
+                </p>
+              </div>
+            </div>
+
+            {/* Dynamic Status / Actions */}
+            {pwaInstalled ? (
+              <div className="flex items-center gap-2.5 p-3.5 bg-green-500/10 border border-green-500/20 rounded-xl text-green-600 dark:text-green-400">
+                <Check className="w-4 h-4 shrink-0" />
+                <span className="text-xs font-semibold">Web App Active & Installed (Standalone Mode)</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2 items-center p-3.5 bg-foreground/5 border border-border-subtle rounded-xl text-foreground/70">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                  <span className="text-xs font-semibold">Ready for Installation</span>
+                  {pwaPrompt ? (
+                    <button
+                      onClick={triggerPwaInstall}
+                      className="ml-auto px-4 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-lg shadow transition-colors flex items-center gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Install Now
+                    </button>
+                  ) : (
+                    <span className="ml-auto text-[10px] font-mono text-foreground/40">Browser Managed</span>
+                  )}
+                </div>
+
+                {/* Manual OS Guides */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-[11px]">
+                  <div className="p-3 bg-foreground/[0.02] border border-border-subtle rounded-xl space-y-1">
+                    <span className="font-bold text-text-heading block">iOS / Safari</span>
+                    <span className="text-foreground/60 block leading-normal">
+                      Tap the <strong className="text-text-heading">Share</strong> button on the bottom bar, then select <strong className="text-text-heading">Add to Home Screen</strong>.
+                    </span>
+                  </div>
+                  <div className="p-3 bg-foreground/[0.02] border border-border-subtle rounded-xl space-y-1">
+                    <span className="font-bold text-text-heading block">Android / Chrome</span>
+                    <span className="text-foreground/60 block leading-normal">
+                      Tap the <strong className="text-text-heading">Install</strong> button above or select <strong className="text-text-heading">Install App</strong> from the browser menu.
+                    </span>
+                  </div>
+                  <div className="p-3 bg-foreground/[0.02] border border-border-subtle rounded-xl space-y-1">
+                    <span className="font-bold text-text-heading block">Desktop / Mac / PC</span>
+                    <span className="text-foreground/60 block leading-normal">
+                      Click the small <strong className="text-text-heading">App Install</strong> icon on the right side of your browser's address bar.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       </div>

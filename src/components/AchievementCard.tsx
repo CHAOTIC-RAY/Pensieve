@@ -14,6 +14,67 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
+  const [imgSrc, setImgSrc] = React.useState<string>('');
+
+  const getResolvedImageUrl = (path?: string) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    
+    const baseUrl = (import.meta as any).env.BASE_URL || '/';
+    const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${cleanBase}${cleanPath}`;
+  };
+
+  React.useEffect(() => {
+    if (achievement.image) {
+      setImgSrc(getResolvedImageUrl(achievement.image));
+    }
+  }, [achievement.image]);
+
+  const handleImgError = () => {
+    let resolvedFallback = '';
+    if (achievement.id.startsWith('generated_')) {
+      const parts = achievement.id.split('_');
+      const themeIdx = parseInt(parts[1], 10);
+      const baseImages = [
+        '/assets/images/first_spark_art_1782894430119.jpg',
+        '/assets/images/wandering_mind_art_1782894717720.jpg',
+        '/assets/images/curator_art_1782894792146.jpg',
+        '/assets/images/colorful_thinker_art_1782894805753.jpg',
+        '/assets/images/knowledge_seeker_art_1782894817660.jpg',
+        '/assets/images/time_weaver_art_1782895575062.jpg',
+        '/assets/images/deep_thinker_art_1782894457729.jpg',
+        '/assets/images/cosmic_synthesis_art_1782895593620.jpg',
+        '/assets/images/hoarder_art_1782894471697.jpg',
+        '/assets/images/grand_alchemist_art_1782895609598.jpg'
+      ];
+      if (!isNaN(themeIdx) && themeIdx >= 0 && themeIdx < baseImages.length) {
+        resolvedFallback = baseImages[themeIdx];
+      }
+    } else {
+      const localMap: Record<string, string> = {
+        first_spark: '/assets/images/first_spark_art_1782894430119.jpg',
+        wandering_mind: '/assets/images/wandering_mind_art_1782894717720.jpg',
+        curator: '/assets/images/curator_art_1782894792146.jpg',
+        colorful_thinker: '/assets/images/colorful_thinker_art_1782894805753.jpg',
+        knowledge_seeker: '/assets/images/knowledge_seeker_art_1782894817660.jpg',
+        chronomancer: '/assets/images/time_weaver_art_1782895575062.jpg',
+        deep_thinker: '/assets/images/deep_thinker_art_1782894457729.jpg',
+        mind_meld: '/assets/images/cosmic_synthesis_art_1782895593620.jpg',
+        hoarder: '/assets/images/hoarder_art_1782894471697.jpg',
+        transmuter: '/assets/images/grand_alchemist_art_1782895609598.jpg',
+      };
+      resolvedFallback = localMap[achievement.id] || '';
+    }
+    
+    if (resolvedFallback) {
+      setImgSrc(getResolvedImageUrl(resolvedFallback));
+    } else {
+      setImgSrc(getResolvedImageUrl('/assets/images/first_spark_art_1782894430119.jpg'));
+    }
+  };
+
   // Smooth out the mouse values
   const mouseX = useSpring(x, { stiffness: 150, damping: 20 });
   const mouseY = useSpring(y, { stiffness: 150, damping: 20 });
@@ -218,11 +279,13 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
             {/* Swirling celestial backdrop */}
             <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient}`} />
             
-            {unlocked && achievement.image ? (
+            {unlocked && imgSrc ? (
               <img 
-                src={achievement.image} 
+                src={imgSrc} 
+                onError={handleImgError}
                 alt={achievement.title} 
                 className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none transition-transform duration-700 group-hover:scale-105"
+                referrerPolicy="no-referrer"
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-950/80 gap-2">
