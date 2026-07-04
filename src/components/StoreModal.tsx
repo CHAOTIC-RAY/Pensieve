@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Sparkles, Store, Zap, Crown, Loader2, Check, Lock, Info, ChevronRight, Eye, Package, Palette } from 'lucide-react';
 import { StoreItem, fetchStoreItems } from '../services/storeService';
-import { UserSettings, saveSettings } from '../services/themeStudio';
+import { UserSettings, saveSettings, getEffectCategory } from '../services/themeStudio';
 
 interface StoreModalProps {
   isOpen: boolean;
@@ -112,7 +112,7 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
 
   const currentXp = userSettings.xp || 0;
   const unlocked = userSettings.unlockedEffects || [];
-  const activeEffect = userSettings.activeEffect;
+  const activeEffects = userSettings.activeEffects || (userSettings.activeEffect ? userSettings.activeEffect.split(' ').filter(Boolean) : []);
 
   const handlePurchase = (item: StoreItem) => {
     if (currentXp < item.price) {
@@ -138,8 +138,11 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
     }
 
     // Auto-equip if it's the first effect
-    if (!newSettings.activeEffect && item.type === 'effect') {
-      newSettings.activeEffect = item.effectId;
+    let currentActive = [...activeEffects];
+    if (currentActive.length === 0 && item.type === 'effect') {
+      currentActive.push(item.effectId);
+      newSettings.activeEffects = currentActive;
+      newSettings.activeEffect = currentActive.join(' ');
     }
 
     if (onUpdateSettings) {
@@ -151,11 +154,19 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
 
   const handleEquip = (item: StoreItem) => {
     const newSettings = { ...userSettings };
-    if (newSettings.activeEffect === item.effectId) {
-      newSettings.activeEffect = null; // unequip
+    let currentActive = [...(newSettings.activeEffects || (newSettings.activeEffect ? newSettings.activeEffect.split(' ').filter(Boolean) : []))];
+    
+    if (currentActive.includes(item.effectId)) {
+      currentActive = currentActive.filter(id => id !== item.effectId);
     } else {
-      newSettings.activeEffect = item.effectId;
+      // Equip: remove any existing active effects of the same category
+      const itemCategory = getEffectCategory(item.effectId);
+      currentActive = currentActive.filter(id => getEffectCategory(id) !== itemCategory);
+      currentActive.push(item.effectId);
     }
+    
+    newSettings.activeEffects = currentActive;
+    newSettings.activeEffect = currentActive.join(' ');
     
     if (onUpdateSettings) {
       onUpdateSettings(newSettings);
@@ -350,10 +361,10 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: '100%', opacity: 1 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.8 }}
-          className="w-full h-full md:max-w-5xl md:h-[90vh] bg-background md:bg-card-bg shadow-2xl md:rounded-3xl border-0 md:border md:border-border-subtle relative overflow-hidden pointer-events-auto flex flex-col"
+          className="w-full h-full md:max-w-5xl md:h-[90vh] bg-modal-bg shadow-2xl md:rounded-3xl border-0 md:border md:border-border-subtle relative overflow-hidden pointer-events-auto flex flex-col"
         >
           {/* Header */}
-          <div className="px-6 py-5 md:px-8 md:py-6 border-b border-border-subtle/50 bg-background/80 md:bg-card-bg/80 backdrop-blur-xl flex items-center justify-between sticky top-0 z-20">
+          <div className="px-6 py-5 md:px-8 md:py-6 border-b border-border-subtle/50 bg-modal-sidebar backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-inner">
                 <Store className="w-6 h-6 text-indigo-500" />
@@ -414,7 +425,7 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 pb-20">
                 {(activeTab === 'market' ? marketItems : ownedItems).map(item => {
                   const isOwned = unlocked.includes(item.effectId);
-                  const isEquipped = activeEffect === item.effectId;
+                  const isEquipped = activeEffects.includes(item.effectId);
                   const canAfford = currentXp >= item.price;
 
                   return (
@@ -478,7 +489,7 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
           </div>
 
           {/* Sticky Close & Inventory Buttons for All Screens */}
-          <div className="sticky bottom-0 left-0 right-0 p-4 border-t border-border-subtle bg-background/95 dark:bg-card-bg/95 backdrop-blur-md z-30 flex items-center justify-center gap-3">
+          <div className="sticky bottom-0 left-0 right-0 p-4 border-t border-border-subtle bg-modal-sidebar/95 backdrop-blur-md z-30 flex items-center justify-center gap-3">
             <button
               onClick={() => setActiveTab(activeTab === 'market' ? 'owned' : 'market')}
               className={`flex-1 py-3 px-4 font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border cursor-pointer h-12 ${
@@ -669,12 +680,12 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
                                 setSelectedItem(null);
                               }}
                               className={`w-full py-3.5 px-6 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                                activeEffect === selectedItem.effectId
+                                activeEffects.includes(selectedItem.effectId)
                                   ? 'bg-indigo-500 text-white shadow-lg'
                                   : 'bg-foreground text-background shadow-xl hover:opacity-90'
                               }`}
                             >
-                              {activeEffect === selectedItem.effectId ? 'Unequip Style' : 'Equip Enhancement'}
+                              {activeEffects.includes(selectedItem.effectId) ? 'Unequip Style' : 'Equip Enhancement'}
                             </button>
                           ) : (
                             <button

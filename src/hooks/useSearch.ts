@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import Fuse from 'fuse.js';
+import * as chrono from 'chrono-node';
 import { MindItem } from '../types';
 
 export interface SearchResult {
@@ -31,7 +32,45 @@ export const useSearch = (items: MindItem[], query: string) => {
       return items.map(item => ({ item, score: 0 }));
     }
 
-    const queryLower = query.trim().toLowerCase();
+    let parsedTextQuery = query;
+    let dateRange: { start: Date, end: Date } | null = null;
+    
+    if (query.trim().length > 0) {
+      const parsedDates = chrono.parse(query);
+      if (parsedDates.length > 0) {
+        const result = parsedDates[0];
+        let startDate = result.start.date();
+        let endDate = result.end ? result.end.date() : null;
+        
+        if (!endDate) {
+           const isRelativePast = result.text.toLowerCase().includes('last') || result.text.toLowerCase().includes('past');
+           if (isRelativePast) {
+               endDate = new Date();
+               if (startDate > endDate) {
+                   let temp = startDate;
+                   startDate = endDate;
+                   endDate = temp;
+               }
+           } else {
+               endDate = new Date(startDate);
+               // If the user specified a month/year without specific day, chrono might just give the 1st of that month.
+               // We will just pad the end date to end of month if it mentions 'month' or 'year' and no day is specified, 
+               // but a simple 24 hour padding is safer for specific days.
+               if (result.text.toLowerCase().includes('month')) {
+                  endDate.setMonth(endDate.getMonth() + 1);
+                  endDate.setDate(0);
+               }
+               endDate.setHours(23, 59, 59, 999);
+               startDate.setHours(0, 0, 0, 0);
+           }
+        }
+        
+        dateRange = { start: startDate, end: endDate };
+        parsedTextQuery = query.replace(result.text, '').replace(/between|from|to|on/gi, '').trim();
+      }
+    }
+
+    const queryLower = parsedTextQuery.trim().toLowerCase();
 
     // Special keyword detection for status and type filters
     const isReadKeyword = queryLower === 'read' || queryLower === 'read items';
@@ -50,89 +89,114 @@ export const useSearch = (items: MindItem[], query: string) => {
     const isRecipeKeyword = queryLower === 'recipes' || queryLower === 'recipe';
     const isProductKeyword = queryLower === 'products' || queryLower === 'product' || queryLower === 'shopping';
 
+    let baseItems = items;
+    
+    // Apply Date Filter
+    if (dateRange) {
+       baseItems = baseItems.filter(item => {
+           const created = new Date(item.createdAt);
+           return created >= dateRange!.start && created <= dateRange!.end;
+       });
+    }
+
     // Apply special keyword filters
     if (isReadKeyword) {
-      const readItems = items.filter(item => item.isRead);
-      return readItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.isRead);
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isWatchedKeyword) {
-      const watchedItems = items.filter(item => item.isWatched);
-      return watchedItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.isWatched);
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isFilmKeyword) {
-      const filmItems = items.filter(item => item.type === 'film');
-      return filmItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.type === 'film');
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isAlbumKeyword) {
-      const albumItems = items.filter(item => item.type === 'album');
-      return albumItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.type === 'album');
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isFavoriteKeyword) {
-      const favItems = items.filter(item => item.isFavorite);
-      return favItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.isFavorite);
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isNoteKeyword) {
-      const noteItems = items.filter(item => item.type === 'note');
-      return noteItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.type === 'note');
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isBookmarkKeyword) {
-      const bookmarkItems = items.filter(item => item.type === 'link');
-      return bookmarkItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.type === 'link');
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isImageKeyword) {
-      const imgItems = items.filter(item => item.type === 'image');
-      return imgItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.type === 'image');
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isQuoteKeyword) {
-      const quoteItems = items.filter(item => item.type === 'quote');
-      return quoteItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.type === 'quote');
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isVideoKeyword) {
-      const videoItems = items.filter(item => item.type === 'video');
-      return videoItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.type === 'video');
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isMusicKeyword) {
-      const musicItems = items.filter(item => item.type === 'music');
-      return musicItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.type === 'music');
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isTweetKeyword) {
-      const tweetItems = items.filter(item => item.type === 'tweet');
-      return tweetItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.type === 'tweet');
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isArticleKeyword) {
-      const articleItems = items.filter(item => item.type === 'article');
-      return articleItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.type === 'article');
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isRecipeKeyword) {
-      const recipeItems = items.filter(item => item.type === 'recipe');
-      return recipeItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.type === 'recipe');
+      return baseItems.map(item => ({ item, score: 0 }));
     }
 
     if (isProductKeyword) {
-      const productItems = items.filter(item => item.type === 'product');
-      return productItems.map(item => ({ item, score: 0 }));
+      baseItems = baseItems.filter(item => item.type === 'product');
+      return baseItems.map(item => ({ item, score: 0 }));
+    }
+
+    // If query is empty after date extraction, return filtered list without fuse search
+    if (queryLower.trim() === '') {
+       return baseItems.map(item => ({ item, score: 0 }));
     }
 
     // Advanced: Link detection
-    const isUrl = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/.test(query.trim());
+    const isUrl = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/.test(queryLower.trim());
     
     // Advanced: Topic detection (simple heuristic for now)
-    const topics = query.split(' ').filter(word => word.startsWith('#')).map(t => t.slice(1));
+    const topics = queryLower.split(' ').filter(word => word.startsWith('#')).map(t => t.slice(1));
 
-    let fuseResults = fuse.search(query);
+    // Make sure to use the filtered baseItems in fuse search.
+    // However, fuse is initialized with the original items.
+    // It's better to search first on fuse, then filter by date.
+    let fuseResults = fuse.search(parsedTextQuery);
+    
+    if (dateRange) {
+        fuseResults = fuseResults.filter(res => {
+           const created = new Date(res.item.createdAt);
+           return created >= dateRange!.start && created <= dateRange!.end;
+        });
+    }
 
     // Boost results that match topics exactly if detected
     if (topics.length > 0) {

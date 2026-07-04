@@ -139,52 +139,52 @@ export default function SerendipityView({
                   onInspectItem(randomItem);
                   onClose();
                 }}
-                className="w-full bg-neutral-50/50 border border-neutral-200/60 p-5 rounded-2xl cursor-pointer hover:border-neutral-300 transition-all duration-300 relative group shadow-sm flex flex-col gap-3"
+                className="w-full bg-modal-sidebar/50 border border-border-subtle p-5 rounded-2xl cursor-pointer hover:bg-modal-sidebar hover:border-border-subtle/80 transition-all duration-300 relative group shadow-sm flex flex-col gap-3"
               >
                 {/* Specific layouts */}
                 {randomItem.type === 'color' && randomItem.colorHex && (
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-xl border shadow-inner shrink-0" style={{ backgroundColor: randomItem.colorHex }} />
+                    <div className="w-14 h-14 rounded-xl border border-border-subtle shadow-inner shrink-0" style={{ backgroundColor: randomItem.colorHex }} />
                     <div>
-                      <h4 className="font-display font-semibold text-sm text-neutral-800 leading-tight">{randomItem.title}</h4>
-                      <p className="text-xs font-mono text-neutral-400 uppercase tracking-tight">{randomItem.colorHex}</p>
+                      <h4 className="font-display font-semibold text-sm text-text-heading leading-tight">{randomItem.title}</h4>
+                      <p className="text-xs font-mono text-foreground/60 uppercase tracking-tight">{randomItem.colorHex}</p>
                     </div>
                   </div>
                 )}
 
                 {randomItem.type === 'quote' && (
-                  <div className="border-l-[3px] border-amber-300 pl-4 space-y-2">
-                    <p className="font-serif italic text-sm text-neutral-700 leading-relaxed">"{randomItem.content}"</p>
-                    {randomItem.author && <span className="text-right block text-[10px] font-mono text-neutral-400">— {randomItem.author}</span>}
+                  <div className="border-l-[3px] border-amber-500/70 pl-4 space-y-2">
+                    <p className="font-serif italic text-sm text-foreground/85 leading-relaxed">"{randomItem.content}"</p>
+                    {randomItem.author && <span className="text-right block text-[10px] font-mono text-foreground/50">— {randomItem.author}</span>}
                   </div>
                 )}
 
                 {randomItem.type === 'note' && (
                   <div className="space-y-1.5">
-                    <h4 className="font-display font-semibold text-sm text-neutral-800 leading-tight">{randomItem.title}</h4>
-                    <p className="text-xs text-neutral-500 leading-relaxed font-sans line-clamp-3">{randomItem.content}</p>
+                    <h4 className="font-display font-semibold text-sm text-text-heading leading-tight">{randomItem.title}</h4>
+                    <p className="text-xs text-foreground/70 leading-relaxed font-sans line-clamp-3">{randomItem.content}</p>
                   </div>
                 )}
 
                 {(randomItem.type === 'link' || randomItem.type === 'article') && (
                   <div className="flex gap-4">
                     {randomItem.imageUrl && (
-                      <img src={randomItem.imageUrl} alt="" className="w-16 h-16 rounded-xl object-cover border border-neutral-100 shrink-0" />
+                      <img src={randomItem.imageUrl} alt="" className="w-16 h-16 rounded-xl object-cover border border-border-subtle shrink-0" />
                     )}
                     <div className="space-y-1 overflow-hidden">
-                      <span className="text-[9px] font-mono text-indigo-600 uppercase font-bold">{randomItem.siteName}</span>
-                      <h4 className="font-display font-semibold text-sm text-neutral-800 leading-tight truncate">{randomItem.title}</h4>
-                      <p className="text-xs text-neutral-400 leading-normal line-clamp-1 truncate">{randomItem.url}</p>
+                      <span className="text-[9px] font-mono text-indigo-500 uppercase font-bold">{randomItem.siteName}</span>
+                      <h4 className="font-display font-semibold text-sm text-text-heading leading-tight truncate">{randomItem.title}</h4>
+                      <p className="text-xs text-foreground/50 leading-normal line-clamp-1 truncate">{randomItem.url}</p>
                     </div>
                   </div>
                 )}
 
                 {randomItem.type === 'image' && randomItem.imageUrl && (
                   <div className="flex gap-4">
-                    <img src={randomItem.imageUrl} alt="" className="w-20 h-16 rounded-xl object-cover border border-neutral-100 shrink-0" />
+                    <img src={randomItem.imageUrl} alt="" className="w-20 h-16 rounded-xl object-cover border border-border-subtle shrink-0" />
                     <div className="space-y-1">
-                      <h4 className="font-display font-semibold text-sm text-neutral-800 leading-tight">{randomItem.title}</h4>
-                      <p className="text-xs text-neutral-400 leading-relaxed line-clamp-2">{randomItem.content}</p>
+                      <h4 className="font-display font-semibold text-sm text-text-heading leading-tight">{randomItem.title}</h4>
+                      <p className="text-xs text-foreground/70 leading-relaxed line-clamp-2">{randomItem.content}</p>
                     </div>
                   </div>
                 )}

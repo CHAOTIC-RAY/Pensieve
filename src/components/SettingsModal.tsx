@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { generateSettingsQrCode, applySettings, getSerializedSettings } from "../utils/settingsQr";
+import { generateSettingsQrCode, applySettings, getSerializedSettings, getEncryptedSettingsCode, decryptAndApplySettings } from "../utils/settingsQr";
 import QrScanner from "./QrScanner";
 import { QrCode, ScanLine, Plug } from "lucide-react";
 import {
@@ -77,6 +77,7 @@ import {
   saveSettings,
   loadGoogleFont,
   calculateLevel,
+  getEffectCategory,
 } from "../services/themeStudio";
 import { MindItem } from "../types";
 import CloudPlugins from "./CloudPlugins";
@@ -84,7 +85,7 @@ import CloudPlugins from "./CloudPlugins";
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: "intelligence" | "sync" | "db" | "ui" | "profile" | "mobile-link" | "plugins";
+  initialTab?: "intelligence" | "db" | "ui" | "profile" | "mobile-link" | "plugins";
   localAiEnabled: boolean;
   setLocalAiEnabledState: (val: boolean) => void;
   localModelId: string;
@@ -104,6 +105,7 @@ interface SettingsModalProps {
   dbStrategy: DbStrategy;
   setDbStrategyState: (val: DbStrategy) => void;
   onItemCreated: (newItem: Omit<MindItem, 'id' | 'createdAt'>) => Promise<string>;
+  onOpenAchievements?: () => void;
 }
 
 export default function SettingsModal({
@@ -128,10 +130,11 @@ export default function SettingsModal({
   setDbStrategyState,
   initialTab,
   onItemCreated,
+  onOpenAchievements
 }: SettingsModalProps) {
   const { achievements } = useAchievements(items);
   const [activeTab, setActiveTab] = useState<
-    "intelligence" | "sync" | "db" | "ui" | "profile" | "mobile-link" | "plugins"
+    "intelligence" | "db" | "ui" | "profile" | "mobile-link" | "plugins"
   >(initialTab || "ui");
   // Appwrite Configuration States
   const [appwriteEndpoint, setAppwriteEndpoint] = useState("");
@@ -180,6 +183,7 @@ export default function SettingsModal({
   const [selectedModel, setSelectedModel] = useState("zai-org/glm-4.6v-flash");
   const [customModelName, setCustomModelName] = useState("");
   const [speculativeDecoding, setSpeculativeDecoding] = useState(false);
+  const [tokenBudget, setTokenBudget] = useState(false);
 
   // Firebase Auth states
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -194,6 +198,12 @@ export default function SettingsModal({
   const [showScanner, setShowScanner] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
   const [scanError, setScanError] = useState("");
+  const [mobileLinkCopied, setMobileLinkCopied] = useState(false);
+  const [encryptedCode, setEncryptedCode] = useState("");
+  const [encryptedCopied, setEncryptedCopied] = useState(false);
+  const [pastedCode, setPastedCode] = useState("");
+  const [pastedSuccess, setPastedSuccess] = useState(false);
+  const [pastedError, setPastedError] = useState("");
 
   const wasOpen = useRef(false);
   const prevInitialTab = useRef(initialTab);
@@ -217,6 +227,9 @@ export default function SettingsModal({
       generateSettingsQrCode()
         .then((url) => setQrCodeDataUrl(url))
         .catch((err) => console.error("Error generating settings QR code:", err));
+      
+      const code = getEncryptedSettingsCode();
+      setEncryptedCode(code);
       
       // Proactively trigger bootstrap if we are in local strategy but engine is still idle (Standby)
       if (aiStrategy === 'local' && bootstrapState.phase === 'idle') {
@@ -254,6 +267,7 @@ export default function SettingsModal({
     selectedModel,
     customModelName,
     speculativeDecoding,
+    tokenBudget,
   ]);
 
   const handleStrategyChange = (strategy: AiStrategy) => {
@@ -335,6 +349,8 @@ export default function SettingsModal({
         localStorage.getItem("pensieve_custom_model_name") || "";
       const storedSpeculative =
         localStorage.getItem("pensieve_speculative_decoding") === "true";
+      const storedTokenBudget =
+        localStorage.getItem("pensieve_token_budget") === "true";
 
       setApiProvider(storedProvider);
       setApiBaseUrl(storedBaseUrl);
@@ -342,6 +358,7 @@ export default function SettingsModal({
       setSelectedModel(storedModel);
       setCustomModelName(storedCustomModel);
       setSpeculativeDecoding(storedSpeculative);
+      setTokenBudget(storedTokenBudget);
     }
   }, [isOpen]);
 
@@ -493,6 +510,12 @@ export default function SettingsModal({
     setSpeculativeDecoding(val);
   };
 
+  const handleTokenBudgetChange = (val: boolean) => {
+    setTokenBudget(val);
+    localStorage.setItem("pensieve_token_budget", val ? "true" : "false");
+    window.dispatchEvent(new CustomEvent("pensieve_token_budget_changed", { detail: val }));
+  };
+
   // API Test state
   const [apiTestStatus, setApiTestStatus] = useState<
     "idle" | "testing" | "success" | "error"
@@ -528,6 +551,10 @@ export default function SettingsModal({
       localStorage.setItem(
         "pensieve_speculative_decoding",
         speculativeDecoding ? "true" : "false",
+      );
+      localStorage.setItem(
+        "pensieve_token_budget",
+        tokenBudget ? "true" : "false",
       );
 
       setTimeout(() => {
@@ -611,10 +638,30 @@ export default function SettingsModal({
     key: K,
     value: UserSettings[K],
   ) => {
-    const updated: UserSettings = {
+    let updated: UserSettings = {
       ...userSettings,
       [key]: value,
     };
+
+    if (key === "activeEffect") {
+      const effectId = value as string | null;
+      let currentActive = [...(userSettings.activeEffects || (userSettings.activeEffect ? userSettings.activeEffect.split(' ').filter(Boolean) : []))];
+      
+      if (effectId) {
+        if (currentActive.includes(effectId)) {
+          currentActive = currentActive.filter(id => id !== effectId);
+        } else {
+          const itemCategory = getEffectCategory(effectId);
+          currentActive = currentActive.filter(id => getEffectCategory(id) !== itemCategory);
+          currentActive.push(effectId);
+        }
+        updated.activeEffects = currentActive;
+        updated.activeEffect = currentActive.join(' ');
+      } else {
+        updated.activeEffects = [];
+        updated.activeEffect = null;
+      }
+    }
 
     // If we changed color or font combo, we might have deviated from active preset
     if (
@@ -687,13 +734,34 @@ export default function SettingsModal({
   };
 
   const renderMobileLinkContent = () => {
-    const [copied, setCopied] = useState(false);
+    const handleCopyEncryptedCode = () => {
+      const code = getEncryptedSettingsCode();
+      navigator.clipboard.writeText(code);
+      setEncryptedCopied(true);
+      setTimeout(() => setEncryptedCopied(false), 2000);
+    };
+
+    const handleImportCode = () => {
+      if (!pastedCode.trim()) return;
+      const success = decryptAndApplySettings(pastedCode);
+      if (success) {
+        setPastedSuccess(true);
+        setPastedError("");
+        setTimeout(() => {
+          setPastedSuccess(false);
+          window.location.reload();
+        }, 1500);
+      } else {
+        setPastedError("Invalid or corrupted secure sync code.");
+        setTimeout(() => setPastedError(""), 3000);
+      }
+    };
 
     const handleCopyRaw = () => {
       const raw = getSerializedSettings();
       navigator.clipboard.writeText(raw);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setMobileLinkCopied(true);
+      setTimeout(() => setMobileLinkCopied(false), 2000);
     };
 
     const handleScanSuccess = (text: string) => {
@@ -703,7 +771,6 @@ export default function SettingsModal({
         setTimeout(() => {
           setScanSuccess(false);
           setShowScanner(false);
-          // Reload page to apply all changes instantly, or just let states update
           window.location.reload();
         }, 1500);
       } else {
@@ -725,100 +792,169 @@ export default function SettingsModal({
           <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
             <QrCode className="w-6 h-6 animate-pulse" />
           </div>
-          <h3 className="text-base font-bold text-text-heading">Sync Settings</h3>
+          <h3 className="text-base font-bold text-text-heading">Sync & Link Devices</h3>
           <p className="text-xs text-foreground/60 mt-1 max-w-sm mx-auto leading-relaxed">
             Easily copy your local AI configuration, cloud storage backends, databases, and custom themes across devices.
           </p>
         </div>
 
-        {/* Desktop View (Generates QR) */}
-        <div className="hidden md:flex flex-col items-center justify-center p-6 border border-border-subtle rounded-3xl bg-card-bg/40 backdrop-blur-sm shadow-sm select-none">
-          <h4 className="text-sm font-bold text-text-heading mb-4">Link with Mobile</h4>
-          {qrCodeDataUrl ? (
-            <div className="relative group p-4 bg-white rounded-2xl shadow-md border border-neutral-200">
-              <img
-                src={qrCodeDataUrl}
-                alt="Settings QR Code"
-                className="w-48 h-48 select-none"
-              />
-              <div className="absolute inset-0 bg-neutral-900/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none" />
-            </div>
-          ) : (
-            <div className="w-48 h-48 bg-neutral-100 dark:bg-neutral-900 rounded-2xl flex items-center justify-center border border-dashed border-border-subtle">
-              <span className="text-xs text-foreground/40 font-medium">Generating QR...</span>
-            </div>
-          )}
+        {/* QR Code Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Desktop View (Generates QR) */}
+          <div className="hidden md:flex flex-col items-center justify-center p-5 border border-border-subtle rounded-3xl bg-card-bg/40 backdrop-blur-sm shadow-sm select-none">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-text-heading mb-3">Scan settings QR</h4>
+            {qrCodeDataUrl ? (
+              <div className="relative group p-3 bg-white rounded-2xl shadow-md border border-neutral-200">
+                <img
+                  src={qrCodeDataUrl}
+                  alt="Settings QR Code"
+                  className="w-40 h-40 select-none"
+                />
+                <div className="absolute inset-0 bg-neutral-900/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none" />
+              </div>
+            ) : (
+              <div className="w-40 h-40 bg-neutral-100 dark:bg-neutral-900 rounded-2xl flex items-center justify-center border border-dashed border-border-subtle">
+                <span className="text-xs text-foreground/40 font-medium">Generating QR...</span>
+              </div>
+            )}
 
-          <div className="mt-5 w-full flex flex-col gap-2.5 max-w-xs">
-            <div className="p-3 rounded-2xl bg-modal-sidebar border border-border-subtle flex items-start gap-2.5">
-              <span className="text-xs font-mono text-emerald-400 font-bold select-none mt-0.5">💡</span>
-              <p className="text-[11px] text-foreground/70 leading-normal">
-                Open <strong>Preferences</strong> on your mobile device and tap the <strong>Link with Desktop</strong> button to scan this QR code!
+            <div className="mt-4 w-full flex flex-col gap-2">
+              <div className="p-2.5 rounded-xl bg-modal-sidebar border border-border-subtle flex items-start gap-2">
+                <span className="text-xs select-none">💡</span>
+                <p className="text-[10px] text-foreground/70 leading-normal">
+                  Open Preferences on mobile and tap <strong>Scan Settings QR</strong> to instantly pair!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile View (Scans QR) */}
+          <div className="flex md:hidden flex-col items-center justify-center p-6 border border-border-subtle rounded-3xl bg-card-bg/40 backdrop-blur-sm shadow-sm select-none text-center">
+             <h4 className="text-sm font-bold text-text-heading mb-2">Scan Desktop Settings</h4>
+             <p className="text-[11px] text-foreground/60 mb-4 max-w-[200px]">
+               Tap the button below to scan the QR code from your desktop browser.
+             </p>
+             
+             <button
+               onClick={() => setShowScanner(true)}
+               className="w-full max-w-[200px] py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+             >
+               <ScanLine className="w-4.5 h-4.5" />
+               Scan Settings QR
+             </button>
+
+             <AnimatePresence>
+               {scanSuccess && (
+                 <motion.div
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   exit={{ opacity: 0 }}
+                   className="mt-4 p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-xl flex items-center gap-2 text-xs font-bold w-full max-w-[200px] justify-center"
+                 >
+                   <Check className="w-4 h-4" />
+                   Settings Synced!
+                 </motion.div>
+               )}
+               {scanError && (
+                 <motion.div
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   exit={{ opacity: 0 }}
+                   className="mt-4 p-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl flex items-center gap-2 text-xs font-bold w-full max-w-[200px] justify-center"
+                 >
+                   <AlertCircle className="w-4 h-4" />
+                   {scanError}
+                 </motion.div>
+               )}
+             </AnimatePresence>
+          </div>
+
+          {/* Encrypted Long Code Copy Section (Available for both Desktop and Mobile) */}
+          <div className="flex flex-col justify-between p-5 border border-border-subtle rounded-3xl bg-card-bg/40 backdrop-blur-sm shadow-sm">
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-text-heading">Export Sync Code</h4>
+              <p className="text-[11px] text-foreground/60 leading-normal">
+                Copy this encrypted long code and paste it on your other device's import section to instantly update all your preferences.
               </p>
+              
+              <div className="p-2.5 rounded-xl bg-input-bg border border-border-subtle font-mono text-[9px] text-foreground/50 break-all line-clamp-3 select-all max-h-[60px] overflow-y-auto">
+                {encryptedCode || "Generating sync code..."}
+              </div>
             </div>
 
             <button
-              onClick={handleCopyRaw}
-              className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
-                copied
+              onClick={handleCopyEncryptedCode}
+              className={`w-full mt-3 py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
+                encryptedCopied
                   ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                   : "bg-card-bg text-foreground border-border-subtle hover:bg-foreground/5"
               }`}
             >
-              {copied ? (
+              {encryptedCopied ? (
                 <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Copied to Clipboard!
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  Copied Secure Code!
                 </>
               ) : (
                 <>
                   <Download className="w-4 h-4" />
-                  Copy Settings Configuration
+                  Copy Encrypted Sync Code
                 </>
               )}
             </button>
           </div>
         </div>
 
-        {/* Mobile View (Scans QR) */}
-        <div className="flex md:hidden flex-col items-center justify-center p-6 border border-border-subtle rounded-3xl bg-card-bg/40 backdrop-blur-sm shadow-sm select-none text-center">
-           <h4 className="text-sm font-bold text-text-heading mb-2">Link with Desktop</h4>
-           <p className="text-[11px] text-foreground/60 mb-6 max-w-[200px]">
-             Tap the button below to scan the QR code from your desktop browser.
-           </p>
-           
-           <button
-             onClick={() => setShowScanner(true)}
-             className="w-full max-w-[200px] py-3 px-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
-           >
-             <ScanLine className="w-5 h-5" />
-             Scan Settings QR
-           </button>
+        {/* Import Paste Section */}
+        <div className="p-5 border border-border-subtle rounded-3xl bg-card-bg/40 backdrop-blur-sm shadow-sm space-y-4">
+          <div className="space-y-1">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-text-heading">Import / Paste Sync Code</h4>
+            <p className="text-[11px] text-foreground/60 leading-normal">
+              Paste the encrypted secure sync code you copied from another device to apply its entire theme, database settings, and profile setup.
+            </p>
+          </div>
 
-           <AnimatePresence>
-             {scanSuccess && (
-               <motion.div
-                 initial={{ opacity: 0, y: 10 }}
-                 animate={{ opacity: 1, y: 0 }}
-                 exit={{ opacity: 0 }}
-                 className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-xl flex items-center gap-2 text-xs font-bold w-full max-w-[200px] justify-center"
-               >
-                 <Check className="w-4 h-4" />
-                 Settings Synced!
-               </motion.div>
-             )}
-             {scanError && (
-               <motion.div
-                 initial={{ opacity: 0, y: 10 }}
-                 animate={{ opacity: 1, y: 0 }}
-                 exit={{ opacity: 0 }}
-                 className="mt-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl flex items-center gap-2 text-xs font-bold w-full max-w-[200px] justify-center"
-               >
-                 <AlertCircle className="w-4 h-4" />
-                 {scanError}
-               </motion.div>
-             )}
-           </AnimatePresence>
+          <textarea
+            value={pastedCode}
+            onChange={(e) => setPastedCode(e.target.value)}
+            placeholder="Paste your PENSIEVE_SECURE_SYNC_... code here"
+            className="w-full h-16 p-3 rounded-xl bg-input-bg border border-border-subtle focus:outline-none focus:ring-1 focus:ring-primary/40 font-mono text-[10px] text-foreground placeholder-foreground/30 resize-none"
+          />
+
+          <button
+            onClick={handleImportCode}
+            disabled={!pastedCode.trim()}
+            className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
+              pastedSuccess
+                ? "bg-emerald-500 text-white border-emerald-600"
+                : !pastedCode.trim()
+                ? "bg-foreground/5 text-foreground/30 border-border-subtle/30 cursor-not-allowed"
+                : "bg-foreground text-background border-transparent hover:opacity-95"
+            }`}
+          >
+            {pastedSuccess ? (
+              <>
+                <Check className="w-4 h-4 text-white" />
+                Settings Synced Successfully!
+              </>
+            ) : (
+              "Import & Sync Settings"
+            )}
+          </button>
+
+          <AnimatePresence>
+            {pastedError && (
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="p-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl flex items-center gap-2 text-xs font-semibold justify-center"
+              >
+                <AlertCircle className="w-4 h-4" />
+                {pastedError}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     );
@@ -849,8 +985,10 @@ export default function SettingsModal({
 
     const handleSignOut = async () => {
       try {
+        localStorage.removeItem('pensieve_local_guest_active');
         await signOut(auth);
         onClose();
+        window.location.href = '/';
       } catch (err) {
         console.error("Sign out error:", err);
       }
@@ -1103,79 +1241,21 @@ export default function SettingsModal({
           </div>
         </div>
 
-        {/* Milestones / Achievements Section (Collapsible) */}
+        {/* Milestones / Achievements Section */}
         <div className="pt-6 border-t border-border-subtle">
           <button
-            onClick={() => setMobileExpanded(prev => ({ ...prev, milestones: !prev.milestones }))}
+            onClick={() => {
+              if (onOpenAchievements) onOpenAchievements();
+              onClose();
+            }}
             className="w-full flex items-center justify-between group transition-colors"
           >
             <h4 className="text-xs font-mono uppercase tracking-wider text-foreground/65 flex items-center gap-1.5 group-hover:text-amber-500">
-              <Trophy className={`w-3.5 h-3.5 transition-colors ${mobileExpanded.milestones ? 'text-amber-500' : 'text-foreground/50'}`} />
-              Milestones &amp; Collectibles ({achievements.filter(a => a.unlockedAt).length} / {achievements.length})
+              <Trophy className={`w-3.5 h-3.5 transition-colors text-foreground/50 group-hover:text-amber-500`} />
+              Milestones & Collectibles ({achievements.filter(a => a.unlockedAt).length} / {achievements.length})
             </h4>
-            {mobileExpanded.milestones ? (
-              <ChevronUp className="w-4 h-4 text-foreground/40" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-foreground/40" />
-            )}
+            <ChevronRight className="w-4 h-4 text-foreground/40 group-hover:translate-x-1 transition-transform" />
           </button>
-
-          <AnimatePresence initial={false}>
-            {mobileExpanded.milestones && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="space-y-4 pt-4">
-                  <p className="text-[11px] text-foreground/50 leading-relaxed">
-                    Your milestones unlocked through thinking, organizing, and using serendipity.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    {achievements.map((ach) => {
-                      const Icon = ach.icon || Trophy;
-                      const isUnlocked = !!ach.unlockedAt;
-                      return (
-                        <div 
-                          key={ach.id}
-                          className={`p-4 rounded-2xl border transition-all duration-300 flex items-center gap-3.5 ${
-                            isUnlocked 
-                              ? "bg-amber-500/5 border-amber-500/25 shadow-sm" 
-                              : "bg-foreground/[0.01] border-border-subtle opacity-60"
-                          }`}
-                        >
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                            isUnlocked ? "bg-amber-500 text-white" : "bg-foreground/5 text-foreground/30"
-                          }`}>
-                            <Icon className="w-5 h-5" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 font-sans">
-                              <span className="text-xs font-bold text-text-heading truncate">{ach.title}</span>
-                              {ach.rarity && (
-                                <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider shrink-0 ${
-                                  ach.rarity === 'Legendary' ? 'bg-amber-500/20 text-amber-600' :
-                                  ach.rarity === 'Epic' ? 'bg-purple-500/20 text-purple-600' :
-                                  ach.rarity === 'Rare' ? 'bg-blue-500/20 text-blue-600' :
-                                  'bg-foreground/10 text-foreground/60'
-                                }`}>
-                                  {ach.rarity}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[10px] text-foreground/50 truncate leading-relaxed">
-                              {ach.description}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </div>
     );
@@ -1567,6 +1647,33 @@ export default function SettingsModal({
             />
           </div>
         )}
+
+        {/* Token Budget Switch */}
+        <div className="flex items-start justify-between p-4 rounded-xl bg-card-bg border border-border-subtle/50 shadow-sm mt-3">
+          <div className="space-y-1 pr-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-text-heading">Token Budget Mode</span>
+              <span className="text-[9px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider font-mono">
+                Smart Routing
+              </span>
+            </div>
+            <p className="text-[10px] text-foreground/60 leading-normal">
+              When enabled, smaller/routine tasks will run directly in your browser using local WebGPU/LiteRT models to conserve API tokens, fallback to the cloud API only for highly complex tasks.
+            </p>
+          </div>
+          <button
+            onClick={() => handleTokenBudgetChange(!tokenBudget)}
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-1 focus:ring-primary/40 mt-1 ${
+              tokenBudget ? "bg-primary" : "bg-foreground/10"
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                tokenBudget ? "translate-x-4" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
 
         <div className="flex justify-end pt-2">
           <button
@@ -2584,7 +2691,7 @@ export default function SettingsModal({
               <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
                 Neon Search Glow Color
               </label>
-              {userSettings.activeEffect === 'search-neon' ? (
+              {userSettings.activeEffects?.includes('search-neon') || userSettings.activeEffect?.split(' ').includes('search-neon') ? (
                 <span className="text-[10px] font-bold text-emerald-500 font-mono">ACTIVE EFFECT</span>
               ) : (
                 <button
@@ -3111,17 +3218,17 @@ export default function SettingsModal({
                 </AnimatePresence>
               </div>
 
-              {/* 3. Cloud Sync */}
+              {/* 3. Plugins */}
               <div className="border border-border-subtle rounded-2xl overflow-hidden bg-card-bg/50 backdrop-blur-sm">
                 <button
-                  onClick={() => toggleMobileSection("sync")}
+                  onClick={() => toggleMobileSection("plugins")}
                   className="w-full px-5 py-4 flex items-center justify-between bg-card-bg hover:bg-foreground/[0.02] transition-colors"
                 >
                   <div className="flex items-center gap-3 text-text-heading font-semibold text-sm">
-                    <Cloud className="w-4.5 h-4.5 text-foreground/80" />
-                    Cloud Sync Dashboard
+                    <Plug className="w-4.5 h-4.5 text-amber-500" />
+                    Plugins Store
                   </div>
-                  {mobileExpanded.sync ? (
+                  {mobileExpanded.plugins ? (
                     <ChevronUp className="w-4 h-4 text-foreground/60" />
                   ) : (
                     <ChevronDown className="w-4 h-4 text-foreground/60" />
@@ -3129,7 +3236,7 @@ export default function SettingsModal({
                 </button>
 
                 <AnimatePresence initial={false}>
-                  {mobileExpanded.sync && (
+                  {mobileExpanded.plugins && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
@@ -3137,7 +3244,9 @@ export default function SettingsModal({
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden border-t border-border-subtle bg-modal-bg/30"
                     >
-                      <div className="p-5">{renderCloudSyncContent()}</div>
+                      <div className="p-5">
+                        <CloudPlugins onItemCreated={onItemCreated} onTriggerToast={triggerToast} />
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -3207,42 +3316,7 @@ export default function SettingsModal({
                 </AnimatePresence>
               </div>
 
-              {/* 6. Cloud Connection Plugins */}
-              <div className="border border-border-subtle rounded-2xl overflow-hidden bg-card-bg/50 backdrop-blur-sm">
-                <button
-                  onClick={() => toggleMobileSection("plugins")}
-                  className="w-full px-5 py-4 flex items-center justify-between bg-card-bg hover:bg-foreground/[0.02] transition-colors"
-                >
-                  <div className="flex items-center gap-3 text-text-heading font-semibold text-sm">
-                    <Plug className="w-4.5 h-4.5 text-foreground/80" />
-                    <span>Cloud Plugins</span>
-                    <span className="text-[9px] bg-rose-500/10 border border-rose-500/20 text-rose-500 font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider font-mono">
-                      Experimental
-                    </span>
-                  </div>
-                  {mobileExpanded.plugins ? (
-                    <ChevronUp className="w-4 h-4 text-foreground/60" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-foreground/60" />
-                  )}
-                </button>
 
-                <AnimatePresence initial={false}>
-                  {mobileExpanded.plugins && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden border-t border-border-subtle bg-modal-bg/30"
-                    >
-                      <div className="p-5">
-                        <CloudPlugins onItemCreated={onItemCreated} onTriggerToast={triggerToast} />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
             </div>
           </div>
 
@@ -3312,15 +3386,15 @@ export default function SettingsModal({
                   </span>
                 </button>
                 <button
-                  onClick={() => setActiveTab("sync")}
+                  onClick={() => setActiveTab("plugins")}
                   className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors shrink-0 ${
-                    activeTab === "sync"
+                    activeTab === "plugins"
                       ? "bg-card-bg text-text-heading shadow-sm border border-border-subtle/30"
                       : "text-foreground/70 hover:bg-foreground/5"
                   }`}
                 >
-                  <Cloud className="w-4 h-4 text-sky-400" />
-                  Cloud Sync
+                  <Plug className="w-4 h-4 text-amber-500" />
+                  Plugins
                 </button>
                 <button
                   onClick={() => setActiveTab("db")}
@@ -3333,20 +3407,7 @@ export default function SettingsModal({
                   <Database className="w-4 h-4 text-orange-400" />
                   Databases
                 </button>
-                <button
-                  onClick={() => setActiveTab("plugins")}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors shrink-0 ${
-                    activeTab === "plugins"
-                      ? "bg-card-bg text-text-heading shadow-sm border border-border-subtle/30"
-                      : "text-foreground/70 hover:bg-foreground/5"
-                  }`}
-                >
-                  <Plug className="w-4 h-4 text-amber-400" />
-                  <span>Cloud Plugins</span>
-                  <span className="text-[9px] bg-rose-500/10 border border-rose-500/20 text-rose-500 font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider font-mono">
-                    Experimental
-                  </span>
-                </button>
+
                 <button
                   onClick={() => setActiveTab("mobile-link")}
                   className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors shrink-0 ${
@@ -3393,7 +3454,6 @@ export default function SettingsModal({
               <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
                 {activeTab === "profile" && renderUserProfileContent()}
                 {activeTab === "intelligence" && renderIntelligenceContent()}
-                {activeTab === "sync" && renderCloudSyncContent()}
                 {activeTab === "db" && renderDatabasesContent()}
                 {activeTab === "ui" && renderUIAppearanceContent()}
                 {activeTab === "mobile-link" && renderMobileLinkContent()}

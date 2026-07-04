@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Sparkle {
@@ -13,6 +13,17 @@ export default function SparkleCursor({ intensity = 0.4 }: { intensity?: number 
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [sparkles, setSparkles] = useState<Sparkle[]>([]);
   const [scrollSpeed, setScrollSpeed] = useState(0);
+  const lastActiveTime = useRef<number>(Date.now());
+  const isMobileRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    isMobileRef.current = window.matchMedia('(max-width: 768px)').matches;
+    const handleResize = () => {
+      isMobileRef.current = window.matchMedia('(max-width: 768px)').matches;
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -30,55 +41,79 @@ export default function SparkleCursor({ intensity = 0.4 }: { intensity?: number 
 
   const addSparkle = useCallback((x: number, y: number) => {
     const id = Date.now() + Math.random();
-    const size = Math.random() * 8 + 2;
+    
+    // Performance optimization: smaller size and count on mobile
+    const maxSparkles = isMobileRef.current ? 12 : 60;
+    const size = isMobileRef.current ? (Math.random() * 5 + 1.5) : (Math.random() * 8 + 2);
+    
     // Purple variants + gold + cyan
     const colors = ['#c084fc', '#a855f7', '#d8b4fe', '#ffffff', '#fbbf24', '#38bdf8'];
     const color = colors[Math.floor(Math.random() * colors.length)];
 
     const newSparkle: Sparkle = { id, x, y, size, color };
     
-    setSparkles((prev) => [...prev.slice(-80), newSparkle]);
+    setSparkles((prev) => [...prev.slice(-maxSparkles), newSparkle]);
 
     // Cleanup after animation
     setTimeout(() => {
       setSparkles((prev) => prev.filter((s) => s.id !== id));
-    }, 800);
+    }, isMobileRef.current ? 500 : 800); // Shorter duration on mobile
   }, []);
 
   useEffect(() => {
-    const isMobile = window.matchMedia('(max-width: 768px)').matches;
     let time = 0;
     let animationFrameId: number;
-    let isTouching = false;
 
     const autoAnimate = () => {
-      if (isMobile && !isTouching) {
-        time += 0.02; // speed of auto movement
+      const isMobile = isMobileRef.current;
+      const idleTime = Date.now() - lastActiveTime.current;
+      const isIdle = idleTime > 2000; // Idle after 2 seconds
+
+      // Auto play on desktop if idle, or auto play on mobile as default
+      if (isIdle || isMobile) {
+        time += isMobile ? 0.012 : 0.018; // speed of auto movement
         const w = window.innerWidth;
         const h = window.innerHeight;
         
         // Figure-8 pattern, centered slightly above middle
-        const nx = w / 2 + Math.sin(time) * (w * 0.35);
-        const ny = h / 2.5 + Math.sin(time * 2) * (h * 0.2);
+        const targetX = w / 2 + Math.sin(time) * (w * 0.32);
+        const targetY = h / 2.5 + Math.sin(time * 2) * (h * 0.18);
         
-        setMousePos({ x: nx, y: ny });
+        // Lerp to target coordinates so transition into idle mode is buttery smooth
+        setMousePos((prev) => {
+          // If cursor is at 0,0, snap immediately to target so it doesn't float in from corner
+          if (prev.x === 0 && prev.y === 0) return { x: targetX, y: targetY };
+          const lerpFactor = isMobile ? 0.05 : 0.08;
+          return {
+            x: prev.x + (targetX - prev.x) * lerpFactor,
+            y: prev.y + (targetY - prev.y) * lerpFactor
+          };
+        });
         
-        // Slightly higher chance of sparkles for mobile auto mode
-        if (Math.random() < intensity + 0.1) {
-          addSparkle(nx, ny);
+        // Slightly lower chance of sparkles for mobile, higher on desktop idle
+        const sparkleChance = isMobile ? (intensity * 0.3) : (intensity * 0.85);
+        if (Math.random() < sparkleChance) {
+          // Add sparkle at current interpolated position
+          setMousePos((current) => {
+            if (current.x > 0 && current.y > 0) {
+              addSparkle(current.x, current.y);
+            }
+            return current;
+          });
         }
       }
       animationFrameId = requestAnimationFrame(autoAnimate);
     };
 
-    if (isMobile) {
-      animationFrameId = requestAnimationFrame(autoAnimate);
-    }
+    animationFrameId = requestAnimationFrame(autoAnimate);
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (isMobile) return;
+      lastActiveTime.current = Date.now();
       setMousePos({ x: e.clientX, y: e.clientY });
       
+      const isMobile = isMobileRef.current;
+      if (isMobile) return;
+
       // Calculate chance based on intensity and scroll speed
       const baseChance = intensity + (scrollSpeed / 50);
       if (Math.random() < baseChance) {
@@ -89,29 +124,26 @@ export default function SparkleCursor({ intensity = 0.4 }: { intensity?: number 
       }
     };
 
-    let touchTimeout: any;
     const handleTouch = (e: TouchEvent) => {
-      isTouching = true;
-      clearTimeout(touchTimeout);
+      lastActiveTime.current = Date.now();
       const touch = e.touches[0];
       if (touch) {
         setMousePos({ x: touch.clientX, y: touch.clientY });
-        if (Math.random() < intensity + 0.2) {
+        const isMobile = isMobileRef.current;
+        const sparkleChance = isMobile ? (intensity * 0.4) : (intensity + 0.2);
+        if (Math.random() < sparkleChance) {
           addSparkle(touch.clientX, touch.clientY);
         }
       }
-      touchTimeout = setTimeout(() => { isTouching = false; }, 3000);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    if (isMobile) {
-      window.addEventListener('touchstart', handleTouch, { passive: true });
-      window.addEventListener('touchmove', handleTouch, { passive: true });
-    }
+    window.addEventListener('touchstart', handleTouch, { passive: true });
+    window.addEventListener('touchmove', handleTouch, { passive: true });
+    window.addEventListener('scroll', () => { lastActiveTime.current = Date.now(); }, { passive: true });
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      clearTimeout(touchTimeout);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('touchstart', handleTouch);
       window.removeEventListener('touchmove', handleTouch);
@@ -151,7 +183,7 @@ export default function SparkleCursor({ intensity = 0.4 }: { intensity?: number 
               rotate: 180
             }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: isMobileRef.current ? 0.5 : 0.8, ease: "easeOut" }}
             className="absolute pointer-events-none"
             style={{
               width: sparkle.size,

@@ -19,6 +19,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "appwrite": "^26.1.0",
     "box-node-sdk": "^10.12.0",
+    "chrono-node": "^2.9.1",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "firebase": "^12.15.0",

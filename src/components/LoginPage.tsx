@@ -14,12 +14,15 @@ import {
 import { auth } from '../lib/firebase';
 import { 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   signInAnonymously 
 } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -30,17 +33,47 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    getRedirectResult(auth).then((result) => {
+      if (result) {
+        navigate('/');
+      }
+    }).catch((err) => {
+      console.error("Redirect auth error:", err);
+      setError(err.message || "Failed to sign in via redirect.");
+    });
+  }, [navigate]);
+
   const handleGoogleSignIn = async () => {
+    const isIframe = window !== window.parent;
+    const provider = new GoogleAuthProvider();
+    
+    if (isIframe) {
+      setError("Google Sign-In is restricted inside preview iframes due to browser security policies. Please use 'Continue as Guest' or click 'Open in New Tab' below to log in.");
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      navigate('/');
+      const result = await signInWithPopup(auth, provider);
+      if (result) {
+        navigate('/');
+      }
     } catch (err: any) {
-      console.error("Error signing in with Google:", err);
-      setError(err.message || "Failed to sign in with Google.");
-      setIsLoading(false);
+      console.error("Error signing in with Google popup:", err);
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+        try {
+          await signInWithRedirect(auth, provider);
+        } catch (redirErr: any) {
+          console.error("Error signing in with Google redirect fallback:", redirErr);
+          setError("Popup was blocked/closed, and fallback redirect also failed. Please allow popups or try another browser.");
+          setIsLoading(false);
+        }
+      } else {
+        setError(err.message || "Failed to sign in with Google.");
+        setIsLoading(false);
+      }
     }
   };
 
@@ -49,11 +82,13 @@ export default function LoginPage() {
     setError(null);
     try {
       await signInAnonymously(auth);
-      navigate('/');
+      localStorage.removeItem('pensieve_local_guest_active');
+      window.location.href = '/';
     } catch (err: any) {
-      console.error("Error signing in anonymously:", err);
-      setError("Anonymous sign-in failed. Ensure this method is enabled in Firebase Console.");
-      setIsLoading(false);
+      console.warn("Firebase Anonymous sign-in failed/disabled, falling back to Local Guest Mode:", err);
+      // Fallback to Local Guest Mode
+      localStorage.setItem('pensieve_local_guest_active', 'true');
+      window.location.href = '/';
     }
   };
 
@@ -119,9 +154,19 @@ export default function LoginPage() {
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-3 bg-red-500/5 border border-red-500/10 rounded-2xl text-red-500 text-[11px] text-center font-mono"
+              className="p-4 bg-red-500/5 border border-red-500/10 rounded-2xl text-red-500 text-[11px] text-center font-mono flex flex-col items-center gap-3"
             >
-              {error}
+              <div className="leading-relaxed">{error}</div>
+              {window !== window.parent && (
+                <a
+                  href={window.location.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors inline-block select-none cursor-pointer"
+                >
+                  Open in New Tab
+                </a>
+              )}
             </motion.div>
           )}
 

@@ -153,43 +153,46 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
             : 'bg-neutral-900/90 p-[6px] border border-neutral-800/80 opacity-40 grayscale-[90%]'
         } shadow-[0_25px_60px_rgba(0,0,0,0.5)] hover:scale-[1.02] isolation-isolate`}
       >
-        {/* Holographic Sheen/Foil layer */}
-        {unlocked && (
-          <motion.div 
-            className="absolute inset-0 z-30 pointer-events-none mix-blend-color-dodge opacity-40 group-hover:opacity-65 transition-opacity"
-            style={{
-              background: `repeating-linear-gradient(45deg, 
-                transparent, 
-                transparent 10px, 
-                ${config.holo} 15px, 
-                transparent 20px, 
-                transparent 30px, 
-                rgba(255, 255, 255, 0.2) 35px, 
-                transparent 40px
-              )`,
-              left: useTransform(glareX, val => `${val - 50}%`),
-              top: useTransform(glareY, val => `${val - 50}%`),
-              width: '200%',
-              height: '200%'
-            }}
-          />
-        )}
+        {/* Clip container for holographic/glare effects to prevent them escaping the 3D-transformed card */}
+        <div className="absolute inset-0 rounded-[24px] overflow-hidden pointer-events-none z-30">
+          {/* Holographic Sheen/Foil layer */}
+          {unlocked && (
+            <motion.div 
+              className="absolute inset-0 pointer-events-none mix-blend-color-dodge opacity-40 group-hover:opacity-65 transition-opacity"
+              style={{
+                background: `repeating-linear-gradient(45deg, 
+                  transparent, 
+                  transparent 10px, 
+                  ${config.holo} 15px, 
+                  transparent 20px, 
+                  transparent 30px, 
+                  rgba(255, 255, 255, 0.2) 35px, 
+                  transparent 40px
+                )`,
+                left: useTransform(glareX, val => `${val - 50}%`),
+                top: useTransform(glareY, val => `${val - 50}%`),
+                width: '200%',
+                height: '200%'
+              }}
+            />
+          )}
 
-        {/* Animated Glare Spot */}
-        {unlocked && (
-          <motion.div 
-            className="absolute inset-0 z-25 pointer-events-none mix-blend-overlay"
-            style={{
-              background: 'radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 65%)',
-              opacity: glareOpacity,
-              left: useTransform(glareX, val => `${val}%`),
-              top: useTransform(glareY, val => `${val}%`),
-              transform: 'translate(-50%, -50%)',
-              width: '180%',
-              height: '180%'
-            }}
-          />
-        )}
+          {/* Animated Glare Spot */}
+          {unlocked && (
+            <motion.div 
+              className="absolute inset-0 pointer-events-none mix-blend-overlay"
+              style={{
+                background: 'radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 65%)',
+                opacity: glareOpacity,
+                left: useTransform(glareX, val => `${val}%`),
+                top: useTransform(glareY, val => `${val}%`),
+                transform: 'translate(-50%, -50%)',
+                width: '180%',
+                height: '180%'
+              }}
+            />
+          )}
+        </div>
 
         {/* Interior Card Content Area */}
         <div className={`w-full h-full rounded-[16px] relative overflow-hidden flex flex-col p-3 ${config.bgGradient}`}>

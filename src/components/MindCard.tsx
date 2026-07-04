@@ -9,7 +9,7 @@ import {
   Copy, Quote as QuoteIcon, Palette, Eye,
   Play, Music, FileText, Twitter, Utensils, Tv, Pin,
   Film, Disc, ShoppingBag, Star, Clock, Tag,
-  CheckCircle2, Volume2, Github
+  CheckCircle2, Volume2, Github, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MindItem, NoteStyle } from '../types';
@@ -136,8 +136,9 @@ export default function MindCard({
       const newTag = tagInput.trim().replace(/^#/, '').replace(',', '');
       if (!newTag) return;
       if (!onUpdateItem) return;
-      const updatedTags = [...(item.tags || []), newTag];
-      await onUpdateItem({ ...item, tags: updatedTags, manualTags: [...(item.manualTags || []), newTag] });
+      const updatedTags = Array.from(new Set([...(item.tags || []), newTag]));
+      const updatedManualTags = Array.from(new Set([...(item.manualTags || []), newTag]));
+      await onUpdateItem({ ...item, tags: updatedTags, manualTags: updatedManualTags });
       setTagInput('');
       setAddingTag(false);
       setContextMenu(null);
@@ -1052,17 +1053,25 @@ export default function MindCard({
 
         {/* Bottom info: Tags footer */}
         {item.tags && item.tags.length > 0 && (
-          <div className="px-4 pb-3 pt-1 flex items-center gap-1 flex-wrap overflow-hidden min-h-[28px] border-t border-neutral-50 bg-neutral-50/20 group-hover:bg-transparent">
-            {item.tags.slice(0, 3).map((tag, idx) => (
-              <span 
-                key={idx} 
-                className="text-[9px] font-mono text-neutral-400 bg-neutral-100/60 hover:bg-neutral-100 border border-neutral-200/20 px-1.5 py-0.5 rounded-md transition"
-              >
-                #{tag}
-              </span>
-            ))}
+          <div className="px-4 pb-3 pt-1 flex items-center gap-1 flex-wrap overflow-hidden min-h-[28px] border-t border-card-border bg-foreground/[0.02] group-hover:bg-transparent">
+            {item.tags.slice(0, 3).map((tag, idx) => {
+              const isAiTag = item.aiTags?.includes(tag);
+              return (
+                <span 
+                  key={idx} 
+                  className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md border transition flex items-center gap-0.5 ${
+                    isAiTag 
+                      ? 'text-indigo-400 dark:text-indigo-300 bg-indigo-500/10 border-indigo-500/20 shadow-sm' 
+                      : 'text-foreground/70 bg-foreground/[0.05] hover:bg-foreground/[0.08] border-card-border/60 hover:border-card-border shadow-sm'
+                  }`}
+                >
+                  {isAiTag && <Sparkles className="w-2.5 h-2.5 opacity-70" />}
+                  #{tag}
+                </span>
+              );
+            })}
             {item.tags.length > 3 && (
-              <span className="text-[9px] font-mono text-neutral-400 font-bold ml-0.5">
+              <span className="text-[9px] font-mono text-foreground/50 font-bold ml-0.5">
                 +{item.tags.length - 3} more
               </span>
             )}

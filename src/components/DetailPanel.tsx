@@ -30,7 +30,8 @@ export default function DetailPanel({
   const [content, setContent] = useState('');
   const [author, setAuthor] = useState('');
   const [newTag, setNewTag] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
+  const [manualTags, setManualTags] = useState<string[]>([]);
+  const [aiTags, setAiTags] = useState<string[]>([]);
   const [noteStyle, setNoteStyle] = useState<NoteStyle>({});
 
   useEffect(() => {
@@ -44,7 +45,16 @@ export default function DetailPanel({
       setTitle(item.title);
       setContent(item.content);
       setAuthor(item.author || '');
-      setTags(item.tags || []);
+      
+      // Separate tags
+      const currentManual = item.manualTags || [];
+      const currentAi = item.aiTags || [];
+      
+      // If there are legacy tags not in manual or AI, assume they are manual
+      const legacyTags = (item.tags || []).filter(t => !currentManual.includes(t) && !currentAi.includes(t));
+      
+      setManualTags([...currentManual, ...legacyTags]);
+      setAiTags([...currentAi]);
       setNoteStyle(item.noteStyle || {});
 
       return () => {
@@ -59,30 +69,51 @@ export default function DetailPanel({
   if (!item) return null;
 
   const handleAutoSave = async () => {
-    if (title !== item.title || content !== item.content || author !== item.author || JSON.stringify(tags) !== JSON.stringify(item.tags) || JSON.stringify(noteStyle) !== JSON.stringify(item.noteStyle)) {
+    const combinedTags = Array.from(new Set([...manualTags, ...aiTags]));
+    if (title !== item.title || content !== item.content || author !== item.author || 
+        JSON.stringify(manualTags) !== JSON.stringify(item.manualTags) ||
+        JSON.stringify(aiTags) !== JSON.stringify(item.aiTags) ||
+        JSON.stringify(combinedTags) !== JSON.stringify(item.tags) || 
+        JSON.stringify(noteStyle) !== JSON.stringify(item.noteStyle)) {
       await onUpdateItem({
         ...item,
         title,
         content,
         author,
-        tags,
+        manualTags,
+        aiTags,
+        tags: combinedTags,
         noteStyle
       });
     }
   };
 
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(t => t !== tagToRemove));
-    setTimeout(handleAutoSave, 50);
+  const handleRemoveTag = (tagToRemove: string, isAi: boolean) => {
+    if (isAi) {
+      setAiTags(prev => {
+        const next = prev.filter(t => t !== tagToRemove);
+        setTimeout(handleAutoSave, 50);
+        return next;
+      });
+    } else {
+      setManualTags(prev => {
+        const next = prev.filter(t => t !== tagToRemove);
+        setTimeout(handleAutoSave, 50);
+        return next;
+      });
+    }
   };
 
   const handleAddTag = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTag.trim()) return;
     const t = newTag.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
-    if (!tags.includes(t)) {
-      setTags([...tags, t]);
-      setTimeout(handleAutoSave, 50);
+    if (!manualTags.includes(t)) {
+      setManualTags(prev => {
+        const next = [...prev, t];
+        setTimeout(handleAutoSave, 50);
+        return next;
+      });
     }
     setNewTag('');
   };
@@ -259,9 +290,9 @@ export default function DetailPanel({
                 Tags
               </span>
               <div className="flex flex-wrap gap-2">
-                {tags.map((tag, idx) => (
+                {manualTags.map((tag, idx) => (
                   <span 
-                    key={idx}
+                    key={`manual-${idx}`}
                     className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border bg-foreground/5 text-foreground/70 border-border-subtle"
                   >
                     <span 
@@ -278,7 +309,7 @@ export default function DetailPanel({
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleRemoveTag(tag);
+                        handleRemoveTag(tag, false);
                       }}
                       className="ml-1 text-foreground/35 hover:text-foreground/75 transition cursor-pointer"
                     >
@@ -287,8 +318,37 @@ export default function DetailPanel({
                   </span>
                 ))}
                 
+                {aiTags.map((tag, idx) => (
+                  <span 
+                    key={`ai-${idx}`}
+                    className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border bg-indigo-500/10 text-indigo-500 border-indigo-500/20 shadow-sm"
+                  >
+                    <Sparkles className="w-3 h-3 opacity-70" />
+                    <span 
+                      className="cursor-pointer hover:underline"
+                      onClick={() => {
+                        if (onSetVibeFilter) {
+                          onSetVibeFilter('tag', tag, '#' + tag);
+                          onClose();
+                        }
+                      }}
+                    >
+                      #{tag}
+                    </span>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveTag(tag, true);
+                      }}
+                      className="ml-1 text-indigo-500/50 hover:text-indigo-500 transition cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                
                 <form onSubmit={handleAddTag} className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                  <div className="flex items-center bg-input-bg border border-border-subtle rounded-lg px-3 py-1 flex-1 sm:w-32 focus-within:border-indigo-500/40 transition">
+                  <div className="flex items-center bg-input-bg border border-border-subtle rounded-lg px-3 py-1 flex-1 sm:w-32 focus-within:border-indigo-500/40 transition shadow-inner">
                     <Plus className="w-3.5 h-3.5 text-foreground/35 mr-1 shrink-0" />
                     <input 
                       type="text" 

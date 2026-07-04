@@ -212,7 +212,7 @@ export default function AchievementsModal({ isOpen, onClose, achievements }: Ach
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-6xl h-full max-h-[85vh] liquid-glass-panel border border-border-subtle/50 flex flex-col overflow-hidden"
+            className="relative w-full max-w-6xl h-full max-h-[85vh] liquid-glass-panel dark:liquid-glass-panel-dark border border-border-subtle/50 flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="px-8 py-6 border-b border-border-subtle/30 flex items-center justify-between shrink-0 bg-background/25">

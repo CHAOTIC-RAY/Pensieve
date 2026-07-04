@@ -12,6 +12,19 @@ import Logo from './Logo';
 import SparkleCursor from './SparkleCursor';
 import AchievementCard from './AchievementCard';
 
+const FANTASY_STARS = [
+  { left: '12%', top: '15%', size: '16px', delay: 0, duration: 4, color: 'text-amber-200' },
+  { left: '85%', top: '10%', size: '22px', delay: 1.5, duration: 5, color: 'text-purple-300' },
+  { left: '42%', top: '22%', size: '24px', delay: 0.5, duration: 6, color: 'text-white' },
+  { left: '72%', top: '35%', size: '14px', delay: 2.2, duration: 4.5, color: 'text-sky-200' },
+  { left: '22%', top: '42%', size: '18px', delay: 1.2, duration: 5.5, color: 'text-emerald-100' },
+  { left: '88%', top: '55%', size: '20px', delay: 3, duration: 7, color: 'text-pink-300' },
+  { left: '15%', top: '75%', size: '20px', delay: 0.8, duration: 5, color: 'text-amber-100' },
+  { left: '48%', top: '78%', size: '16px', delay: 1.8, duration: 4, color: 'text-indigo-200' },
+  { left: '80%', top: '82%', size: '24px', delay: 2.5, duration: 6, color: 'text-yellow-100' },
+  { left: '28%', top: '88%', size: '14px', delay: 0.4, duration: 3.5, color: 'text-white' },
+];
+
 export default function LandingPage() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -604,21 +617,54 @@ export default function LandingPage() {
             className="w-full h-full bg-[#1c1d22] text-[#f8fafc] text-center shadow-[0_0_80px_rgba(0,0,0,0.2)] relative overflow-hidden group flex flex-col justify-center items-center"
           >
             {/* Shimmery Water Galaxy Background */}
-            <div className="absolute inset-0 pointer-events-none opacity-40">
-              <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,#3b0764_0%,transparent_50%)] animate-pulse duration-[8s]" />
-              <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-primary/20 blur-[120px] rounded-full animate-blob mix-blend-screen" />
-              <div className="absolute bottom-1/4 left-1/4 w-[450px] h-[450px] bg-indigo-500/20 blur-[100px] rounded-full animate-blob animation-delay-2000 mix-blend-screen" />
+            <div className="absolute inset-0 pointer-events-none opacity-85">
+              {/* Deep Space Background Nebulae */}
+              <div className="absolute inset-0 bg-[#06070b]" />
+              <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_30%_25%,#4c1d95_0%,transparent_50%)] animate-pulse duration-[10s]" />
+              <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_80%_75%,#831843_0%,transparent_50%)] animate-pulse duration-[12s]" />
+              <div className="absolute inset-0 opacity-35 bg-[radial-gradient(circle_at_50%_50%,#1e3a8a_0%,transparent_60%)]" />
+              <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-primary/20 blur-[130px] rounded-full animate-blob mix-blend-screen" />
+              <div className="absolute bottom-1/4 left-1/4 w-[450px] h-[450px] bg-indigo-500/20 blur-[110px] rounded-full animate-blob animation-delay-2000 mix-blend-screen" />
               
-              {/* Star field */}
-              <div className="absolute inset-0 opacity-30" style={{ 
-                backgroundImage: 'radial-gradient(white 1px, transparent 0)', 
-                backgroundSize: '40px 40px' 
+              {/* Ultra-fine backdrop star field */}
+              <div className="absolute inset-0 opacity-35" style={{ 
+                backgroundImage: 'radial-gradient(rgba(255,255,255,0.7) 1px, transparent 0)', 
+                backgroundSize: '30px 30px' 
               }} />
-              <div className="absolute inset-0 opacity-20 animate-pulse" style={{ 
-                backgroundImage: 'radial-gradient(white 1.5px, transparent 0)', 
-                backgroundSize: '100px 100px',
-                animationDuration: '3s'
+              <div className="absolute inset-0 opacity-25 animate-pulse" style={{ 
+                backgroundImage: 'radial-gradient(rgba(255,255,255,0.8) 1.5px, transparent 0)', 
+                backgroundSize: '80px 80px',
+                animationDuration: '4s'
               }} />
+
+              {/* Twinkling Magical Fantasy Stars */}
+              {FANTASY_STARS.map((star, idx) => (
+                <motion.div
+                  key={idx}
+                  className={`absolute ${star.color} pointer-events-none`}
+                  style={{
+                    left: star.left,
+                    top: star.top,
+                    width: star.size,
+                    height: star.size,
+                  }}
+                  animate={{
+                    opacity: [0.2, 0.95, 0.2],
+                    scale: [0.75, 1.15, 0.75],
+                    rotate: [0, 180, 360],
+                  }}
+                  transition={{
+                    duration: star.duration,
+                    delay: star.delay,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <svg className="w-full h-full drop-shadow-[0_0_8px_rgba(255,255,255,0.85)]" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0L14.6 9.4L24 12L14.6 14.6L12 24L9.4 14.6L0 12L9.4 9.4L12 0Z" />
+                  </svg>
+                </motion.div>
+              ))}
               
               {/* Shimmer water effect */}
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent mix-blend-overlay animate-wave" />

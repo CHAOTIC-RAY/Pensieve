@@ -61,10 +61,10 @@ export default function PluginModal({ isOpen, onClose, onItemCreated, onTriggerT
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 1 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.8 }}
-              className="w-full h-full md:max-w-5xl md:h-[90vh] bg-background md:bg-card-bg shadow-2xl md:rounded-3xl border-0 md:border md:border-border-subtle relative overflow-hidden pointer-events-auto flex flex-col"
+              className="w-full h-full md:max-w-5xl md:h-[90vh] bg-modal-bg shadow-2xl md:rounded-3xl border-0 md:border md:border-border-subtle relative overflow-hidden pointer-events-auto flex flex-col"
             >
               {/* Header */}
-              <div className="px-6 py-5 md:px-8 md:py-6 border-b border-border-subtle/50 bg-background/80 md:bg-card-bg/80 backdrop-blur-xl flex items-center justify-between sticky top-0 z-20">
+              <div className="px-6 py-5 md:px-8 md:py-6 border-b border-border-subtle/50 bg-modal-sidebar backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-inner">
                     <Plug className="w-5 h-5 text-amber-500" />
@@ -101,7 +101,7 @@ export default function PluginModal({ isOpen, onClose, onItemCreated, onTriggerT
               </div>
 
               {/* Bottom Sticky action area for mobile/all screens */}
-              <div className="sticky bottom-0 left-0 right-0 p-4 border-t border-border-subtle bg-background/95 dark:bg-card-bg/95 backdrop-blur-md z-30 flex justify-center">
+              <div className="sticky bottom-0 left-0 right-0 p-4 border-t border-border-subtle bg-modal-sidebar/95 backdrop-blur-md z-30 flex justify-center">
                 <button
                   onClick={onClose}
                   className="w-full py-3.5 bg-foreground text-background font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"

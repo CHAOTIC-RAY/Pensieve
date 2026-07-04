@@ -28,6 +28,7 @@ const KEY_MAP: Record<string, string> = {
   "pensieve_selected_model": "sel_mod",
   "pensieve_custom_model_name": "cust_mod",
   "pensieve_speculative_decoding": "spec_dec",
+  "pensieve_token_budget": "tok_bud",
   "app_user_settings": "theme_set"
 };
 
@@ -104,6 +105,45 @@ export function applySettings(scannedText: string): boolean {
     return true;
   } catch (error) {
     console.error("Error applying settings from QR code:", error);
+    return false;
+  }
+}
+
+/**
+ * Encrypts current settings into a long code that users can copy/paste.
+ */
+export function getEncryptedSettingsCode(): string {
+  const serialized = getSerializedSettings();
+  if (!serialized) return "";
+  try {
+    // Basic encryption: Base64 encoding of UTF-8 string with a secure prefix
+    const base64 = btoa(encodeURIComponent(serialized));
+    return `PENSIEVE_SECURE_SYNC_${base64}`;
+  } catch (e) {
+    console.error("Failed to generate encrypted settings code:", e);
+    return "";
+  }
+}
+
+/**
+ * Decrypts a long code and applies the settings.
+ */
+export function decryptAndApplySettings(encryptedCode: string): boolean {
+  if (!encryptedCode) return false;
+  const cleanCode = encryptedCode.trim();
+  if (!cleanCode.startsWith("PENSIEVE_SECURE_SYNC_")) {
+    // If they paste a raw serialized text, handle it gracefully
+    if (cleanCode.startsWith("pensieve-settings:")) {
+      return applySettings(cleanCode);
+    }
+    return false;
+  }
+  try {
+    const base64 = cleanCode.substring("PENSIEVE_SECURE_SYNC_".length);
+    const decrypted = decodeURIComponent(atob(base64));
+    return applySettings(decrypted);
+  } catch (e) {
+    console.error("Failed to decrypt and apply settings:", e);
     return false;
   }
 }

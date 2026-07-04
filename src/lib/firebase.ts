@@ -31,16 +31,8 @@ const getFirebaseConfig = () => {
     }
   }
   
-  // Fallback to hardcoded config if environment variables aren't available
-  return {
-    apiKey: "AIzaSyCI9dw2m47MMk9jIXvl4l7DEPA4AF91tS0",
-    authDomain: "gen-lang-client-0018612871.firebaseapp.com",
-    projectId: "gen-lang-client-0018612871",
-    storageBucket: "gen-lang-client-0018612871.firebasestorage.app",
-    messagingSenderId: "591622610805",
-    appId: "1:591622610805:web:97cca18539f0981e017d3c",
-    measurementId: "G-WZVSFCPW38"
-  };
+  // Fallback to platform-generated config from firebase-applet-config.json
+  return firebaseConfig;
 };
 
 const activeConfig = getFirebaseConfig();
@@ -52,6 +44,9 @@ import { getAuth } from 'firebase/auth';
 export const auth = getAuth(app);
 
 import { getFirestore } from 'firebase/firestore';
-export const db = getFirestore(app);
+// Initialize Firestore with the custom database ID if configured
+const customDbId = isBrowser ? localStorage.getItem('pensieve_firebase_databaseId') : null;
+const dbId = customDbId || firebaseConfig.firestoreDatabaseId;
+export const db = dbId ? getFirestore(app, dbId) : getFirestore(app);
 
 export default app;

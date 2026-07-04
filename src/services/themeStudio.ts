@@ -2,6 +2,7 @@ export type UserSettings = {
   xp?: number;
   unlockedEffects?: string[];
   activeEffect?: string | null;
+  activeEffects?: string[];
   
   // Customization Overrides (from Store or Settings)
   avatarBorderColor?: string;
@@ -189,6 +190,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   xp: 100, // starting XP
   unlockedEffects: ['rank-insignia'],
   activeEffect: 'rank-insignia',
+  activeEffects: ['rank-insignia'],
 };
 
 // Lazy font loader
@@ -274,18 +276,19 @@ export function applyTheme(settings: UserSettings) {
   root.setAttribute('data-search-glass', settings.searchBarGlass ? 'true' : 'false');
 
   // Handle Active Effects from Store
-  const effectId = settings.activeEffect;
-  root.setAttribute('data-active-effect', effectId || 'none');
+  const activeEffects = settings.activeEffects || (settings.activeEffect ? settings.activeEffect.split(' ').filter(Boolean) : []);
+  root.setAttribute('data-active-effects', activeEffects.join(' ') || 'none');
+  root.setAttribute('data-active-effect', activeEffects[0] || 'none');
   
   // Special Handling for CRT
-  if (effectId === 'effect-crt') {
+  if (activeEffects.includes('effect-crt')) {
     document.body.classList.add('crt-active');
   } else {
     document.body.classList.remove('crt-active');
   }
 
   // Special Handling for Glass UI (Store Version)
-  if (effectId === 'theme-glass') {
+  if (activeEffects.includes('theme-glass')) {
     root.setAttribute('data-ui-style', 'glass');
     root.style.setProperty('--blur-strength', '40px');
   }
@@ -360,4 +363,14 @@ export function saveSettings(settings: UserSettings) {
   } catch (err) {
     console.error('Failed to save settings:', err);
   }
+}
+
+export function getEffectCategory(effectId: string): string {
+  if (effectId === 'theme-glass') return 'theme';
+  if (effectId === 'effect-crt') return 'screen-overlay';
+  if (effectId === 'widget-weather') return 'widget';
+  if (effectId === 'avatar-glow' || effectId === 'rank-insignia') return 'avatar-border';
+  if (effectId === 'search-glass' || effectId === 'search-neon') return 'search-bar';
+  if (effectId === 'icon-royal') return 'profile-icon';
+  return 'other';
 }

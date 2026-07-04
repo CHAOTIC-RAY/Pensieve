@@ -6,8 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag, Store, X, Database, Plug, Clock } from 'lucide-react';
+import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag, Store, X, Database, Plug, Clock, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import * as chrono from 'chrono-node';
 import { auth } from './lib/firebase';
 import { DbStrategy, getDbStrategy, loadDbItems, saveDbItems, processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured, isAppwriteConfigured } from './services/dbStrategyService';
 import { MindItem, MindItemType } from './types';
@@ -161,11 +162,59 @@ export default function App() {
   }, []);
   
   useEffect(() => {
+    // Check if there is an active local guest session
+    const localGuestActive = localStorage.getItem('pensieve_local_guest_active') === 'true';
+    if (localGuestActive) {
+      const guestObj = {
+        uid: 'guest-user',
+        email: 'guest@pensieve.local',
+        displayName: 'Guest Scholar',
+        isAnonymous: true,
+        emailVerified: true
+      } as any as User;
+      setUser(guestObj);
+      setAuthLoading(false);
+      return;
+    }
+
+    // Robust safety fallback: if Firebase Auth gets stuck due to iframe/cross-site cookie restrictions,
+    // clear the loading state after 4 seconds so the user can still use the app or log in.
+    const authTimeout = setTimeout(() => {
+      setAuthLoading((currentLoading) => {
+        if (currentLoading) {
+          console.warn("[Pensieve Auth] Firebase Auth initialization timed out. Falling back to local/guest mode.");
+          const guestObj = {
+            uid: 'guest-user',
+            email: 'guest@pensieve.local',
+            displayName: 'Guest Scholar',
+            isAnonymous: true,
+            emailVerified: true
+          } as any as User;
+          setUser(guestObj);
+          localStorage.setItem('pensieve_local_guest_active', 'true');
+          return false;
+        }
+        return currentLoading;
+      });
+    }, 4000);
+
     const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
+      clearTimeout(authTimeout);
+      if (u) {
+        setUser(u);
+        localStorage.removeItem('pensieve_local_guest_active');
+      } else if (localStorage.getItem('pensieve_local_guest_active') === 'true') {
+        // Keep the guest user if they explicitly selected/fallback to it
+      } else {
+        setUser(null);
+      }
       setAuthLoading(false);
     });
-    return () => unsubscribe();
+
+    return () => {
+      clearTimeout(authTimeout);
+      unsubscribe();
+    };
   }, []);
 
   const [items, setItems] = useState<MindItem[]>([]);
@@ -265,7 +314,7 @@ export default function App() {
   const [localVisionModelId, setLocalVisionModelIdState] = useState(getSelectedVisionModelId());
   const [bootstrapState, setBootstrapState] = useState({ phase: 'idle', progress: 0, message: '' });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<"intelligence" | "sync" | "db" | "ui" | "profile" | "mobile-link" | "plugins">("ui");
+  const [settingsTab, setSettingsTab] = useState<"intelligence" | "db" | "ui" | "profile" | "mobile-link" | "plugins">("ui");
   const [availableModels, setAvailableModels] = useState<ModelManifestEntry[]>([]);
   const [sidebarPosition, setSidebarPosition] = useState<'left' | 'right'>('left');
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -803,6 +852,7 @@ export default function App() {
         dbStrategy={dbStrategy}
         setDbStrategyState={setDbStrategyState}
         onItemCreated={handleItemCreated}
+        onOpenAchievements={() => setIsAchievementsOpen(true)}
       />
 
       <AchievementsModal
@@ -883,48 +933,6 @@ export default function App() {
           
           <div className="w-6 h-[1px] bg-border-subtle my-1" />
 
-          {/* Store Button */}
-          <button
-            onClick={() => setIsStoreOpen(true)}
-            title="Marketplace"
-            className="w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] bg-amber-500/10 border-amber-500/20 text-amber-500 hover:scale-105 active:scale-95"
-          >
-            <Store className="w-5 h-5" />
-          </button>
-          {/* Achievements Button */}
-          <button
-            onClick={() => setIsAchievementsOpen(true)}
-            title={`Milestones (${totalXp} XP)`}
-            className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border relative shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),_0_4px_8px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 ${
-              isAchievementsOpen 
-                ? 'bg-amber-500/20 border-amber-500/30 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' 
-                : 'bg-foreground/5 border-foreground/10 text-foreground/70 hover:bg-amber-500/10 hover:text-amber-500'
-            }`}
-          >
-            <Trophy className={`w-5 h-5 ${isAchievementsOpen ? 'fill-current text-amber-500' : ''}`} />
-            {totalXp > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-950 font-mono font-black text-[9px] px-1.5 py-0.5 rounded-full border border-yellow-300 shadow-md">
-                {totalXp}
-              </span>
-            )}
-          </button>
-
-          {/* Cloud Connection Plugins */}
-          <button
-            onClick={() => {
-              setSettingsTab('plugins');
-              setIsSettingsOpen(true);
-            }}
-            title="Cloud Plugins"
-            className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border relative shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),_0_4px_8px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 ${
-              isSettingsOpen && settingsTab === 'plugins'
-                ? 'bg-amber-500/20 border-amber-500/30 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-                : 'bg-foreground/5 border-foreground/10 text-foreground/70 hover:bg-amber-500/10 hover:text-amber-500'
-            }`}
-          >
-            <Plug className="w-5 h-5" />
-          </button>
-          
           {/* Settings / Preferences Button */}
           <button
             onClick={() => {
@@ -943,34 +951,32 @@ export default function App() {
         </div>
 
         {/* Floating Status & Profile - Top Right */}
-        <div className="hidden md:flex flex-row items-center gap-4 fixed top-6 right-6 z-40 select-none">
-          {/* Local AI Status Indicator */}
-          <button 
-            id="local-ai-toggle-btn"
-            onClick={() => {
-              setSettingsTab('intelligence');
-              setIsSettingsOpen(true);
-            }}
-            className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),_0_4px_8px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 ${
-              localAiEnabled 
-                ? bootstrapState.phase === 'ready'
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20'
-                  : bootstrapState.phase === 'downloading'
-                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20 animate-pulse'
-                    : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-500 hover:bg-indigo-500/20'
-                : 'bg-foreground/[0.02] border-foreground/10 text-foreground/60 hover:bg-foreground/10 hover:text-foreground'
-            }`}
-            title={
-              localAiEnabled 
-                ? bootstrapState.phase === 'ready'
-                  ? 'Local AI: Active'
-                  : bootstrapState.phase === 'downloading'
-                    ? `Warming... ${Math.round(bootstrapState.progress * 100)}%`
-                    : 'Local AI: Loading'
-                : 'Local AI: Off (Configure in settings)'
-            }
+        <div className="hidden md:flex flex-row items-center gap-3.5 fixed top-6 right-6 z-40 select-none">
+          {/* Store Button */}
+          <button
+            onClick={() => setIsStoreOpen(true)}
+            title="Marketplace"
+            className="w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] bg-amber-500/10 border-amber-500/20 text-amber-500 hover:scale-105 active:scale-95"
           >
-            <Brain className={`w-5 h-5 ${bootstrapState.phase === 'downloading' ? 'animate-bounce' : ''}`} />
+            <Store className="w-5 h-5" />
+          </button>
+
+          {/* Achievements Button */}
+          <button
+            onClick={() => setIsAchievementsOpen(true)}
+            title={`Milestones (${totalXp} XP)`}
+            className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer backdrop-blur-xl border relative shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),_0_4px_8px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),_0_4px_8px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 ${
+              isAchievementsOpen 
+                ? 'bg-amber-500/20 border-amber-500/30 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' 
+                : 'bg-foreground/5 border-foreground/10 text-foreground/70 hover:bg-amber-500/10 hover:text-amber-500'
+            }`}
+          >
+            <Trophy className={`w-5 h-5 ${isAchievementsOpen ? 'fill-current text-amber-500' : ''}`} />
+            {totalXp > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-950 font-mono font-black text-[9px] px-1.5 py-0.5 rounded-full border border-yellow-300 shadow-md">
+                {totalXp}
+              </span>
+            )}
           </button>
 
           {/* User Profile avatar */}
@@ -1008,7 +1014,7 @@ export default function App() {
         }`}>
           
           {/* Centered Editorial Greeting & Focus Title */}
-          <div className="text-center mt-2 md:mt-24 mb-4 md:mb-6 px-4 max-w-xl mx-auto space-y-0.5 md:space-y-1.5 select-none pointer-events-none shrink-0">
+          <div className="text-center mt-2 md:mt-10 mb-4 md:mb-6 px-4 max-w-xl mx-auto space-y-0.5 md:space-y-1.5 select-none pointer-events-none shrink-0">
             <h1 className="text-2xl md:text-5xl font-bold tracking-tight text-foreground font-display transition-colors duration-300 leading-tight">
               What are you remembering today?
             </h1>
@@ -1113,31 +1119,33 @@ export default function App() {
               </div>
             </div>
 
-            {/* Color filter rail */}
-            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar w-full px-1 py-2 mt-2">
-              <span className="text-[10px] font-mono uppercase text-foreground/45 tracking-wider font-bold flex items-center gap-1.5 shrink-0">
-                <Filter className="w-3.5 h-3.5" /> Color:
-              </span>
-              <div className="flex items-center gap-2 shrink-0">
-                {COLOR_FILTERS.map((col) => (
-                  <button
-                    key={col.name}
-                    onClick={() => {
-                      if (activeColorFilter === col.name) {
-                        setActiveColorFilter(null);
-                      } else {
-                        setActiveColorFilter(col.name);
-                      }
-                    }}
-                    className={`w-6 h-6 rounded-full border cursor-pointer hover:scale-110 transition flex items-center justify-center relative ${col.class} ${
-                      activeColorFilter === col.name ? 'scale-115 ring-2 ring-primary/40 border-primary' : 'border-border-subtle opacity-80 hover:opacity-100'
-                    }`}
-                  >
-                    {activeColorFilter === col.name && (
-                      <Check className={`w-3.5 h-3.5 stroke-[3] ${col.name === 'white' || col.name === 'yellow' ? 'text-black' : 'text-white'}`} />
-                    )}
-                  </button>
-                ))}
+            {/* Color & Date filter rail */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 overflow-x-auto no-scrollbar w-full px-1 py-2 mt-2">
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-[10px] font-mono uppercase text-foreground/45 tracking-wider font-bold flex items-center gap-1.5 shrink-0">
+                  <Filter className="w-3.5 h-3.5" /> Color:
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  {COLOR_FILTERS.map((col) => (
+                    <button
+                      key={col.name}
+                      onClick={() => {
+                        if (activeColorFilter === col.name) {
+                          setActiveColorFilter(null);
+                        } else {
+                          setActiveColorFilter(col.name);
+                        }
+                      }}
+                      className={`w-6 h-6 rounded-full border cursor-pointer hover:scale-110 transition flex items-center justify-center relative ${col.class} ${
+                        activeColorFilter === col.name ? 'scale-115 ring-2 ring-primary/40 border-primary' : 'border-border-subtle opacity-80 hover:opacity-100'
+                      }`}
+                    >
+                      {activeColorFilter === col.name && (
+                        <Check className={`w-3.5 h-3.5 stroke-[3] ${col.name === 'white' || col.name === 'yellow' ? 'text-black' : 'text-white'}`} />
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

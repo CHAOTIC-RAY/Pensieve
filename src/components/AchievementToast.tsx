@@ -26,7 +26,7 @@ export default function AchievementToast({ achievement, onDismiss }: Achievement
             initial={{ opacity: 0, y: -50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="pointer-events-auto liquid-glass-panel border-border-subtle/50 px-6 py-4 flex items-center gap-5 shadow-2xl rounded-2xl max-w-md w-full"
+            className="pointer-events-auto liquid-glass-panel dark:liquid-glass-panel-dark border-border-subtle/50 px-6 py-4 flex items-center gap-5 shadow-2xl rounded-2xl max-w-md w-full"
           >
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-300 to-orange-500 flex items-center justify-center shrink-0 shadow-inner">
               {achievement.icon ? (

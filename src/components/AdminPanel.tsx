@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StoreItem, fetchStoreItems, addStoreItem, isStoreAppwriteConfigured } from '../services/storeService';
 import { motion } from 'motion/react';
-import { ArrowLeft, Plus, ShieldAlert, Package, Lock } from 'lucide-react';
+import { ArrowLeft, Plus, ShieldAlert, Package, Lock, Chrome, LogOut } from 'lucide-react';
 import { auth } from '../lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut } from 'firebase/auth';
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -20,7 +20,19 @@ export default function AdminPanel() {
   const [effectId, setEffectId] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginLoading, setLoginLoading] = useState(false);
+
   useEffect(() => {
+    getRedirectResult(auth).then((result) => {
+      if (result) {
+        setUserEmail(result.user.email || null);
+      }
+    }).catch((err) => {
+      console.error("Admin redirect auth error:", err);
+      setLoginError(err.message || "Failed to sign in with Google redirect.");
+    });
+
     const unsub = onAuthStateChanged(auth, (u) => {
       setUserEmail(u?.email || null);
       setCheckingAuth(false);
@@ -37,6 +49,43 @@ export default function AdminPanel() {
     const storeItems = await fetchStoreItems();
     setItems(storeItems);
     setLoading(false);
+  };
+
+  const handleAdminGoogleSignIn = async () => {
+    setLoginLoading(true);
+    setLoginError(null);
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      if (result) {
+        setUserEmail(result.user.email || null);
+      }
+    } catch (err: any) {
+      console.error("Admin Google login popup error:", err);
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+        try {
+          await signInWithRedirect(auth, provider);
+        } catch (redirErr: any) {
+          console.error("Admin Google login redirect error:", redirErr);
+          setLoginError("Popup was blocked/closed, and fallback redirect also failed. Please allow popups or try another browser.");
+          setLoginLoading(false);
+        }
+      } else {
+        setLoginError(err.message || "Failed to sign in with Google.");
+        setLoginLoading(false);
+      }
+    }
+  };
+
+  const handleSignOut = async () => {
+    setCheckingAuth(true);
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error("Sign out error:", err);
+    } finally {
+      setCheckingAuth(false);
+    }
   };
 
   const handleAddItem = async (e: React.FormEvent) => {
@@ -74,7 +123,60 @@ export default function AdminPanel() {
     );
   }
 
-  const isAuthorized = userEmail?.toLowerCase() === '2093ray.dark@gmail.com' || userEmail?.toLowerCase() === '2003ray.dark@gmail.com';
+  const allowedEmails = ['200ray.dark@gmail.com', '2003ray.dark@gmail.com', '2093ray.dark@gmail.com'];
+  const isAuthorized = userEmail ? allowedEmails.includes(userEmail.toLowerCase()) : false;
+
+  if (!userEmail) {
+    return (
+      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-6 relative overflow-hidden">
+        {/* Animated Gradient Background Elements */}
+        <div className="absolute inset-0 bg-white" />
+        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-purple-100/50 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] bg-primary/10 blur-[150px] rounded-full animate-[pulse_8s_infinite_alternate]" />
+        
+        <div className="w-full max-w-md relative z-10 space-y-8">
+          {/* Back Button */}
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-neutral-400 hover:text-neutral-600 transition-colors group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-xs font-mono uppercase tracking-widest">Back to Workspace</span>
+          </button>
+
+          {/* Login Card */}
+          <div className="bg-white/80 backdrop-blur-3xl border border-black/[0.05] rounded-[32px] p-8 md:p-10 shadow-2xl shadow-purple-200/50 space-y-8 text-center">
+            <div className="space-y-3">
+              <div className="w-12 h-12 bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h1 className="text-3xl font-black text-neutral-900 font-display tracking-tight">
+                Admin Portal
+              </h1>
+              <p className="text-neutral-500 text-sm font-sans max-w-[280px] mx-auto leading-relaxed">
+                Please sign in with Google to access the administrator dashboard. Only authorized administrators are allowed.
+              </p>
+            </div>
+
+            {loginError && (
+              <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-2xl text-red-500 text-[11px] text-center font-mono">
+                {loginError}
+              </div>
+            )}
+
+            <button
+              onClick={handleAdminGoogleSignIn}
+              disabled={loginLoading}
+              className="w-full py-4 bg-[#0c0d12] text-white rounded-2xl font-bold hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-xl disabled:opacity-50"
+            >
+              <Chrome className="w-5 h-5" />
+              <span className="text-sm">{loginLoading ? "Signing in..." : "Sign in with Google"}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   if (!isAuthorized) {
     return (
@@ -84,14 +186,23 @@ export default function AdminPanel() {
         </div>
         <h1 className="text-2xl font-bold font-display tracking-tight text-text-heading mb-2">Access Denied</h1>
         <p className="text-foreground/60 mb-8 max-w-md">
-          You do not have permission to view the Admin Dashboard. This area is restricted to authorized personnel.
+          Your account ({userEmail}) does not have permission to view the Admin Dashboard. This area is restricted to authorized personnel.
         </p>
-        <button 
-          onClick={() => navigate('/')}
-          className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl transition hover:opacity-90"
-        >
-          Return to Workspace
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <button 
+            onClick={handleSignOut}
+            className="px-6 py-3 bg-foreground text-background font-bold rounded-xl transition hover:opacity-90 flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out / Switch Account
+          </button>
+          <button 
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-foreground/5 text-foreground font-bold rounded-xl transition hover:bg-foreground/10"
+          >
+            Return to Workspace
+          </button>
+        </div>
       </div>
     );
   }
