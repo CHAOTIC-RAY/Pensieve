@@ -234,25 +234,42 @@ export default function SettingsModal({
         console.warn('[Appwrite Auto-Setup] Database warning:', e);
       }
 
-      // 2. Create Collection
+      // 2. Create or Update Collection
       try {
+        const collPayload = {
+          name: 'Mind Items',
+          permissions: [
+            'read("any")',
+            'create("any")',
+            'update("any")',
+            'delete("any")',
+          ],
+          documentSecurity: false,
+          enabled: true
+        };
+
         const collRes = await fetch(`${appwriteEndpoint}/databases/${dbId}/collections`, {
           method: 'POST',
           headers: commonHeaders,
           body: JSON.stringify({
             collectionId: collId,
-            name: 'Mind Items',
-            permissions: [
-              'read("any")',
-              'create("any")',
-              'update("any")',
-              'delete("any")',
-            ],
-            documentSecurity: false,
+            ...collPayload
           }),
         });
         const collData = await collRes.json();
-        if (!collRes.ok && collData.code !== 409) throw new Error(collData.message || 'Collection creation failed');
+        if (!collRes.ok) {
+          if (collData.code === 409) {
+            // Exists, update it to ensure permissions
+            const updateRes = await fetch(`${appwriteEndpoint}/databases/${dbId}/collections/${collId}`, {
+              method: 'PUT',
+              headers: commonHeaders,
+              body: JSON.stringify(collPayload),
+            });
+            if (!updateRes.ok) console.warn('[Appwrite Auto-Setup] Could not update existing collection permissions.');
+          } else {
+            throw new Error(collData.message || 'Collection creation failed');
+          }
+        }
         console.log('[Appwrite Auto-Setup] Collection handled');
       } catch (e: any) {
         console.warn('[Appwrite Auto-Setup] Collection warning:', e);
@@ -260,7 +277,7 @@ export default function SettingsModal({
 
       // 3. Create Attributes
       const attributes = [
-        { key: 'items', type: 'string', size: 1073741824, required: true },
+        { key: 'items', type: 'string', size: 1000000, required: true },
         { key: 'user_id', type: 'string', size: 255, required: true },
         { key: 'updated_at', type: 'string', size: 64, required: true },
       ];
@@ -289,25 +306,42 @@ export default function SettingsModal({
         }
       }
 
-      // 4. Create Bucket
+      // 4. Create or Update Bucket
       try {
+        const buckPayload = {
+          name: 'Pensieve Storage',
+          permissions: [
+            'read("any")',
+            'create("any")',
+            'update("any")',
+            'delete("any")',
+          ],
+          fileSecurity: false,
+          enabled: true
+        };
+
         const buckRes = await fetch(`${appwriteEndpoint}/storage/buckets`, {
           method: 'POST',
           headers: commonHeaders,
           body: JSON.stringify({
             bucketId: buckId,
-            name: 'Pensieve Storage',
-            permissions: [
-              'read("any")',
-              'create("any")',
-              'update("any")',
-              'delete("any")',
-            ],
-            fileSecurity: false,
+            ...buckPayload
           }),
         });
         const buckData = await buckRes.json();
-        if (!buckRes.ok && buckData.code !== 409) throw new Error(buckData.message || 'Bucket creation failed');
+        if (!buckRes.ok) {
+          if (buckData.code === 409) {
+            // Exists, update it to ensure permissions
+            const updateRes = await fetch(`${appwriteEndpoint}/storage/buckets/${buckId}`, {
+              method: 'PUT',
+              headers: commonHeaders,
+              body: JSON.stringify(buckPayload),
+            });
+            if (!updateRes.ok) console.warn('[Appwrite Auto-Setup] Could not update existing bucket permissions.');
+          } else {
+            throw new Error(buckData.message || 'Bucket creation failed');
+          }
+        }
         console.log('[Appwrite Auto-Setup] Bucket handled');
       } catch (e: any) {
         console.warn('[Appwrite Auto-Setup] Bucket warning:', e);
@@ -2474,12 +2508,12 @@ export default function SettingsModal({
                 <li>Create a database (e.g., "pensieve-db")</li>
                 <li>Create a collection with these attributes:
                   <ul className="ml-4 mt-1 space-y-0.5">
-                    <li><code className="bg-foreground/5 px-1 rounded">items</code> (string, size 1073741824)</li>
-                    <li><code className="bg-foreground/5 px-1 rounded">user_id</code> (string)</li>
-                    <li><code className="bg-foreground/5 px-1 rounded">updated_at</code> (string)</li>
+                    <li><code className="bg-foreground/5 px-1 rounded">items</code> (string, size 1000000)</li>
+                    <li><code className="bg-foreground/5 px-1 rounded">user_id</code> (string, size 255)</li>
+                    <li><code className="bg-foreground/5 px-1 rounded">updated_at</code> (string, size 64)</li>
                   </ul>
                 </li>
-                <li><strong>Set Permissions:</strong> In the collection settings, Add a Role: <span className="text-primary font-bold">any</span> and check: <span className="font-semibold">Create, Read, Update, Delete</span>.</li>
+                <li><strong>Set Permissions:</strong> In the collection settings, add a Role: <span className="text-primary font-bold">any</span> and check: <span className="font-semibold">Create, Read, Update, Delete</span>.</li>
                 <li>Create a Storage Bucket and set permissions for Role <span className="text-primary font-bold">any</span> to allow <span className="font-semibold">Read, Create, Update, Delete</span>.</li>
               </ol>
             </div>
