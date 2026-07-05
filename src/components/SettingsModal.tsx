@@ -2224,7 +2224,7 @@ export default function SettingsModal({
                     localStorage.setItem('pensieve_appwrite_endpoint', e.target.value);
                     window.dispatchEvent(new Event('app-settings-updated'));
                   }}
-                  placeholder="https://cloud.appwrite.io/v1"
+                  placeholder="e.g., https://cloud.appwrite.io/v1 or https://sgp.cloud.appwrite.io/v1"
                   className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
                 />
               </div>
@@ -2294,7 +2294,7 @@ export default function SettingsModal({
               </h4>
               <ol className="text-[10px] text-foreground/70 leading-relaxed space-y-1 list-decimal list-inside">
                 <li>Create an account at <span className="text-primary font-medium">appwrite.io</span> or self-host Appwrite</li>
-                <li>Create a new project in your Appwrite console</li>
+                <li>Create a new project and copy the <strong>API Endpoint</strong> (e.g. <code>https://cloud.appwrite.io/v1</code> or regional like <code>https://sgp.cloud.appwrite.io/v1</code>) and <strong>Project ID</strong></li>
                 <li>Create a database (e.g., "pensieve-db")</li>
                 <li>Create a collection with these attributes:
                   <ul className="ml-4 mt-1 space-y-0.5">
@@ -2305,7 +2305,6 @@ export default function SettingsModal({
                 </li>
                 <li>Set collection permissions to allow document creation/updates</li>
                 <li>Create a Storage Bucket (e.g., "pensieve-bucket-id") and set permissions to allow uploads</li>
-                <li>Copy the endpoint, project ID, database ID, collection ID, and bucket ID into the fields above</li>
               </ol>
             </div>
 

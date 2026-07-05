@@ -5,7 +5,10 @@
 
 import { MindItem } from '../types';
 
-const getStorageKey = (userId: string) => `pensieve_mind_items_${userId}`;
+const getStorageKey = (userId: string) => {
+  const cleanId = userId.replace(/[^a-zA-Z0-9_]/g, '');
+  return `usr_${cleanId}`.substring(0, 36);
+};
 
 export interface AppwriteConfig {
   endpoint: string;
