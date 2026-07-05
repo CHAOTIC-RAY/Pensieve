@@ -220,8 +220,27 @@ export async function generateLocalVisionResponse(
  * Replicates the structure of /api/analyze but offline.
  */
 export async function organizeAndTagItemLocally(item: any): Promise<any> {
+  // Heuristic fallback generator
+  const getHeuristicFallback = () => {
+    const tags = [item.type];
+    if (item.title) {
+      item.title.toLowerCase().split(/\s+/).forEach((w: string) => {
+        if (w.length > 4) tags.push(w.replace(/[^a-z0-9]/g, ''));
+      });
+    }
+    return {
+      success: true,
+      title: item.title || `Local ${item.type}`,
+      content: item.content || '',
+      tags: tags.slice(0, 8),
+      aiSummary: 'Saved locally using on-device indexing (heuristic fallback)',
+      dominantColor: 'grey'
+    };
+  };
+
   if (!activeEngine) {
-    throw new Error('On-device local AI is currently active but model is not loaded. Warm up the model first.');
+    console.warn('[Pensieve Local AI] Model not ready for local analysis. Using heuristic fallback.');
+    return getHeuristicFallback();
   }
 
   let prompt = '';
@@ -335,20 +354,6 @@ export async function organizeAndTagItemLocally(item: any): Promise<any> {
     };
   } catch (error) {
     console.error('[Local AI Parser Fail]', error);
-    // Simple heuristic fallback
-    const tags = [item.type];
-    if (item.title) {
-      item.title.toLowerCase().split(/\s+/).forEach((w: string) => {
-        if (w.length > 4) tags.push(w.replace(/[^a-z0-9]/g, ''));
-      });
-    }
-    return {
-      success: true,
-      title: item.title || `Local ${item.type}`,
-      content: item.content || '',
-      tags: tags.slice(0, 8),
-      aiSummary: 'Saved locally using on-device indexing (heuristic fallback)',
-      dominantColor: 'grey'
-    };
+    return getHeuristicFallback();
   }
 }

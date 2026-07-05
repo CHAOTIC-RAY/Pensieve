@@ -284,13 +284,30 @@ export async function getAppwriteItems(userId: string): Promise<MindItem[]> {
 
     if (response.ok) {
       const data = await response.json();
-      if (data && data.items && Array.isArray(data.items)) {
-        console.log(`[Appwrite] Successfully fetched ${data.items.length} items.`);
-        return data.items;
+      
+      // Handle both direct array and stringified items
+      let items: MindItem[] = [];
+      if (data && data.items) {
+        if (Array.isArray(data.items)) {
+          items = data.items;
+        } else if (typeof data.items === 'string') {
+          try {
+            items = JSON.parse(data.items);
+          } catch (e) {
+            console.error('[Appwrite] Failed to parse items string', e);
+          }
+        }
+      }
+
+      if (items.length > 0 || (data && data.$id)) {
+        console.log(`[Appwrite] Successfully fetched ${items.length} items.`);
+        return items;
       }
     } else if (response.status === 404) {
       console.log('[Appwrite] No document found. Starting with empty collection.');
       return [];
+    } else if (response.status === 401) {
+      console.error('[Appwrite] 401 Unauthorized: Please check your project ID, API Key, and COLLECTION PERMISSIONS in the Appwrite console. Ensure "any" role has Read/Write permissions if not using an API Key.');
     } else {
       console.warn(`[Appwrite] Fetch returned status: ${response.status}`);
     }
@@ -357,7 +374,7 @@ export async function saveAppwriteItems(userId: string, items: MindItem[]): Prom
     const patchUrl = `${config.endpoint}/databases/${config.databaseId}/collections/${config.collectionId}/documents/${documentId}`;
 
     const dataPayload = {
-      items: optimizedItems,
+      items: JSON.stringify(optimizedItems),
       updated_at: new Date().toISOString(),
       user_id: userId,
     };
@@ -395,6 +412,9 @@ export async function saveAppwriteItems(userId: string, items: MindItem[]): Prom
     } else {
       const errorText = await response.text();
       console.warn(`[Appwrite] Save returned status: ${response.status}`, errorText);
+      if (response.status === 401) {
+        console.error('[Appwrite] PERMISSION DENIED: Make sure you have added a Role "any" to your Collection Settings and checked "Create", "Read", "Update", and "Delete" permissions in the Appwrite Console.');
+      }
     }
   } catch (error) {
     console.error('[Appwrite] Error saving items:', error);

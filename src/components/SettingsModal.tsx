@@ -176,7 +176,7 @@ export default function SettingsModal({
     "intelligence" | "db" | "ui" | "profile" | "mobile-link" | "plugins"
   >(initialTab || "ui");
   // Appwrite Configuration States
-  const [appwriteEndpoint, setAppwriteEndpoint] = useState("");
+  const [appwriteEndpoint, setAppwriteEndpoint] = useState("https://cloud.appwrite.io/v1");
   const [appwriteProjectId, setAppwriteProjectId] = useState("");
   const [appwriteDatabaseId, setAppwriteDatabaseId] = useState("");
   const [appwriteCollectionId, setAppwriteCollectionId] = useState("");
@@ -195,6 +195,142 @@ export default function SettingsModal({
     setAppwriteBucketId(localStorage.getItem("pensieve_appwrite_bucketId") || "");
     setAppwriteApiKey(localStorage.getItem("pensieve_appwrite_apiKey") || "");
   }, []);
+
+  const handleAppwriteAutoSetup = async () => {
+    if (!appwriteEndpoint || !appwriteProjectId || !appwriteApiKey) {
+      setAppwriteAutoSetError("Please provide Endpoint, Project ID, and API Key for auto-setup.");
+      return;
+    }
+
+    setIsAppwriteAutoSetting(true);
+    setAppwriteAutoSetError("");
+    setAppwriteAutoSetSuccess("");
+
+    const commonHeaders = {
+      'Content-Type': 'application/json',
+      'X-Appwrite-Project': appwriteProjectId,
+      'X-Appwrite-Key': appwriteApiKey,
+    };
+
+    try {
+      const dbId = appwriteDatabaseId || 'pensieve-db';
+      const collId = appwriteCollectionId || 'mind-items';
+      const buckId = appwriteBucketId || 'pensieve-bucket';
+
+      // 1. Create Database
+      try {
+        const dbRes = await fetch(`${appwriteEndpoint}/databases`, {
+          method: 'POST',
+          headers: commonHeaders,
+          body: JSON.stringify({
+            databaseId: dbId,
+            name: 'Pensieve Database',
+          }),
+        });
+        const dbData = await dbRes.json();
+        if (!dbRes.ok && dbData.code !== 409) throw new Error(dbData.message || 'Database creation failed');
+        console.log('[Appwrite Auto-Setup] Database handled');
+      } catch (e: any) {
+        console.warn('[Appwrite Auto-Setup] Database warning:', e);
+      }
+
+      // 2. Create Collection
+      try {
+        const collRes = await fetch(`${appwriteEndpoint}/databases/${dbId}/collections`, {
+          method: 'POST',
+          headers: commonHeaders,
+          body: JSON.stringify({
+            collectionId: collId,
+            name: 'Mind Items',
+            permissions: [
+              'read("any")',
+              'create("any")',
+              'update("any")',
+              'delete("any")',
+            ],
+            documentSecurity: false,
+          }),
+        });
+        const collData = await collRes.json();
+        if (!collRes.ok && collData.code !== 409) throw new Error(collData.message || 'Collection creation failed');
+        console.log('[Appwrite Auto-Setup] Collection handled');
+      } catch (e: any) {
+        console.warn('[Appwrite Auto-Setup] Collection warning:', e);
+      }
+
+      // 3. Create Attributes
+      const attributes = [
+        { key: 'items', type: 'string', size: 1073741824, required: true },
+        { key: 'user_id', type: 'string', size: 255, required: true },
+        { key: 'updated_at', type: 'string', size: 64, required: true },
+      ];
+
+      for (const attr of attributes) {
+        try {
+          const attrRes = await fetch(`${appwriteEndpoint}/databases/${dbId}/collections/${collId}/attributes/string`, {
+            method: 'POST',
+            headers: commonHeaders,
+            body: JSON.stringify({
+              key: attr.key,
+              size: attr.size,
+              required: attr.required,
+            }),
+          });
+          const attrData = await attrRes.json();
+          if (!attrRes.ok && attrData.code !== 409) {
+             console.warn(`[Appwrite Auto-Setup] Attribute ${attr.key} error:`, attrData);
+          } else {
+             console.log(`[Appwrite Auto-Setup] Attribute ${attr.key} handled`);
+          }
+          // Wait a bit for attribute to be created before next one
+          await new Promise(resolve => setTimeout(resolve, 800));
+        } catch (e: any) {
+          console.warn(`[Appwrite Auto-Setup] Attribute ${attr.key} loop error:`, e);
+        }
+      }
+
+      // 4. Create Bucket
+      try {
+        const buckRes = await fetch(`${appwriteEndpoint}/storage/buckets`, {
+          method: 'POST',
+          headers: commonHeaders,
+          body: JSON.stringify({
+            bucketId: buckId,
+            name: 'Pensieve Storage',
+            permissions: [
+              'read("any")',
+              'create("any")',
+              'update("any")',
+              'delete("any")',
+            ],
+            fileSecurity: false,
+          }),
+        });
+        const buckData = await buckRes.json();
+        if (!buckRes.ok && buckData.code !== 409) throw new Error(buckData.message || 'Bucket creation failed');
+        console.log('[Appwrite Auto-Setup] Bucket handled');
+      } catch (e: any) {
+        console.warn('[Appwrite Auto-Setup] Bucket warning:', e);
+      }
+
+      // Update states and localStorage
+      setAppwriteDatabaseId(dbId);
+      setAppwriteCollectionId(collId);
+      setAppwriteBucketId(buckId);
+      
+      localStorage.setItem('pensieve_appwrite_databaseId', dbId);
+      localStorage.setItem('pensieve_appwrite_collectionId', collId);
+      localStorage.setItem('pensieve_appwrite_bucketId', buckId);
+      
+      setAppwriteAutoSetSuccess("Auto-setup complete! Database, Collection, and Bucket are ready. Note: Large attributes may take a moment to be active.");
+      window.dispatchEvent(new Event('app-settings-updated'));
+    } catch (err: any) {
+      console.error('Appwrite Auto-Setup Error:', err);
+      setAppwriteAutoSetError(err.message || "Failed to auto-setup Appwrite resources.");
+    } finally {
+      setIsAppwriteAutoSetting(false);
+    }
+  };
   const [supabaseUrl, setSupabaseUrl] = useState("");
   const [supabaseKey, setSupabaseKey] = useState("");
   const [openAiKey, setOpenAiKey] = useState("");
@@ -2325,25 +2461,26 @@ export default function SettingsModal({
                 <ExternalLink className="w-3.5 h-3.5" />
                 Quick Setup Guide
               </h4>
-              <p className="text-[10px] text-foreground/70 leading-relaxed font-semibold">Option A: Auto-Setup (Recommended)</p>
+              <p className="text-[10px] text-foreground/70 leading-relaxed font-semibold">Option A: Auto-Setup (Recommended for New Users)</p>
               <ol className="text-[10px] text-foreground/70 leading-relaxed space-y-1 list-decimal list-inside pb-2">
                 <li>Create a project at <span className="text-primary font-medium">appwrite.io</span></li>
-                <li>Copy your <strong>API Endpoint</strong> and <strong>Project ID</strong> above</li>
-                <li>Go to Overview &gt; API Keys, create a key with all permissions (or at least database & storage permissions), and paste it above</li>
-                <li>Click the <span className="font-semibold text-primary">Auto-Setup Database & Bucket</span> button above!</li>
+                <li>Copy your <strong>Project ID</strong> from the project settings.</li>
+                <li>Ensure the <strong>Endpoint</strong> is set correctly above (default is cloud).</li>
+                <li>Go to <strong>Overview &gt; API Keys</strong>, create a key with "Database" and "Storage" scopes.</li>
+                <li>Paste the API Key above and click <span className="font-semibold text-primary">Auto-Setup Database & Bucket</span>!</li>
               </ol>
               <p className="text-[10px] text-foreground/70 leading-relaxed font-semibold border-t border-primary/10 pt-2">Option B: Manual Setup</p>
               <ol className="text-[10px] text-foreground/70 leading-relaxed space-y-1 list-decimal list-inside">
                 <li>Create a database (e.g., "pensieve-db")</li>
                 <li>Create a collection with these attributes:
                   <ul className="ml-4 mt-1 space-y-0.5">
-                    <li><code className="bg-foreground/5 px-1 rounded">items</code> (string, large 1073741824)</li>
+                    <li><code className="bg-foreground/5 px-1 rounded">items</code> (string, size 1073741824)</li>
                     <li><code className="bg-foreground/5 px-1 rounded">user_id</code> (string)</li>
                     <li><code className="bg-foreground/5 px-1 rounded">updated_at</code> (string)</li>
                   </ul>
                 </li>
-                <li>Set collection permissions to allow document read/creation/updates</li>
-                <li>Create a Storage Bucket (e.g., "pensieve-bucket-id") and set permissions to allow read/uploads</li>
+                <li><strong>Set Permissions:</strong> In the collection settings, Add a Role: <span className="text-primary font-bold">any</span> and check: <span className="font-semibold">Create, Read, Update, Delete</span>.</li>
+                <li>Create a Storage Bucket and set permissions for Role <span className="text-primary font-bold">any</span> to allow <span className="font-semibold">Read, Create, Update, Delete</span>.</li>
               </ol>
             </div>
 
