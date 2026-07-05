@@ -38,32 +38,32 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
       const parts = achievement.id.split('_');
       const themeIdx = parseInt(parts[1], 10);
       const baseImages = [
-        '/assets/images/first_spark_art_1782894430119.jpg',
-        '/assets/images/wandering_mind_art_1782894717720.jpg',
-        '/assets/images/curator_art_1782894792146.jpg',
-        '/assets/images/colorful_thinker_art_1782894805753.jpg',
-        '/assets/images/knowledge_seeker_art_1782894817660.jpg',
-        '/assets/images/time_weaver_art_1782895575062.jpg',
-        '/assets/images/deep_thinker_art_1782894457729.jpg',
-        '/assets/images/cosmic_synthesis_art_1782895593620.jpg',
-        '/assets/images/hoarder_art_1782894471697.jpg',
-        '/assets/images/grand_alchemist_art_1782895609598.jpg'
+        '/assets/images/first_spark_1783225522306.jpg',
+        '/assets/images/wandering_mind_1783225553989.jpg',
+        '/assets/images/curator_1783225567567.jpg',
+        '/assets/images/colorful_thinker_1783225582426.jpg',
+        '/assets/images/knowledge_seeker_1783225593832.jpg',
+        '/assets/images/time_weaver_1783225609753.jpg',
+        '/assets/images/deep_thinker_1783225623783.jpg',
+        '/assets/images/cosmic_synthesis_1783225638436.jpg',
+        '/assets/images/hoarder_1783225650570.jpg',
+        '/assets/images/grand_alchemist_1783225665178.jpg'
       ];
       if (!isNaN(themeIdx) && themeIdx >= 0 && themeIdx < baseImages.length) {
         resolvedFallback = baseImages[themeIdx];
       }
     } else {
       const localMap: Record<string, string> = {
-        first_spark: '/assets/images/first_spark_art_1782894430119.jpg',
-        wandering_mind: '/assets/images/wandering_mind_art_1782894717720.jpg',
-        curator: '/assets/images/curator_art_1782894792146.jpg',
-        colorful_thinker: '/assets/images/colorful_thinker_art_1782894805753.jpg',
-        knowledge_seeker: '/assets/images/knowledge_seeker_art_1782894817660.jpg',
-        chronomancer: '/assets/images/time_weaver_art_1782895575062.jpg',
-        deep_thinker: '/assets/images/deep_thinker_art_1782894457729.jpg',
-        mind_meld: '/assets/images/cosmic_synthesis_art_1782895593620.jpg',
-        hoarder: '/assets/images/hoarder_art_1782894471697.jpg',
-        transmuter: '/assets/images/grand_alchemist_art_1782895609598.jpg',
+        first_spark: '/assets/images/first_spark_1783225522306.jpg',
+        wandering_mind: '/assets/images/wandering_mind_1783225553989.jpg',
+        curator: '/assets/images/curator_1783225567567.jpg',
+        colorful_thinker: '/assets/images/colorful_thinker_1783225582426.jpg',
+        knowledge_seeker: '/assets/images/knowledge_seeker_1783225593832.jpg',
+        chronomancer: '/assets/images/time_weaver_1783225609753.jpg',
+        deep_thinker: '/assets/images/deep_thinker_1783225623783.jpg',
+        mind_meld: '/assets/images/cosmic_synthesis_1783225638436.jpg',
+        hoarder: '/assets/images/hoarder_1783225650570.jpg',
+        transmuter: '/assets/images/grand_alchemist_1783225665178.jpg',
       };
       resolvedFallback = localMap[achievement.id] || '';
     }
@@ -71,7 +71,7 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
     if (resolvedFallback) {
       setImgSrc(getResolvedImageUrl(resolvedFallback));
     } else {
-      setImgSrc(getResolvedImageUrl('/assets/images/first_spark_art_1782894430119.jpg'));
+      setImgSrc(getResolvedImageUrl('/assets/images/first_spark_1783225522306.jpg'));
     }
   };
 

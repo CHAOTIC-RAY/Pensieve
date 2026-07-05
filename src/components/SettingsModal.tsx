@@ -3425,6 +3425,38 @@ export default function SettingsModal({
                 </AnimatePresence>
               </div>
 
+              {/* 6. Link with Mobile */}
+              <div className="border border-border-subtle rounded-2xl overflow-hidden bg-card-bg/50 backdrop-blur-sm">
+                <button
+                  onClick={() => toggleMobileSection("mobile-link")}
+                  className="w-full px-5 py-4 flex items-center justify-between bg-card-bg hover:bg-foreground/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3 text-text-heading font-semibold text-sm">
+                    <Smartphone className="w-4.5 h-4.5 text-foreground/80" />
+                    Link with Mobile
+                  </div>
+                  {mobileExpanded["mobile-link"] ? (
+                    <ChevronUp className="w-4 h-4 text-foreground/60" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-foreground/60" />
+                  )}
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {mobileExpanded["mobile-link"] && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden border-t border-border-subtle bg-modal-bg/30"
+                    >
+                      <div className="p-5">{renderMobileLinkContent()}</div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
 
             </div>
           </div>
