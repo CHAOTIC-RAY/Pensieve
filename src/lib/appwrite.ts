@@ -339,38 +339,37 @@ export async function saveAppwriteItems(userId: string, items: MindItem[]): Prom
     }
 
     const documentId = getStorageKey(userId);
-    const url = `${config.endpoint}/databases/${config.databaseId}/collections/${config.collectionId}/documents/${documentId}`;
+    const postUrl = `${config.endpoint}/databases/${config.databaseId}/collections/${config.collectionId}/documents`;
+    const patchUrl = `${config.endpoint}/databases/${config.databaseId}/collections/${config.collectionId}/documents/${documentId}`;
 
-    // Try to update first (PATCH), if 404 then create (POST)
-    const body = {
-      documentId,
-      data: {
-        items: optimizedItems,
-        updated_at: new Date().toISOString(),
-        user_id: userId,
-      },
+    const dataPayload = {
+      items: optimizedItems,
+      updated_at: new Date().toISOString(),
+      user_id: userId,
     };
 
-    // Try POST first (create with custom ID)
-    let response = await fetch(url, {
-      method: 'POST',
+    // Try PATCH first (update existing)
+    let response = await fetch(patchUrl, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'X-Appwrite-Project': config.projectId,
-        'X-Appwrite-Force-Update': 'true',
       },
-      body: JSON.stringify(body.data),
+      body: JSON.stringify({ data: dataPayload }),
     });
 
-    // If conflict, try PATCH (update existing)
-    if (response.status === 409 || response.status === 404) {
-      response = await fetch(url, {
-        method: 'PATCH',
+    // If 404, try POST (create with custom ID)
+    if (response.status === 404) {
+      response = await fetch(postUrl, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Appwrite-Project': config.projectId,
         },
-        body: JSON.stringify(body.data),
+        body: JSON.stringify({
+          documentId: documentId,
+          data: dataPayload,
+        }),
       });
     }
 

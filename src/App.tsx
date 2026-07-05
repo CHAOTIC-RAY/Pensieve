@@ -525,7 +525,7 @@ export default function App() {
       tags: newItem.tags || []
     };
 
-    const createdId = Date.now().toString(); // unique ID
+    const createdId = Date.now().toString() + Math.random().toString(36).substring(2, 9); // unique ID
     let fallbackItem = { ...docData, id: createdId } as MindItem;
 
     // Upload media to storage bucket if configured and item has base64 media
