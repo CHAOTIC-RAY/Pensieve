@@ -3432,7 +3432,7 @@ export default function SettingsModal({
                   className="w-full px-5 py-4 flex items-center justify-between bg-card-bg hover:bg-foreground/[0.02] transition-colors"
                 >
                   <div className="flex items-center gap-3 text-text-heading font-semibold text-sm">
-                    <Smartphone className="w-4.5 h-4.5 text-foreground/80" />
+                    <MonitorSmartphone className="w-4 h-4 text-foreground/80" />
                     Link with Mobile
                   </div>
                   {mobileExpanded["mobile-link"] ? (
