@@ -181,6 +181,10 @@ export default function SettingsModal({
   const [appwriteDatabaseId, setAppwriteDatabaseId] = useState("");
   const [appwriteCollectionId, setAppwriteCollectionId] = useState("");
   const [appwriteBucketId, setAppwriteBucketId] = useState("");
+  const [appwriteApiKey, setAppwriteApiKey] = useState("");
+  const [isAppwriteAutoSetting, setIsAppwriteAutoSetting] = useState(false);
+  const [appwriteAutoSetError, setAppwriteAutoSetError] = useState("");
+  const [appwriteAutoSetSuccess, setAppwriteAutoSetSuccess] = useState("");
 
   useEffect(() => {
     // Load Appwrite configuration
@@ -189,6 +193,7 @@ export default function SettingsModal({
     setAppwriteDatabaseId(localStorage.getItem("pensieve_appwrite_databaseId") || "");
     setAppwriteCollectionId(localStorage.getItem("pensieve_appwrite_collectionId") || "");
     setAppwriteBucketId(localStorage.getItem("pensieve_appwrite_bucketId") || "");
+    setAppwriteApiKey(localStorage.getItem("pensieve_appwrite_apiKey") || "");
   }, []);
   const [supabaseUrl, setSupabaseUrl] = useState("");
   const [supabaseKey, setSupabaseKey] = useState("");
@@ -2242,6 +2247,34 @@ export default function SettingsModal({
                   className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
                 />
               </div>
+              <div className="md:col-span-2">
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">API Key (Optional, for auto-setup & bypassing permissions)</label>
+                <input
+                  type="password"
+                  value={appwriteApiKey}
+                  onChange={(e) => {
+                    setAppwriteApiKey(e.target.value);
+                    localStorage.setItem('pensieve_appwrite_apiKey', e.target.value);
+                    window.dispatchEvent(new Event('app-settings-updated'));
+                  }}
+                  placeholder="your-api-key"
+                  className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
+                />
+              </div>
+              <div className="md:col-span-2 flex flex-col gap-2 mt-2">
+                <button
+                  onClick={handleAppwriteAutoSetup}
+                  disabled={isAppwriteAutoSetting || !appwriteEndpoint || !appwriteProjectId || !appwriteApiKey}
+                  className="self-start px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isAppwriteAutoSetting ? 'Setting Up...' : 'Auto-Setup Database & Bucket'}
+                </button>
+                {appwriteAutoSetError && <p className="text-[10px] text-rose-500">{appwriteAutoSetError}</p>}
+                {appwriteAutoSetSuccess && <p className="text-[10px] text-emerald-500">{appwriteAutoSetSuccess}</p>}
+              </div>
+              
+              <div className="md:col-span-2 my-2 border-b border-border-subtle/50" />
+              
               <div>
                 <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">Database ID</label>
                 <input
@@ -2292,19 +2325,25 @@ export default function SettingsModal({
                 <ExternalLink className="w-3.5 h-3.5" />
                 Quick Setup Guide
               </h4>
+              <p className="text-[10px] text-foreground/70 leading-relaxed font-semibold">Option A: Auto-Setup (Recommended)</p>
+              <ol className="text-[10px] text-foreground/70 leading-relaxed space-y-1 list-decimal list-inside pb-2">
+                <li>Create a project at <span className="text-primary font-medium">appwrite.io</span></li>
+                <li>Copy your <strong>API Endpoint</strong> and <strong>Project ID</strong> above</li>
+                <li>Go to Overview &gt; API Keys, create a key with all permissions (or at least database & storage permissions), and paste it above</li>
+                <li>Click the <span className="font-semibold text-primary">Auto-Setup Database & Bucket</span> button above!</li>
+              </ol>
+              <p className="text-[10px] text-foreground/70 leading-relaxed font-semibold border-t border-primary/10 pt-2">Option B: Manual Setup</p>
               <ol className="text-[10px] text-foreground/70 leading-relaxed space-y-1 list-decimal list-inside">
-                <li>Create an account at <span className="text-primary font-medium">appwrite.io</span> or self-host Appwrite</li>
-                <li>Create a new project and copy the <strong>API Endpoint</strong> (e.g. <code>https://cloud.appwrite.io/v1</code> or regional like <code>https://sgp.cloud.appwrite.io/v1</code>) and <strong>Project ID</strong></li>
                 <li>Create a database (e.g., "pensieve-db")</li>
                 <li>Create a collection with these attributes:
                   <ul className="ml-4 mt-1 space-y-0.5">
-                    <li><code className="bg-foreground/5 px-1 rounded">items</code> (string, large)</li>
+                    <li><code className="bg-foreground/5 px-1 rounded">items</code> (string, large 1073741824)</li>
                     <li><code className="bg-foreground/5 px-1 rounded">user_id</code> (string)</li>
                     <li><code className="bg-foreground/5 px-1 rounded">updated_at</code> (string)</li>
                   </ul>
                 </li>
-                <li>Set collection permissions to allow document creation/updates</li>
-                <li>Create a Storage Bucket (e.g., "pensieve-bucket-id") and set permissions to allow uploads</li>
+                <li>Set collection permissions to allow document read/creation/updates</li>
+                <li>Create a Storage Bucket (e.g., "pensieve-bucket-id") and set permissions to allow read/uploads</li>
               </ol>
             </div>
 
@@ -2315,11 +2354,13 @@ export default function SettingsModal({
                 setAppwriteDatabaseId("");
                 setAppwriteCollectionId("");
                 setAppwriteBucketId("");
+                setAppwriteApiKey("");
                 localStorage.removeItem('pensieve_appwrite_endpoint');
                 localStorage.removeItem('pensieve_appwrite_projectId');
                 localStorage.removeItem('pensieve_appwrite_databaseId');
                 localStorage.removeItem('pensieve_appwrite_collectionId');
                 localStorage.removeItem('pensieve_appwrite_bucketId');
+                localStorage.removeItem('pensieve_appwrite_apiKey');
                 window.dispatchEvent(new Event('app-settings-updated'));
               }}
               className="text-[10px] text-rose-500 hover:underline mt-2 flex items-center gap-1"

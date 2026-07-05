@@ -16,6 +16,7 @@ export interface AppwriteConfig {
   databaseId: string;
   collectionId: string;
   bucketId?: string;
+  apiKey?: string;
 }
 
 /**
@@ -29,12 +30,13 @@ export function getAppwriteConfig(): AppwriteConfig | null {
   const databaseId = localStorage.getItem('pensieve_appwrite_databaseId');
   const collectionId = localStorage.getItem('pensieve_appwrite_collectionId');
   const bucketId = localStorage.getItem('pensieve_appwrite_bucketId') || undefined;
+  const apiKey = localStorage.getItem('pensieve_appwrite_apiKey') || undefined;
 
   if (!endpoint || !projectId || !databaseId || !collectionId) {
     return null;
   }
 
-  return { endpoint, projectId, databaseId, collectionId, bucketId };
+  return { endpoint, projectId, databaseId, collectionId, bucketId, apiKey };
 }
 
 /**
@@ -50,6 +52,12 @@ export function setAppwriteConfig(config: AppwriteConfig) {
     localStorage.setItem('pensieve_appwrite_bucketId', config.bucketId);
   } else {
     localStorage.removeItem('pensieve_appwrite_bucketId');
+  }
+
+  if (config.apiKey) {
+    localStorage.setItem('pensieve_appwrite_apiKey', config.apiKey);
+  } else {
+    localStorage.removeItem('pensieve_appwrite_apiKey');
   }
 }
 
@@ -106,6 +114,7 @@ export async function uploadToStorageBucket(
       method: 'POST',
       headers: {
         'X-Appwrite-Project': config.projectId,
+        ...(config.apiKey ? { 'X-Appwrite-Key': config.apiKey } : {}),
       },
       body: formData,
     });
@@ -186,6 +195,7 @@ export async function deleteFromStorageBucket(fileId: string): Promise<boolean> 
       method: 'DELETE',
       headers: {
         'X-Appwrite-Project': config.projectId,
+        ...(config.apiKey ? { 'X-Appwrite-Key': config.apiKey } : {}),
       },
     });
 
@@ -268,6 +278,7 @@ export async function getAppwriteItems(userId: string): Promise<MindItem[]> {
       headers: {
         'Content-Type': 'application/json',
         'X-Appwrite-Project': config.projectId,
+        ...(config.apiKey ? { 'X-Appwrite-Key': config.apiKey } : {}),
       },
     });
 
@@ -357,6 +368,7 @@ export async function saveAppwriteItems(userId: string, items: MindItem[]): Prom
       headers: {
         'Content-Type': 'application/json',
         'X-Appwrite-Project': config.projectId,
+        ...(config.apiKey ? { 'X-Appwrite-Key': config.apiKey } : {}),
       },
       body: JSON.stringify({ data: dataPayload }),
     });
@@ -368,6 +380,7 @@ export async function saveAppwriteItems(userId: string, items: MindItem[]): Prom
         headers: {
           'Content-Type': 'application/json',
           'X-Appwrite-Project': config.projectId,
+        ...(config.apiKey ? { 'X-Appwrite-Key': config.apiKey } : {}),
         },
         body: JSON.stringify({
           documentId: documentId,
