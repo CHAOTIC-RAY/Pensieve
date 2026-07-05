@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, ChangeEvent } from "react";
 import jsQR from "jsqr";
-import { Camera, X, RefreshCw, AlertCircle, ExternalLink } from "lucide-react";
+import { Camera, X, RefreshCw, AlertCircle, ExternalLink, Image as ImageIcon } from "lucide-react";
 
 interface QrScannerProps {
   onScan: (text: string) => void;
@@ -18,6 +18,7 @@ export default function QrScanner({ onScan, onClose }: QrScannerProps) {
   >("prompt");
   const [errorMessage, setErrorMessage] = useState("");
   const [isScanning, setIsScanning] = useState(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
 
   // Initialize Camera
   useEffect(() => {
@@ -27,15 +28,16 @@ export default function QrScanner({ onScan, onClose }: QrScannerProps) {
         setErrorMessage("Camera access is not supported by your browser or connection. Make sure you are using HTTPS or localhost.");
         return;
       }
-
       try {
         setPermissionState("prompt");
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "environment" },
           audio: false,
         });
-
         streamRef.current = stream;
+
+        // Ensure videoRef is available, even if we just rendered
+        // In React, refs might not be instantly available if conditional rendering was just evaluated, but we made it unconditional now.
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.setAttribute("playsinline", "true"); // required for iOS
@@ -76,7 +78,6 @@ export default function QrScanner({ onScan, onClose }: QrScannerProps) {
   // Processing loops
   useEffect(() => {
     if (permissionState !== "granted" || !isScanning) return;
-
     const canvas = canvasRef.current;
     const video = videoRef.current;
     if (!canvas || !video) return;
@@ -89,7 +90,6 @@ export default function QrScanner({ onScan, onClose }: QrScannerProps) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, imageData.width, imageData.height, {
           inversionAttempts: "dontInvert",
@@ -97,12 +97,11 @@ export default function QrScanner({ onScan, onClose }: QrScannerProps) {
 
         if (code && code.data) {
           // Found a code!
-          onScan(code.data);
           stopCamera();
+          onScan(code.data);
           return;
         }
       }
-
       animationFrameId.current = requestAnimationFrame(scanFrame);
     };
 
@@ -115,34 +114,106 @@ export default function QrScanner({ onScan, onClose }: QrScannerProps) {
     };
   }, [permissionState, isScanning, onScan]);
 
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessingImage(true);
+    stopCamera();
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) {
+           setIsProcessingImage(false);
+           return;
+        }
+        
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) {
+           setIsProcessingImage(false);
+           return;
+        }
+        
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert",
+        });
+
+        if (code && code.data) {
+          onScan(code.data);
+        } else {
+          setPermissionState("unsupported");
+          setErrorMessage("No valid QR code found in the uploaded image. Please try another image.");
+        }
+        setIsProcessingImage(false);
+      };
+      img.onerror = () => {
+        setIsProcessingImage(false);
+        setPermissionState("unsupported");
+        setErrorMessage("Failed to load image.");
+      }
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => {
+        setIsProcessingImage(false);
+        setPermissionState("unsupported");
+        setErrorMessage("Failed to read file.");
+    }
+    reader.readAsDataURL(file);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-white select-none">
+    <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center md:p-4 text-white select-none">
       {/* Header */}
-      <div className="absolute top-4 left-0 right-0 px-6 flex items-center justify-between z-10">
-        <h3 className="text-base font-bold flex items-center gap-2">
+      <div className="absolute top-0 left-0 right-0 px-4 py-4 md:top-4 flex items-center justify-between z-10 bg-gradient-to-b from-black/80 to-transparent">
+        <h3 className="text-base font-bold flex items-center gap-2 drop-shadow-md">
           <Camera className="w-5 h-5 text-emerald-400" />
-          Scan Settings QR Code
+          Scan QR Code
         </h3>
         <button
           onClick={onClose}
-          className="p-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-xl transition text-white"
+          className="p-2 bg-black/40 hover:bg-black/60 backdrop-blur-md active:scale-95 rounded-xl transition text-white"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
       {/* Camera / Permission States */}
-      <div className="relative w-full max-w-md aspect-square rounded-3xl overflow-hidden border border-white/10 bg-neutral-950 flex flex-col items-center justify-center">
-        {permissionState === "prompt" && (
-          <div className="flex flex-col items-center gap-3 p-6 text-center">
+      <div className="relative w-full h-full md:max-w-md md:aspect-video md:h-auto md:rounded-3xl overflow-hidden border-0 md:border border-white/10 bg-neutral-950 flex flex-col items-center justify-center shadow-none md:shadow-2xl">
+        
+        {/* We ALWAYS render video and canvas so refs are available for startCamera */}
+        <video
+          ref={videoRef}
+          className={`w-full h-full object-cover ${permissionState !== 'granted' ? 'hidden' : ''}`}
+          muted
+          playsInline
+        />
+        <canvas ref={canvasRef} className="hidden" />
+
+        {isProcessingImage && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm gap-3">
+            <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin" />
+            <p className="text-sm font-semibold text-emerald-400">Processing image...</p>
+          </div>
+        )}
+
+        {permissionState === "prompt" && !isProcessingImage && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center z-10 bg-neutral-950">
             <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin" />
             <p className="text-sm font-semibold">Requesting camera access...</p>
             <p className="text-xs text-white/50">Please allow camera permissions if prompted by your browser.</p>
           </div>
         )}
 
-        {permissionState === "denied" && (
-          <div className="flex flex-col items-center gap-4 p-6 text-center">
+        {permissionState === "denied" && !isProcessingImage && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center z-10 bg-neutral-950">
             <AlertCircle className="w-10 h-10 text-rose-500" />
             <h4 className="text-sm font-bold text-rose-400">Camera Access Denied</h4>
             <p className="text-xs text-white/60 leading-relaxed max-w-xs">
@@ -167,34 +238,24 @@ export default function QrScanner({ onScan, onClose }: QrScannerProps) {
           </div>
         )}
 
-        {permissionState === "unsupported" && (
-          <div className="flex flex-col items-center gap-3 p-6 text-center">
+        {permissionState === "unsupported" && !isProcessingImage && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center z-10 bg-neutral-950">
             <AlertCircle className="w-10 h-10 text-rose-500" />
-            <h4 className="text-sm font-bold text-rose-400">Unsupported Environment</h4>
+            <h4 className="text-sm font-bold text-rose-400">Scan Failed / Unsupported</h4>
             <p className="text-xs text-white/60 leading-relaxed">
               {errorMessage}
             </p>
           </div>
         )}
 
-        {permissionState === "granted" && (
+        {permissionState === "granted" && !isProcessingImage && (
           <>
-            {/* Camera Viewport */}
-            <video
-              ref={videoRef}
-              className="w-full h-full object-cover"
-              muted
-              playsInline
-            />
-            {/* Offscreen scanning canvas */}
-            <canvas ref={canvasRef} className="hidden" />
-
             {/* Glowing Finder overlay */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative w-2/3 aspect-square max-w-[240px] border-2 border-emerald-500/40 rounded-2xl bg-black/5 flex flex-col justify-between p-4 shadow-[0_0_50px_rgba(16,185,129,0.15)]">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="relative w-2/3 max-w-[240px] aspect-square border-2 border-emerald-500/40 rounded-2xl bg-black/5 flex flex-col justify-between p-4 shadow-[0_0_50px_rgba(16,185,129,0.15)] overflow-hidden">
                 {/* Visual scanning line */}
                 <div className="w-full h-0.5 bg-emerald-400 shadow-[0_0_8px_#10b981] animate-[scan_2s_infinite_ease-in-out]" />
-
+                
                 {/* Corners visual indicators */}
                 <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg" />
                 <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg" />
@@ -206,12 +267,27 @@ export default function QrScanner({ onScan, onClose }: QrScannerProps) {
         )}
       </div>
 
-      {/* Footer Instructions */}
-      <div className="mt-6 text-center max-w-xs">
+      {/* Footer Instructions & Actions */}
+      <div className="absolute bottom-8 text-center max-w-sm flex flex-col items-center w-full z-10">
         <p className="text-sm font-semibold text-emerald-400">Align QR Code</p>
-        <p className="text-xs text-white/50 mt-1 leading-relaxed">
-          Position the desktop preferences settings QR code inside the viewfinder to automatically link settings.
+        <p className="text-xs text-white/50 mt-1 leading-relaxed px-4">
+          Position the settings QR code inside the viewfinder to automatically link your device.
         </p>
+
+        <div className="mt-6 flex items-center justify-center gap-4 w-full">
+            <div className="relative overflow-hidden group">
+                <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
+                />
+                <div className="flex items-center gap-2 py-3 px-5 bg-black/50 backdrop-blur-md hover:bg-white/10 border border-white/20 rounded-xl transition-all cursor-pointer shadow-lg active:scale-95 group-hover:border-emerald-500/50 group-hover:text-emerald-400 text-sm font-semibold">
+                    <ImageIcon className="w-4 h-4" />
+                    Upload Photo
+                </div>
+            </div>
+        </div>
       </div>
 
       {/* Embedded CSS animation for scanning line */}
