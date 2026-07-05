@@ -9,8 +9,11 @@ interface Sparkle {
   color: string;
 }
 
+let sparkleIdCounter = 0;
+
 export default function SparkleCursor({ intensity = 0.4 }: { intensity?: number }) {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const mousePosRef = useRef({ x: 0, y: 0 });
   const [sparkles, setSparkles] = useState<Sparkle[]>([]);
   const [scrollSpeed, setScrollSpeed] = useState(0);
   const lastActiveTime = useRef<number>(Date.now());
@@ -40,7 +43,7 @@ export default function SparkleCursor({ intensity = 0.4 }: { intensity?: number 
   }, []);
 
   const addSparkle = useCallback((x: number, y: number) => {
-    const id = Date.now() + Math.random();
+    const id = ++sparkleIdCounter;
     
     // Performance optimization: smaller size and count on mobile
     const maxSparkles = isMobileRef.current ? 12 : 60;
@@ -80,26 +83,25 @@ export default function SparkleCursor({ intensity = 0.4 }: { intensity?: number 
         const targetY = h / 2.5 + Math.sin(time * 2) * (h * 0.18);
         
         // Lerp to target coordinates so transition into idle mode is buttery smooth
-        setMousePos((prev) => {
-          // If cursor is at 0,0, snap immediately to target so it doesn't float in from corner
-          if (prev.x === 0 && prev.y === 0) return { x: targetX, y: targetY };
+        let nextX = mousePosRef.current.x;
+        let nextY = mousePosRef.current.y;
+        
+        if (nextX === 0 && nextY === 0) {
+          nextX = targetX;
+          nextY = targetY;
+        } else {
           const lerpFactor = isMobile ? 0.05 : 0.08;
-          return {
-            x: prev.x + (targetX - prev.x) * lerpFactor,
-            y: prev.y + (targetY - prev.y) * lerpFactor
-          };
-        });
+          nextX = nextX + (targetX - nextX) * lerpFactor;
+          nextY = nextY + (targetY - nextY) * lerpFactor;
+        }
+        
+        mousePosRef.current = { x: nextX, y: nextY };
+        setMousePos({ x: nextX, y: nextY });
         
         // Slightly lower chance of sparkles for mobile, higher on desktop idle
         const sparkleChance = isMobile ? (intensity * 0.3) : (intensity * 0.85);
-        if (Math.random() < sparkleChance) {
-          // Add sparkle at current interpolated position
-          setMousePos((current) => {
-            if (current.x > 0 && current.y > 0) {
-              addSparkle(current.x, current.y);
-            }
-            return current;
-          });
+        if (Math.random() < sparkleChance && nextX > 0 && nextY > 0) {
+          addSparkle(nextX, nextY);
         }
       }
       animationFrameId = requestAnimationFrame(autoAnimate);
@@ -109,7 +111,9 @@ export default function SparkleCursor({ intensity = 0.4 }: { intensity?: number 
 
     const handleMouseMove = (e: MouseEvent) => {
       lastActiveTime.current = Date.now();
-      setMousePos({ x: e.clientX, y: e.clientY });
+      const pos = { x: e.clientX, y: e.clientY };
+      mousePosRef.current = pos;
+      setMousePos(pos);
       
       const isMobile = isMobileRef.current;
       if (isMobile) return;
@@ -117,9 +121,9 @@ export default function SparkleCursor({ intensity = 0.4 }: { intensity?: number 
       // Calculate chance based on intensity and scroll speed
       const baseChance = intensity + (scrollSpeed / 50);
       if (Math.random() < baseChance) {
-        addSparkle(e.clientX, e.clientY);
+        addSparkle(pos.x, pos.y);
         if (scrollSpeed > 10 && Math.random() < 0.6) {
-           addSparkle(e.clientX + (Math.random() - 0.5) * 60, e.clientY + (Math.random() - 0.5) * 60);
+           addSparkle(pos.x + (Math.random() - 0.5) * 60, pos.y + (Math.random() - 0.5) * 60);
         }
       }
     };
@@ -128,11 +132,13 @@ export default function SparkleCursor({ intensity = 0.4 }: { intensity?: number 
       lastActiveTime.current = Date.now();
       const touch = e.touches[0];
       if (touch) {
-        setMousePos({ x: touch.clientX, y: touch.clientY });
+        const pos = { x: touch.clientX, y: touch.clientY };
+        mousePosRef.current = pos;
+        setMousePos(pos);
         const isMobile = isMobileRef.current;
         const sparkleChance = isMobile ? (intensity * 0.4) : (intensity + 0.2);
         if (Math.random() < sparkleChance) {
-          addSparkle(touch.clientX, touch.clientY);
+          addSparkle(pos.x, pos.y);
         }
       }
     };
