@@ -6,7 +6,7 @@ import {
   useSpring,
   useMotionValueEvent
 } from 'motion/react';
-import { ArrowRight, Search, Sparkles, Heart, Palette, Compass, Trophy, Activity, Lock, Cloud, Mic, Volume2, LogIn, Github, Play, Check, CircleCheck as CheckCircle2, Quote as QuoteIcon, FileText, Zap, Maximize2, ShoppingBag, Shield, Layers, Plug } from 'lucide-react';
+import { ArrowRight, Search, Sparkles, Heart, Palette, Compass, Trophy, Activity, Lock, Cloud, Mic, Volume2, LogIn, Github, Play, Check, CircleCheck as CheckCircle2, Quote as QuoteIcon, FileText, Zap, Maximize2, ShoppingBag, Shield, Layers, Plug, Cpu, ShieldCheck, Code2, Database } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import SparkleCursor from './SparkleCursor';
@@ -65,17 +65,32 @@ export default function LandingPage() {
 
   // Shift transform ranges on mobile to eliminate delay/blank screen feeling
   const gridRange = isMobile ? [0.03, 0.08] : [0.08, 0.15];
-  const featuresRange = isMobile ? [0.10, 0.18] : [0.18, 0.28];
-  const voiceRange = isMobile ? [0.22, 0.30] : [0.32, 0.42];
-  const serendipityRange = isMobile ? [0.34, 0.42] : [0.48, 0.58];
+  const searchRange = isMobile ? [0.10, 0.16] : [0.18, 0.25];
+  const aiRange = isMobile ? [0.18, 0.24] : [0.27, 0.34];
+  const marketRange = isMobile ? [0.26, 0.32] : [0.36, 0.43];
+  const xpRange = isMobile ? [0.34, 0.40] : [0.45, 0.52];
+  const voiceRange = isMobile ? [0.42, 0.48] : [0.54, 0.61];
+  const serendipityRange = isMobile ? [0.50, 0.56] : [0.63, 0.70];
 
   // Content grid fades in
   const gridOpacity = useTransform(smoothProgress, gridRange, [0, 1]);
   const gridY = useTransform(smoothProgress, gridRange, [30, 0]);
 
-  // Additional features section fades in
-  const featuresOpacity = useTransform(smoothProgress, featuresRange, [0, 1]);
-  const featuresY = useTransform(smoothProgress, featuresRange, [30, 0]);
+  // Search section
+  const searchOpacity = useTransform(smoothProgress, searchRange, [0, 1]);
+  const searchY = useTransform(smoothProgress, searchRange, [30, 0]);
+
+  // AI section
+  const aiOpacity = useTransform(smoothProgress, aiRange, [0, 1]);
+  const aiY = useTransform(smoothProgress, aiRange, [30, 0]);
+
+  // Marketplace section
+  const marketOpacity = useTransform(smoothProgress, marketRange, [0, 1]);
+  const marketY = useTransform(smoothProgress, marketRange, [30, 0]);
+
+  // XP section
+  const xpOpacity = useTransform(smoothProgress, xpRange, [0, 1]);
+  const xpY = useTransform(smoothProgress, xpRange, [30, 0]);
 
   // Voice Note section fades in
   const voiceOpacity = useTransform(smoothProgress, voiceRange, [0, 1]);
@@ -396,63 +411,287 @@ export default function LandingPage() {
 
             </div>
           </motion.div>
-        </section>
-
-        {/* Section 3: Highlighted Features */}
+        </section>        {/* Neural Search Engine Section */}
         <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
           <motion.div 
-            style={{ opacity: featuresOpacity, y: featuresY }}
-            className="w-full max-w-5xl space-y-16"
+            style={{ opacity: searchOpacity, y: searchY }}
+            className="w-full max-w-5xl grid md:grid-cols-2 gap-16 items-center"
           >
-            <div className="text-center">
-              <span className="text-[10px] font-mono text-primary font-bold uppercase tracking-[0.25em] bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">ARCHITECTURE & FEATURES</span>
-              <h2 className="text-3xl md:text-5xl font-display font-black text-foreground mt-4 tracking-tight">Enterprise Infrastructure. <br/><span className="text-primary italic">Consumer Soul.</span></h2>
-              <p className="text-xs md:text-sm text-foreground/45 mt-4 max-w-xl mx-auto leading-relaxed">Built on a robust Appwrite + Firebase Auth stack with offline capabilities. Your database stays securely in the cloud with high-performance edge synchronization.</p>
+            <div className="order-2 md:order-1 space-y-6">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-550 border border-indigo-500/20">
+                <Search className="w-5 h-5" />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-display font-black text-foreground">Neural Search Engine</h2>
+              <p className="text-sm text-foreground/80 leading-relaxed font-sans font-medium">
+                Eliminate the latency of sequential scans. Our engine utilizes a custom Inverted Index paired with B-Tree temporal sorting to deliver instant recall across your entire memory vault. 
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
+                  <Zap className="w-4 h-4 text-indigo-500" /> Sub-millisecond Cardinality Estimation
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
+                  <Code2 className="w-4 h-4 text-indigo-500" /> Heuristic Rule-Based Optimization (RBO)
+                </div>
+              </div>
+            </div>
+            <div className="order-1 md:order-2 relative group">
+              <div className="absolute -inset-4 bg-indigo-500/10 rounded-[2.5rem] blur-2xl group-hover:bg-indigo-500/20 transition-all duration-700"></div>
+              <div className="relative aspect-video rounded-[2rem] border border-black/[0.03] bg-white/40 backdrop-blur-md flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.05),transparent)]"></div>
+                <div className="font-mono text-[10px] text-indigo-600/40 p-8 leading-tight">
+                  {`SELECT * FROM mind_items \nWHERE terms @@ to_tsquery('neural')\nORDER BY rank DESC, created_at DESC;\n\n[Optimizer] Plan: B-Tree Scan\n[Status] 0.12ms execution time`}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* LiteRT & WebGPU Section */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
+          <motion.div 
+            style={{ opacity: aiOpacity, y: aiY }}
+            className="w-full max-w-5xl grid md:grid-cols-2 gap-16 items-center"
+          >
+            <div className="relative group">
+              <div className="absolute -inset-8 bg-emerald-500/15 rounded-[3rem] blur-3xl group-hover:bg-emerald-500/25 transition-all duration-700 animate-pulse"></div>
+              <div className="relative aspect-video rounded-[2.5rem] border border-black/[0.05] bg-white/40 backdrop-blur-xl flex flex-col items-center justify-center overflow-hidden shadow-2xl">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.1),transparent)]"></div>
+                
+                {/* Neural Network Visual */}
+                <div className="relative w-32 h-32 flex items-center justify-center">
+                  <div className="absolute inset-0 border-2 border-emerald-500/20 rounded-full animate-[ping_3s_linear_infinite]"></div>
+                  <div className="absolute inset-4 border border-emerald-500/30 rounded-full animate-[spin_10s_linear_infinite]"></div>
+                  <div className="relative w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.4)]">
+                    <Cpu className="w-8 h-8 text-white" />
+                  </div>
+                  {/* Floating Nodes */}
+                  {[...Array(6)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ 
+                        y: [0, -10, 0],
+                        opacity: [0.3, 0.7, 0.3]
+                      }}
+                      transition={{ 
+                        duration: 3 + i, 
+                        repeat: Infinity,
+                        delay: i * 0.5
+                      }}
+                      className="absolute w-2 h-2 bg-emerald-400 rounded-full"
+                      style={{ 
+                        top: `${20 + Math.random() * 60}%`, 
+                        left: `${20 + Math.random() * 60}%` 
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-6 flex flex-col items-center gap-2">
+                  <div className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                    TENSOR_CORE_ACTIVE: 1.5B PARAMS
+                  </div>
+                  <div className="text-[9px] font-mono text-emerald-600/40 uppercase tracking-[0.2em]">
+                    ON-DEVICE WEBGPU INFERENCE
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-6">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 border border-emerald-500/20">
+                <Cpu className="w-5 h-5" />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-display font-black text-foreground flex items-center gap-3">
+                LiteRT Intelligence
+                <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">
+                  OFFLINE
+                </span>
+              </h2>
+              <p className="text-sm text-foreground/80 leading-relaxed font-sans font-medium">
+                Experience neural analysis without the server. We compile and run a custom language model directly in your browser using Google LiteRT and WebGPU acceleration. 100% private semantic analysis—your context never touches the cloud.
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" /> End-to-End Privacy First
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
+                  <Zap className="w-4 h-4 text-emerald-500" /> Hardware Accelerated LLM Inference
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Effect Marketplace Section */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
+          <motion.div 
+            style={{ opacity: marketOpacity, y: marketY }}
+            className="w-full max-w-5xl grid md:grid-cols-2 gap-16 items-center"
+          >
+            <div className="order-2 md:order-1 space-y-6">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-555 border border-amber-500/20">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-display font-black text-foreground">Effect Marketplace</h2>
+              <p className="text-sm text-foreground/80 leading-relaxed font-sans font-medium">
+                Your workspace is a canvas. Exchange your earned XP for custom visual modifiers. From dynamic GLSL shaders to vintage CRT monitor filters, personalize every pixel of your digital sanctuary with high-fidelity effects.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl border border-black/[0.03] bg-white/60 shadow-sm flex flex-col gap-1 items-center justify-center group/item hover:border-amber-500/30 transition-all cursor-pointer">
+                  <span className="text-[10px] font-black text-amber-600">LIQUID GLASS</span>
+                  <div className="w-full h-1 bg-amber-500/10 rounded-full overflow-hidden">
+                    <div className="w-full h-full bg-amber-500/40 translate-x-[-100%] group-hover/item:translate-x-0 transition-transform duration-500"></div>
+                  </div>
+                </div>
+                <div className="p-4 rounded-2xl border border-black/[0.03] bg-white/60 shadow-sm flex flex-col gap-1 items-center justify-center group/item hover:border-amber-500/30 transition-all cursor-pointer">
+                  <span className="text-[10px] font-black text-amber-600">CRT PHOSPHOR</span>
+                  <div className="w-full h-1 bg-amber-500/10 rounded-full overflow-hidden">
+                    <div className="w-full h-full bg-amber-500/40 translate-x-[-100%] group-hover/item:translate-x-0 transition-transform duration-500"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="order-1 md:order-2 relative group">
+              <div className="absolute -inset-8 bg-amber-500/15 rounded-[3rem] blur-3xl group-hover:bg-amber-500/25 transition-all duration-700 animate-pulse"></div>
+              <div className="relative aspect-square max-w-[340px] mx-auto rounded-[2.5rem] border border-black/[0.05] bg-white/40 backdrop-blur-xl flex items-center justify-center overflow-hidden shadow-2xl group/market">
+                {/* Visual Effect Stack Preview */}
+                <div className="relative w-56 h-72 space-y-4">
+                  {/* Layer 3: Base */}
+                  <div className="absolute inset-0 bg-white/20 rounded-2xl border border-white/40 transform translate-x-4 translate-y-4 scale-95 opacity-50 blur-[1px]"></div>
+                  {/* Layer 2: Content */}
+                  <div className="absolute inset-0 bg-white/30 rounded-2xl border border-white/40 transform translate-x-2 translate-y-2 scale-[0.97] opacity-80 flex flex-col p-4 gap-3">
+                    <div className="h-6 w-1/2 bg-amber-500/20 rounded"></div>
+                    <div className="space-y-2">
+                      <div className="h-2 w-full bg-black/5 rounded"></div>
+                      <div className="h-2 w-full bg-black/5 rounded"></div>
+                    </div>
+                  </div>
+                  {/* Layer 1: Active Filter (Holographic/Glass) */}
+                  <div className="relative h-full w-full bg-white/40 rounded-2xl border border-white/60 shadow-xl flex flex-col overflow-hidden group-hover/market:scale-[1.02] transition-transform duration-500">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-amber-500/5"></div>
+                    {/* Scanline Overlay */}
+                    <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'repeating-linear-gradient(0deg, #000, #000 1px, transparent 1px, transparent 2px)' }}></div>
+                    {/* Dynamic "Liquid" Reflection */}
+                    <motion.div 
+                      animate={{ x: [-100, 200] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                      className="absolute top-0 bottom-0 w-20 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-[-20deg]"
+                    />
+                    <div className="p-4 space-y-3 relative z-10">
+                      <div className="h-8 w-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                        <Palette className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-3 w-3/4 bg-amber-500/10 rounded"></div>
+                        <div className="h-3 w-full bg-amber-500/10 rounded"></div>
+                        <div className="h-3 w-2/3 bg-amber-500/10 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="mt-auto p-4 border-t border-amber-500/10 bg-amber-500/5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] font-black text-amber-600 uppercase">CRT_EMULATION_01</span>
+                        <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Floating Price Tags */}
+                <motion.div 
+                  animate={{ y: [0, -10, 0] }} 
+                  transition={{ duration: 4, repeat: Infinity }}
+                  className="absolute top-8 -right-4 bg-amber-500 text-white text-[10px] font-black px-4 py-2 rounded-full shadow-lg border border-amber-400 z-20"
+                >
+                  600 XP
+                </motion.div>
+                <motion.div 
+                  animate={{ y: [0, 10, 0] }} 
+                  transition={{ duration: 5, repeat: Infinity, delay: 0.5 }}
+                  className="absolute bottom-8 -left-4 bg-foreground text-background text-[10px] font-black px-4 py-2 rounded-full shadow-lg border border-white/10 z-20"
+                >
+                  COLLECTIBLE
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* XP Economy Section */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
+          <motion.div 
+            style={{ opacity: xpOpacity, y: xpY }}
+            className="w-full max-w-5xl grid md:grid-cols-2 gap-16 items-center"
+          >
+            <div className="relative group">
+              <div className="absolute -inset-8 bg-purple-500/15 rounded-[3rem] blur-3xl group-hover:bg-purple-500/25 transition-all duration-700 animate-pulse"></div>
+              <div className="relative aspect-video rounded-[2.5rem] border border-black/[0.05] bg-white/40 backdrop-blur-xl flex flex-col items-center justify-center p-8 space-y-6 shadow-2xl">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/40">
+                    <Trophy className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-3xl font-black text-foreground">LVL 24</div>
+                    <div className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Cognitive Architect</div>
+                  </div>
+                </div>
+                <div className="w-full space-y-2">
+                  <div className="flex justify-between text-[10px] font-bold text-foreground/40 uppercase">
+                    <span>XP Progress</span>
+                    <span>14,200 / 15,000</span>
+                  </div>
+                  <div className="w-full h-3 bg-purple-100 dark:bg-purple-900/30 rounded-full overflow-hidden border border-purple-200 dark:border-purple-800/50">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      whileInView={{ width: '70%' }}
+                      transition={{ duration: 1.5, ease: "easeOut" }}
+                      className="h-full bg-gradient-to-r from-purple-500 to-indigo-500"
+                    />
+                  </div>
+                </div>
+                <div className="text-[10px] font-mono text-purple-600/60 uppercase tracking-widest animate-pulse">+150 XP EARNED FROM LAST CAPTURE</div>
+              </div>
+            </div>
+            <div className="space-y-6">
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-555 border border-purple-500/20">
+                <Activity className="w-5 h-5" />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-display font-black text-foreground">XP Economy & Gamification</h2>
+              <p className="text-sm text-foreground/80 leading-relaxed font-sans font-medium">
+                Cognition is rewarded. Every item captured, link saved, and insight discovered contributes to your experience points. Build long-term memory habits while unlocking functional milestones and social badges.
+              </p>
+              <div className="flex gap-4">
+                <div className="flex flex-col">
+                  <span className="text-lg font-black text-foreground">14.2k</span>
+                  <span className="text-[10px] font-bold text-foreground/40 uppercase">Total XP</span>
+                </div>
+                <div className="w-px h-10 bg-black/5"></div>
+                <div className="flex flex-col">
+                  <span className="text-lg font-black text-foreground">12</span>
+                  <span className="text-[10px] font-bold text-foreground/40 uppercase">Achievements</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Section 4: Architecture Grid */}
+        <section className="relative py-24 px-6 flex flex-col items-center">
+          <div className="w-full max-w-5xl space-y-16">
+            <div className="text-center space-y-4">
+              <span className="text-[10px] font-mono text-primary font-bold uppercase tracking-[0.25em] bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">TECHNICAL ARCHITECTURE</span>
+              <h2 className="text-3xl md:text-5xl font-display font-black text-foreground tracking-tight">Enterprise Infrastructure. <br/><span className="text-primary italic">Consumer Soul.</span></h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Feature 1 */}
               <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-550 border border-indigo-500/20">
-                  <Cloud className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Appwrite Database</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Powered by Appwrite for real-time document storage. Features scalable infrastructure that securely syncs your workspace across all devices instantly.</p>
-              </div>
-
-              {/* Feature 2 */}
-              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-555 border border-emerald-500/20">
-                  <Zap className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold font-display tracking-tight text-foreground flex items-center gap-2">
-                  On-Device LiteRT & WebGPU
-                  <span className="text-[10px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-550 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">
-                    Beta
-                  </span>
-                </h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Run a 1.5B parameter language model entirely locally using Google LiteRT and WebGPU. 100% private semantic search and AI summarization—no data ever leaves your device.</p>
-              </div>
-              
-              {/* Feature 3 */}
-              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-550 border border-rose-500/20">
                   <Maximize2 className="w-5 h-5" />
                 </div>
                 <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Native Inspector Panel</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">A beautiful, Notion-style rich editor. Fully responsive: full-screen modal on mobile with native gestures, and a sleek focused card on desktop. Optimized for text, images, and voice notes.</p>
+                <p className="text-sm text-foreground/80 leading-relaxed font-sans">A beautiful, Notion-style rich editor. Fully responsive: full-screen modal on mobile with native gestures, and a sleek focused card on desktop optimized for text and images.</p>
               </div>
 
-              {/* Feature 4 */}
-              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-555 border border-amber-500/20">
-                  <ShoppingBag className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Effects Marketplace</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Spend earned XP in the integrated Store. Unlock cosmic themes, CRT monitor visual effects, custom name tags, and premium visual elements for your workspace.</p>
-              </div>
-
-              {/* Feature 5 */}
+              {/* Feature 2 */}
               <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
                 <div className="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-555 border border-teal-500/20">
                   <Shield className="w-5 h-5" />
@@ -461,30 +700,46 @@ export default function LandingPage() {
                 <p className="text-sm text-foreground/80 leading-relaxed font-sans">Enterprise-grade authentication with Google Identity Platform. Complete with admin dashboard controls and strictly protected application environments.</p>
               </div>
 
-              {/* Feature 6 */}
+              {/* Feature 3 */}
               <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-555 border border-purple-500/20">
-                  <Layers className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold font-display tracking-tight text-foreground">XP Economy & Gamification</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Build habits with interactive milestones. Track progress via the comprehensive XP system and custom physical-style collectible achievement cards.</p>
-              </div>
-
-              {/* Feature 7 - Experimental Cloud Connections */}
-              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-555 border border-rose-500/20 animate-pulse">
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-555 border border-rose-500/20">
                   <Plug className="w-5 h-5" />
                 </div>
                 <h3 className="text-xl font-bold font-display tracking-tight text-foreground flex items-center gap-2">
                   Cloud Connections
-                  <span className="text-[10px] bg-rose-500/10 border border-rose-500/20 text-rose-500 font-bold px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
-                    Experimental
-                  </span>
+                  <span className="text-[10px] bg-rose-500/10 border border-rose-500/20 text-rose-500 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">BETA</span>
                 </h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Connect Google Photos, Google Drive, or Microsoft OneDrive plugin. Safely browse and import external photos, files, and documents directly into your memory vault.</p>
+                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Connect Google Photos, Drive, or OneDrive. Safely browse and import external photos, files, and documents directly into your memory vault.</p>
+              </div>
+
+              {/* Feature 4 */}
+              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-550 border border-indigo-500/20">
+                  <Database className="w-5 h-5" />
+                </div>
+                <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Appwrite Database Sync</h3>
+                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Powered by Appwrite for real-time document storage. Features scalable infrastructure that securely syncs your workspace across all devices instantly.</p>
+              </div>
+
+              {/* Feature 5 */}
+              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-555 border border-emerald-500/20">
+                  <Compass className="w-5 h-5" />
+                </div>
+                <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Offline-First Engine</h3>
+                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Never lose access. Our core storage utilizes a robust local-first architecture that functions perfectly without an internet connection, syncing only when you are back online.</p>
+              </div>
+
+              {/* Feature 6 */}
+              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-555 border border-amber-500/20">
+                  <Zap className="w-5 h-5" />
+                </div>
+                <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Keyboard Driven</h3>
+                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Power user efficiency. Navigate, search, and capture using a comprehensive set of keyboard shortcuts designed for frictionless thought logging.</p>
               </div>
             </div>
-          </motion.div>
+          </div>
         </section>
 
         {/* Section 4: Voice Notes & Audio Capture */}
@@ -499,10 +754,15 @@ export default function LandingPage() {
               </div>
               <h2 className="text-3xl md:text-4xl font-display font-black text-foreground">Instant Voice Capture</h2>
               <p className="text-sm text-foreground/80 leading-relaxed font-sans font-medium">
-                Speak your mind. Record brainstorming loops, ambient sounds, or flashes of genius directly from the Omnibar. Audio notes are compressed locally, archived as rich wave playback cards, and queued for offline indexing.
+                Never lose a fleeting thought. Tap once to initiate high-fidelity audio sampling. Our system uses zero-latency HTML5 MediaRecorder and custom WebAudio nodes to process and compress your voice notes locally before background indexing.
               </p>
-              <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
-                <Volume2 className="w-4 h-4 text-amber-500" /> HTML5 MediaRecorder & WebAudio Nodes
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
+                  <Volume2 className="w-4 h-4 text-amber-500" /> Real-time Spectral Analysis
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Lossless Local Compression
+                </div>
               </div>
             </div>
             

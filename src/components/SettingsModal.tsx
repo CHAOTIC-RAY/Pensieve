@@ -2495,15 +2495,18 @@ export default function SettingsModal({
                 <ExternalLink className="w-3.5 h-3.5" />
                 Quick Setup Guide
               </h4>
-              <p className="text-[10px] text-foreground/70 leading-relaxed font-semibold">Option A: Auto-Setup (Recommended for New Users)</p>
-              <ol className="text-[10px] text-foreground/70 leading-relaxed space-y-1 list-decimal list-inside pb-2">
-                <li>Create a project at <span className="text-primary font-medium">appwrite.io</span></li>
-                <li>Copy your <strong>Project ID</strong> from the project settings.</li>
-                <li>Ensure the <strong>Endpoint</strong> is set correctly above (default is cloud).</li>
-                <li>Go to <strong>Overview &gt; API Keys</strong>, create a key with "Database" and "Storage" scopes.</li>
-                <li>Paste the API Key above and click <span className="font-semibold text-primary">Auto-Setup Database & Bucket</span>!</li>
-              </ol>
-              <p className="text-[10px] text-foreground/70 leading-relaxed font-semibold border-t border-primary/10 pt-2">Option B: Manual Setup</p>
+                <p className="text-[10px] text-foreground/70 leading-relaxed font-bold bg-primary/10 p-2 rounded-lg border border-primary/20 flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+                  Option A: One-Click Auto-Setup (Highly Recommended)
+                </p>
+                <ol className="text-[10px] text-foreground/70 leading-relaxed space-y-1 list-decimal list-inside pb-2 pt-1">
+                  <li>Create a project at <span className="text-primary font-bold underline decoration-primary/30">appwrite.io</span></li>
+                  <li>Copy your <strong>Project ID</strong> from the project settings.</li>
+                  <li>Ensure the <strong>Endpoint</strong> is set correctly above.</li>
+                  <li>Go to <strong>Overview &gt; API Keys</strong>, create a key with "Database" and "Storage" scopes.</li>
+                  <li>Paste the API Key above and click <span className="font-bold text-primary">Auto-Setup Database & Bucket</span>!</li>
+                </ol>
+                <p className="text-[10px] text-foreground/70 leading-relaxed font-semibold border-t border-primary/10 pt-2 opacity-60">Option B: Manual Setup (Advanced)</p>
               <ol className="text-[10px] text-foreground/70 leading-relaxed space-y-1 list-decimal list-inside">
                 <li>Create a database (e.g., "pensieve-db")</li>
                 <li>Create a collection with these attributes:

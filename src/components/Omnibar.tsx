@@ -1053,7 +1053,7 @@ export default function Omnibar({
                         className="bg-foreground hover:bg-foreground/90 text-background text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        Analyze and Save
+                        Save Image
                       </button>
                     </div>
                   </div>

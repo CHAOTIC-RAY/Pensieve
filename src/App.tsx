@@ -48,6 +48,7 @@ import AdminPanel from './components/AdminPanel';
 import { useAchievements } from './hooks/useAchievements';
 import AchievementsModal from './components/AchievementsModal';
 import AchievementToast from './components/AchievementToast';
+import { saveToLocalStorage, getFromLocalStorage } from './lib/safeStorage';
 import PinnedWidgets from './components/PinnedWidgets';
 
 const GalaxyBackground = () => {
@@ -288,6 +289,7 @@ export default function App() {
     setReaderItemId(item ? item.id : null);
   };
   const [isSerendipityOpen, setIsSerendipityOpen] = useState(false);
+  const [storageError, setStorageError] = useState<{ message: string, type: string } | null>(null);
   const [isStoreOpen, setIsStoreOpen] = useState(false);
   const [isPluginModalOpen, setIsPluginModalOpen] = useState(false);
   const [pluginModalName, setPluginModalName] = useState('');
@@ -439,7 +441,7 @@ export default function App() {
           );
 
           setItems(merged);
-          localStorage.setItem('pensieve_local_items', JSON.stringify(merged));
+          saveToLocalStorage('pensieve_local_items', merged);
           
           // If there were local-only unsynced items, persist them to the active strategy
           if (localOnly.length > 0) {
@@ -507,7 +509,7 @@ export default function App() {
   const safeUpdateItem = async (itemId: string, updates: Partial<MindItem>) => {
     setItems(prev => {
       const updated = prev.map(item => item.id === itemId ? { ...item, ...updates } : item);
-      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
+      saveToLocalStorage('pensieve_local_items', updated);
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -539,7 +541,7 @@ export default function App() {
     // Put it in local state and active database instantly
     setItems(prev => {
       const updated = [fallbackItem, ...prev];
-      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
+      saveToLocalStorage('pensieve_local_items', updated);
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -666,12 +668,19 @@ export default function App() {
     return createdId;
   };
 
-  // Toggle favorite
+  useEffect(() => {
+    const handleError = (e: any) => {
+      if (e.detail) setStorageError(e.detail);
+    };
+    window.addEventListener('pensieve_storage_error', handleError);
+    return () => window.removeEventListener('pensieve_storage_error', handleError);
+  }, []);
+
   const handleToggleFavorite = async (item: MindItem) => {
     const newIsFavorite = !item.isFavorite;
     setItems(prev => {
       const updated = prev.map(i => i.id === item.id ? { ...i, isFavorite: newIsFavorite } : i);
-      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
+      saveToLocalStorage('pensieve_local_items', updated);
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -684,7 +693,7 @@ export default function App() {
     const newIsTopMind = !item.isTopMind;
     setItems(prev => {
       const updated = prev.map(i => i.id === item.id ? { ...i, isTopMind: newIsTopMind } : i);
-      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
+      saveToLocalStorage('pensieve_local_items', updated);
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -701,7 +710,7 @@ export default function App() {
 
     setItems(prev => {
       const updated = prev.filter(i => i.id !== item.id);
-      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
+      saveToLocalStorage('pensieve_local_items', updated);
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -716,7 +725,7 @@ export default function App() {
   const handleUpdateItem = async (updatedItem: MindItem) => {
     setItems(prev => {
       const updated = prev.map(i => i.id === updatedItem.id ? { ...i, ...updatedItem } : i);
-      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
+      saveToLocalStorage('pensieve_local_items', updated);
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -728,7 +737,7 @@ export default function App() {
   const handleUpdateChecklist = async (item: MindItem, updatedContent: string) => {
     setItems(prev => {
       const updated = prev.map(i => i.id === item.id ? { ...i, content: updatedContent } : i);
-      localStorage.setItem('pensieve_local_items', JSON.stringify(updated));
+      saveToLocalStorage('pensieve_local_items', updated);
       if (user) {
         saveDbItems(user.uid, updated, dbStrategy);
       }
@@ -1558,6 +1567,46 @@ export default function App() {
         onInspectItem={setSelectedItem}
         onToggleFavorite={handleToggleFavorite}
       />
+
+      {/* Storage Quota Error Toast */}
+      <AnimatePresence>
+        {storageError && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-24 left-4 md:bottom-6 md:left-6 max-w-sm bg-red-500 text-white p-4 rounded-2xl shadow-xl flex gap-3 items-start z-[200]"
+          >
+            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <Database className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <h4 className="text-xs font-bold uppercase tracking-wider">Browser Storage Full</h4>
+              <p className="text-[10px] opacity-90 leading-normal">
+                {storageError.message}
+              </p>
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => {
+                    setSettingsTab("db");
+                    setIsSettingsOpen(true);
+                    setStorageError(null);
+                  }}
+                  className="text-[10px] font-bold underline decoration-white/30 cursor-pointer"
+                >
+                  Configure Cloud Sync
+                </button>
+                <button
+                  onClick={() => setStorageError(null)}
+                  className="text-[10px] opacity-70 hover:opacity-100 font-semibold cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Appwrite recommendation toast */}
       <AnimatePresence>
