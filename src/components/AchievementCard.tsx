@@ -92,6 +92,12 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
   const glowX = useTransform(mouseX, [-0.5, 0.5], [-25, 25]);
   const glowY = useTransform(mouseY, [-0.5, 0.5], [-25, 25]);
 
+  // Define these transforms at the top level so they are always registered as hooks
+  const holoLeft = useTransform(glareX, (val: number) => `${val - 50}%`);
+  const holoTop = useTransform(glareY, (val: number) => `${val - 50}%`);
+  const glareSpotLeft = useTransform(glareX, (val: number) => `${val}%`);
+  const glareSpotTop = useTransform(glareY, (val: number) => `${val}%`);
+
   function handleMouseMove(event: React.MouseEvent<HTMLDivElement>) {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
@@ -230,8 +236,8 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
                   rgba(255, 255, 255, 0.2) 35px, 
                   transparent 40px
                 )`,
-                left: useTransform(glareX, val => `${val - 50}%`),
-                top: useTransform(glareY, val => `${val - 50}%`),
+                left: holoLeft,
+                top: holoTop,
                 width: '200%',
                 height: '200%'
               }}
@@ -245,8 +251,8 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
               style={{
                 background: 'radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 65%)',
                 opacity: glareOpacity,
-                left: useTransform(glareX, val => `${val}%`),
-                top: useTransform(glareY, val => `${val}%`),
+                left: glareSpotLeft,
+                top: glareSpotTop,
                 transform: 'translate(-50%, -50%)',
                 width: '180%',
                 height: '180%'

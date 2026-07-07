@@ -6,11 +6,40 @@ import {
   useSpring,
   useMotionValueEvent
 } from 'motion/react';
-import { ArrowRight, Search, Sparkles, Heart, Palette, Compass, Trophy, Activity, Lock, Cloud, Mic, Volume2, LogIn, Github, Play, Check, CircleCheck as CheckCircle2, Quote as QuoteIcon, FileText, Zap, Maximize2, ShoppingBag, Shield, Layers, Plug, Cpu, ShieldCheck, Code2, Database } from 'lucide-react';
+import { ArrowRight, Search, Sparkles, Heart, Palette, Compass, Trophy, Activity, Lock, Cloud, Mic, Volume2, LogIn, Github, Play, Check, CircleCheck as CheckCircle2, Quote as QuoteIcon, FileText, Zap, Maximize2, ShoppingBag, Shield, Layers, Plug, Cpu, ShieldCheck, Code2, Database, Image as ImageIcon, FileSpreadsheet, FileJson, Music, Video, Table2, HardDrive, LayoutGrid, BookOpen, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import SparkleCursor from './SparkleCursor';
 import AchievementCard from './AchievementCard';
+
+interface LandingAchievementCardProps {
+  achievement: any;
+  rotationClass?: string;
+}
+
+function LandingAchievementCard({ achievement, rotationClass = "" }: LandingAchievementCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isInView, setIsInView] = useState(false);
+
+  // Unlocked if hovered OR in view (mid-scroll on mobile)
+  const unlocked = isHovered || isInView;
+
+  return (
+    <motion.div
+      onViewportEnter={() => setIsInView(true)}
+      onViewportLeave={() => setIsInView(false)}
+      viewport={{ amount: 0.55 }} // Trigger when 55% of card is in viewport (mid-scroll)
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={`transform transition-all duration-500 pointer-events-auto ${rotationClass} ${unlocked ? 'scale-[1.03] z-20' : 'scale-[0.98] opacity-80'}`}
+    >
+      <AchievementCard 
+        unlocked={unlocked}
+        achievement={achievement}
+      />
+    </motion.div>
+  );
+}
 
 const FANTASY_STARS = [
   { left: '12%', top: '15%', size: '16px', delay: 0, duration: 4, color: 'text-amber-200' },
@@ -24,6 +53,15 @@ const FANTASY_STARS = [
   { left: '80%', top: '82%', size: '24px', delay: 2.5, duration: 6, color: 'text-yellow-100' },
   { left: '28%', top: '88%', size: '14px', delay: 0.4, duration: 3.5, color: 'text-white' },
 ];
+
+const BACKDROP_STARS = Array.from({ length: 150 }).map((_, i) => ({
+  left: `${Math.random() * 100}%`,
+  top: `${Math.random() * 100}%`,
+  size: `${Math.random() * 2 + 0.5}px`,
+  delay: Math.random() * 5,
+  duration: 3 + Math.random() * 4,
+  opacity: Math.random() * 0.5 + 0.2
+}));
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -63,14 +101,14 @@ export default function LandingPage() {
   const omnibarY = useTransform(smoothProgress, [0, 0.15, 0.8], [0, -180, -180]);
   const omnibarScale = useTransform(smoothProgress, [0, 0.15], [1, 0.95]);
 
-  // Shift transform ranges on mobile to eliminate delay/blank screen feeling
-  const gridRange = isMobile ? [0.03, 0.08] : [0.08, 0.15];
-  const searchRange = isMobile ? [0.10, 0.16] : [0.18, 0.25];
-  const aiRange = isMobile ? [0.18, 0.24] : [0.27, 0.34];
-  const marketRange = isMobile ? [0.26, 0.32] : [0.36, 0.43];
-  const xpRange = isMobile ? [0.34, 0.40] : [0.45, 0.52];
-  const voiceRange = isMobile ? [0.42, 0.48] : [0.54, 0.61];
-  const serendipityRange = isMobile ? [0.50, 0.56] : [0.63, 0.70];
+  // Shift transform ranges to accommodate new flow - tighter ranges for faster fade-in
+  const gridRange = isMobile ? [0.02, 0.06] : [0.04, 0.09];
+  const searchRange = isMobile ? [0.08, 0.12] : [0.12, 0.18];
+  const aiRange = isMobile ? [0.14, 0.18] : [0.20, 0.26];
+  const captureRange = isMobile ? [0.20, 0.24] : [0.28, 0.34];
+  const gamifiedMarketRange = isMobile ? [0.26, 0.30] : [0.36, 0.44];
+  const serendipityRange = isMobile ? [0.34, 0.38] : [0.48, 0.56];
+  const infraRange = isMobile ? [0.42, 0.46] : [0.60, 0.70];
 
   // Content grid fades in
   const gridOpacity = useTransform(smoothProgress, gridRange, [0, 1]);
@@ -84,21 +122,22 @@ export default function LandingPage() {
   const aiOpacity = useTransform(smoothProgress, aiRange, [0, 1]);
   const aiY = useTransform(smoothProgress, aiRange, [30, 0]);
 
-  // Marketplace section
-  const marketOpacity = useTransform(smoothProgress, marketRange, [0, 1]);
-  const marketY = useTransform(smoothProgress, marketRange, [30, 0]);
+  // Capture section
+  const captureOpacity = useTransform(smoothProgress, captureRange, [0, 1]);
+  const captureY = useTransform(smoothProgress, captureRange, [30, 0]);
 
-  // XP section
-  const xpOpacity = useTransform(smoothProgress, xpRange, [0, 1]);
-  const xpY = useTransform(smoothProgress, xpRange, [30, 0]);
-
-  // Voice Note section fades in
-  const voiceOpacity = useTransform(smoothProgress, voiceRange, [0, 1]);
-  const voiceY = useTransform(smoothProgress, voiceRange, [30, 0]);
+  // Gamified Marketplace section (Combined market + xp)
+  const marketOpacity = useTransform(smoothProgress, gamifiedMarketRange, [0, 1]);
+  const marketY = useTransform(smoothProgress, gamifiedMarketRange, [30, 0]);
 
   // Serendipity section
   const serendipityOpacity = useTransform(smoothProgress, serendipityRange, [0, 1]);
+  const serendipityY = useTransform(smoothProgress, serendipityRange, [30, 0]);
   const serendipityScale = useTransform(smoothProgress, serendipityRange, [0.97, 1]);
+
+  // Infrastructure section
+  const infraOpacity = useTransform(smoothProgress, infraRange, [0, 1]);
+  const infraY = useTransform(smoothProgress, infraRange, [30, 0]);
 
   // Last scroll zoom transitions (Forge-style full screen)
   const lastScrollWidth = useTransform(smoothProgress, [0.85, 0.98], ['90%', '100%']);
@@ -123,11 +162,11 @@ export default function LandingPage() {
     if (latest < 0.15) {
       setSearchPlaceholder("Save a note, link, or search...");
     } else if (latest >= 0.15 && latest < 0.3) {
-      setSearchPlaceholder("Typing: 'brutalist glassmorphic app designs'...");
+      setSearchPlaceholder("Neural Search: 'brutalist glassmorphic app designs'...");
     } else if (latest >= 0.3 && latest < 0.48) {
-      setSearchPlaceholder("Categorizing: #design #ux #glassmorphism...");
+      setSearchPlaceholder("Processing: Image + PDF + Voice context...");
     } else if (latest >= 0.48 && latest < 0.68) {
-      setSearchPlaceholder("Recording: 'Review meeting thoughts' (0:12s)...");
+      setSearchPlaceholder("Aura Unlocked: +150 XP earned...");
     } else if (latest >= 0.68 && latest < 0.85) {
       setSearchPlaceholder("Recalling memory: 'First Spark' milestone...");
     } else {
@@ -281,128 +320,168 @@ export default function LandingPage() {
         </section>
 
         {/* Section 2: Masonry Grid Preview */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-8 md:px-16 lg:px-24 pointer-events-none py-24">
           <motion.div 
             style={{ opacity: gridOpacity, y: gridY }}
-            className="w-full max-w-5xl"
+            className="w-full max-w-5xl space-y-20"
           >
-            <div className="text-center mb-16">
-              <span className="text-[10px] font-mono text-primary font-bold uppercase tracking-[0.25em] bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">WORKSPACE PREVIEW</span>
-              <h2 className="text-3xl md:text-4xl font-display font-black text-foreground mt-4">Effortless Mind Mapping</h2>
-              <p className="text-xs md:text-sm text-foreground/75 mt-2 max-w-lg mx-auto leading-relaxed">Everything you capture is instantly analyzed, beautifully structured, and preserved inside your local sandboxed database.</p>
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest mx-auto">
+                <LayoutGrid className="w-3.5 h-3.5" /> Neural Workspace
+              </div>
+              <h2 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight tracking-tight">Effortless Mind Mapping</h2>
+              <p className="text-xs md:text-sm text-foreground/60 leading-relaxed font-sans max-w-xl mx-auto">
+                Everything you capture is instantly analyzed, beautifully structured, and preserved inside your local sandboxed database. A fluid vault for a fluid mind.
+              </p>
             </div>
             
-            <div className="columns-1 sm:columns-2 md:columns-3 gap-6 space-y-6 max-w-4xl mx-auto">
+            <div className="columns-1 sm:columns-2 md:columns-3 gap-8 space-y-8 max-w-4xl mx-auto">
               
               {/* 1. Quote Card Swatch */}
-              <div className="w-full bg-[#fdf2f2] text-neutral-800 rounded-3xl p-6 break-inside-avoid shadow-[0_12px_28px_rgba(0,0,0,0.04)] border border-rose-100 relative overflow-hidden group hover:scale-[1.01] transition-all duration-500">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[8px] uppercase tracking-widest text-rose-500 font-bold">Quote Swatch</span>
-                  <span className="text-[9px] font-mono text-rose-300">saved just now</span>
-                </div>
-                <QuoteIcon className="w-5 h-5 text-rose-200 mb-2" />
-                <blockquote className="font-serif italic text-sm text-neutral-800 leading-relaxed mb-3">
+              <div className="w-full bg-[#121212] text-white p-6 rounded-3xl border border-white/10 break-inside-avoid flex flex-col gap-4 text-center justify-center items-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-md transition-all duration-300 pointer-events-auto shadow-sm">
+                <span className="text-[8px] uppercase tracking-widest text-white/40 font-bold">Quote</span>
+                <QuoteIcon className="w-4 h-4 text-white/20" />
+                <blockquote className="font-serif italic text-xs text-white leading-relaxed">
                   "Simplicity is the ultimate sophistication. It resides in the empty space between things."
                 </blockquote>
-                <p className="text-[10px] font-sans text-neutral-400">— Leonardo da Vinci</p>
+                <div className="text-[9px] font-mono text-white/50">
+                  — Leonardo da Vinci
+                </div>
               </div>
 
               {/* 2. Color Palette Swatches */}
-              <div className="w-full bg-white dark:bg-[#18181b] rounded-3xl overflow-hidden break-inside-avoid shadow-[0_12px_28px_rgba(0,0,0,0.04)] border border-black/5 dark:border-white/5 group hover:scale-[1.01] transition-all duration-500">
+              <div className="w-full bg-card-bg border border-card-border rounded-3xl overflow-hidden break-inside-avoid shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col text-foreground relative group pointer-events-auto">
                 <div className="w-full h-24 flex">
                   {['#E8B4B8', '#FFD3B6', '#D4A5A5', '#6C5B7B'].map((hex, i) => (
-                    <div key={i} className="flex-1 h-full" style={{ backgroundColor: hex }} />
+                    <div key={i} className="flex-1 h-full hover:flex-[1.5] transition-all duration-300 relative cursor-pointer" style={{ backgroundColor: hex }}>
+                      <div className="absolute inset-0 bg-black/10 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity text-[8px] font-mono text-white font-bold select-none">
+                        Copy
+                      </div>
+                    </div>
                   ))}
                 </div>
-                <div className="p-4 flex flex-col gap-1.5">
+                <div className="p-4 flex flex-col gap-1.5 border-t border-card-border bg-card-bg">
                   <div className="flex items-center justify-between">
-                    <span className="text-[8px] font-mono font-bold text-neutral-500 uppercase tracking-wider">COLOR PALETTE</span>
-                    <span className="text-[8px] font-mono text-neutral-400">4 swatches</span>
+                    <span className="text-[9px] font-mono font-bold text-card-title tracking-tight uppercase truncate">
+                      #E8B4B8, #FFD3B6, #D4A5...
+                    </span>
+                    <span className="text-[8px] font-sans font-medium text-card-desc flex items-center gap-1 bg-card-footer px-2 py-0.5 rounded-md border border-card-border">
+                      <Palette className="w-2.5 h-2.5 text-card-desc" />
+                      Palette
+                    </span>
                   </div>
-                  <h3 className="font-display font-bold text-sm text-neutral-800 dark:text-neutral-200">Sunset Over Tokyo</h3>
-                  <p className="text-[10px] text-neutral-500 leading-relaxed">Warm sepia and dusty violets from the evening landscape.</p>
+                  <h3 className="font-display font-medium text-xs text-card-title line-clamp-1 leading-snug">
+                    Sunset Over Tokyo
+                  </h3>
+                  <p className="text-[10px] text-card-desc font-sans leading-relaxed line-clamp-2">
+                    Warm sepia and dusty violets from the evening landscape.
+                  </p>
                 </div>
               </div>
 
               {/* 3. Disruption-Free Reader Card */}
-              <div className="w-full bg-[#F6F0E5] text-[#2c2826] rounded-3xl p-5 break-inside-avoid shadow-[0_12px_28px_rgba(0,0,0,0.04)] border border-[#e2d6be] group hover:scale-[1.01] transition-all duration-500">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[8px] uppercase tracking-widest text-[#5f5a54] font-black flex items-center gap-1 bg-[#ecdcb9]/50 px-2 py-0.5 rounded-md">
-                    <FileText className="w-2.5 h-2.5 text-[#5f5a54]" /> Reader Mode
+              <div className="w-full bg-card-bg border border-card-border rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col text-foreground relative border-l-[3px] border-indigo-300/60 rounded-r-3xl group break-inside-avoid pointer-events-auto">
+                <div className="p-4 bg-card-footer border-b border-card-border flex items-center justify-between">
+                  <span className="text-[9px] font-mono font-semibold text-card-desc uppercase">Sovereign Mind</span>
+                  <span className="text-[8px] font-sans font-medium text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <BookOpen className="w-2.5 h-2.5" /> Reader Mode
                   </span>
-                  <span className="text-[9px] font-mono text-[#5f5a54]/65">3 min read</span>
                 </div>
-                <h3 className="font-serif font-bold text-sm text-[#2c2826] leading-snug mb-2">
-                  The Philosophy of Subtraction
-                </h3>
-                <p className="text-[11px] text-[#5f5a54] leading-relaxed line-clamp-3">
-                  In a world of constant notification noise, the act of removal becomes an act of mental rebellion. By purging secondary inputs, we allow primary intentions to grow...
-                </p>
+                <div className="p-4 flex flex-col gap-1.5 bg-card-bg">
+                  <h3 className="font-serif font-bold text-xs text-card-title leading-snug tracking-tight">
+                    The Philosophy of Subtraction
+                  </h3>
+                  <p className="text-[10px] text-card-desc leading-relaxed font-sans line-clamp-3">
+                    In a world of constant notification noise, the act of removal becomes an act of mental rebellion. By purging secondary inputs, we allow primary intentions to grow...
+                  </p>
+                  <div className="flex items-center justify-between pt-1 border-t border-card-border mt-1 text-[9px] font-mono">
+                    <span className="text-card-desc opacity-80">subtraction.io</span>
+                    <span className="text-indigo-400 font-semibold">3 min read</span>
+                  </div>
+                </div>
               </div>
 
               {/* 4. Beautiful Image Card */}
-              <div className="w-full bg-white dark:bg-[#18181b] rounded-3xl overflow-hidden break-inside-avoid shadow-[0_12px_28px_rgba(0,0,0,0.04)] border border-black/5 dark:border-white/5 p-3.5 group hover:scale-[1.01] transition-all duration-500">
-                <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900 relative">
+              <div className="w-full bg-card-bg border border-card-border rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col text-foreground relative group break-inside-avoid pointer-events-auto">
+                <div className="w-full overflow-hidden bg-card-footer relative">
                   <img 
                     src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80" 
                     alt="Ocean beach" 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full object-cover max-h-[180px] transition-transform duration-500 group-hover:scale-102"
+                    loading="lazy"
                   />
                 </div>
-                <div className="p-2.5 text-center">
-                  <span className="font-serif italic text-xs text-neutral-700 dark:text-neutral-300 block">
+                <div className="p-4 flex flex-col gap-1.5 bg-card-bg border-t border-card-border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-mono text-card-desc">
+                      Captured today
+                    </span>
+                    <span className="text-[8px] font-sans font-medium text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <Eye className="w-2.5 h-2.5" /> Image
+                    </span>
+                  </div>
+                  <h3 className="font-serif italic text-xs text-neutral-800 dark:text-neutral-200 line-clamp-1 leading-snug text-center">
                     "Infinite Horizons"
-                  </span>
-                  <span className="block text-[8px] font-mono text-neutral-400 mt-1 uppercase tracking-wider">
-                    Captured today
-                  </span>
+                  </h3>
                 </div>
               </div>
 
               {/* 5. Checklist Card */}
-              <div className="w-full bg-[#FEF3C7] text-[#451a03] rounded-3xl p-5 break-inside-avoid shadow-[0_12px_28px_rgba(0,0,0,0.04)] border border-[#fde68a] group hover:scale-[1.01] transition-all duration-500">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[8px] uppercase tracking-widest text-[#92400e] font-black">Interactive List</span>
-                  <span className="text-[9px] font-mono text-[#92400e]/60">2/3 done</span>
-                </div>
-                <h3 className="font-bold text-xs tracking-tight mb-2.5">Weekend Flow Rituals</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 rounded border border-[#b45309] bg-[#b45309] text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </div>
-                    <span className="text-[11px] line-through text-[#92400e]/50">Unplug screens for 4 hours</span>
+              <div className="w-full bg-card-bg border border-card-border rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col text-foreground relative group break-inside-avoid pointer-events-auto" style={{ backgroundColor: '#FFFDF5', color: '#2C2114' }}>
+                <div className="p-4 flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] uppercase tracking-widest font-bold opacity-45">List</span>
+                    <span className="text-[9px] font-mono opacity-45">2/3 done</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 rounded border border-[#b45309] bg-[#b45309] text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  <h3 className="font-semibold text-xs tracking-tight leading-snug">
+                    Weekend Flow Rituals
+                  </h3>
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-start gap-2 cursor-pointer">
+                      <button type="button" className="w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-all bg-[#B28A54] border-[#B28A54] text-white">
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      </button>
+                      <span className="text-[10px] tracking-tight transition-all leading-tight line-through opacity-40 font-normal">
+                        Unplug screens for 4 hours
+                      </span>
                     </div>
-                    <span className="text-[11px] line-through text-[#92400e]/50">Log color swatches of the sunset</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 rounded border border-[#b45309] bg-[#fef8e2]" />
-                    <span className="text-[11px] font-semibold text-[#451a03]">Sketch new design patterns</span>
+                    <div className="flex items-start gap-2 cursor-pointer">
+                      <button type="button" className="w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-all bg-[#B28A54] border-[#B28A54] text-white">
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      </button>
+                      <span className="text-[10px] tracking-tight transition-all leading-tight line-through opacity-40 font-normal">
+                        Log color swatches of the sunset
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2 cursor-pointer">
+                      <button type="button" className="w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-all border-neutral-300 bg-white" />
+                      <span className="text-[10px] tracking-tight transition-all leading-tight font-medium">
+                        Sketch new design patterns
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* 6. Voice Waveform Card */}
-              <div className="w-full bg-gradient-to-tr from-amber-500/10 via-orange-500/5 to-transparent bg-white dark:bg-[#18181b] rounded-3xl p-5 break-inside-avoid shadow-[0_12px_28px_rgba(0,0,0,0.04)] border border-amber-500/10 group hover:scale-[1.01] transition-all duration-500">
+              <div className="w-full bg-card-bg border border-card-border rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col text-foreground relative p-4 bg-gradient-to-tr from-amber-500/10 via-orange-500/10 to-transparent group break-inside-avoid pointer-events-auto">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[8px] uppercase tracking-widest text-amber-600 font-bold flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-md">
-                    Voice
+                  <span className="text-[9px] uppercase tracking-widest text-amber-600 font-bold flex items-center gap-1 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-md">
+                    <Volume2 className="w-2.5 h-2.5 text-amber-500" /> Voice Note
                   </span>
-                  <span className="text-[9px] font-mono text-neutral-400">0:14 duration</span>
+                  <span className="text-[9px] font-mono text-neutral-400">0:14</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white shrink-0 shadow-sm">
-                    <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-bold text-neutral-800 dark:text-neutral-200 truncate">Brainstorming UI cues</h4>
-                    <div className="h-4 flex items-center gap-0.5 mt-1">
+                <div className="flex flex-col gap-2">
+                  <h3 className="font-display font-semibold text-xs text-foreground line-clamp-1 leading-snug tracking-tight">
+                    Brainstorming UI cues
+                  </h3>
+                  <div className="flex items-center gap-2.5 bg-black/5 rounded-2xl p-2 mt-1">
+                    <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-white shrink-0 shadow-sm cursor-pointer hover:scale-105 transition">
+                      <Play className="w-3 h-3 fill-white ml-0.5" />
+                    </div>
+                    <div className="flex-1 flex items-center gap-0.5 h-4">
                       {[15, 30, 10, 40, 50, 25, 15, 30, 45, 10, 35, 20, 30, 25, 15].map((h, i) => (
-                        <div key={i} className="w-[2px] bg-amber-500 rounded-full" style={{ height: `${h}%` }} />
+                        <div key={i} className="w-1 bg-amber-500 rounded-full" style={{ height: `${h}%` }} />
                       ))}
                     </div>
                   </div>
@@ -411,454 +490,373 @@ export default function LandingPage() {
 
             </div>
           </motion.div>
-        </section>        {/* Neural Search Engine Section */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
-          <motion.div 
-            style={{ opacity: searchOpacity, y: searchY }}
-            className="w-full max-w-5xl grid md:grid-cols-2 gap-16 items-center"
-          >
-            <div className="order-2 md:order-1 space-y-6">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-550 border border-indigo-500/20">
-                <Search className="w-5 h-5" />
-              </div>
-              <h2 className="text-3xl md:text-4xl font-display font-black text-foreground">Neural Search Engine</h2>
-              <p className="text-sm text-foreground/80 leading-relaxed font-sans font-medium">
-                Eliminate the latency of sequential scans. Our engine utilizes a custom Inverted Index paired with B-Tree temporal sorting to deliver instant recall across your entire memory vault. 
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
-                  <Zap className="w-4 h-4 text-indigo-500" /> Sub-millisecond Cardinality Estimation
-                </div>
-                <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
-                  <Code2 className="w-4 h-4 text-indigo-500" /> Heuristic Rule-Based Optimization (RBO)
-                </div>
-              </div>
-            </div>
-            <div className="order-1 md:order-2 relative group">
-              <div className="absolute -inset-4 bg-indigo-500/10 rounded-[2.5rem] blur-2xl group-hover:bg-indigo-500/20 transition-all duration-700"></div>
-              <div className="relative aspect-video rounded-[2rem] border border-black/[0.03] bg-white/40 backdrop-blur-md flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.05),transparent)]"></div>
-                <div className="font-mono text-[10px] text-indigo-600/40 p-8 leading-tight">
-                  {`SELECT * FROM mind_items \nWHERE terms @@ to_tsquery('neural')\nORDER BY rank DESC, created_at DESC;\n\n[Optimizer] Plan: B-Tree Scan\n[Status] 0.12ms execution time`}
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </section>
-
-        {/* LiteRT & WebGPU Section */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
+        {/* Section 4: Universal Multi-Modal Capture */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-8 md:px-16 lg:px-24 pointer-events-none py-24">
           <motion.div 
-            style={{ opacity: aiOpacity, y: aiY }}
-            className="w-full max-w-5xl grid md:grid-cols-2 gap-16 items-center"
+            style={{ opacity: captureOpacity, y: captureY }}
+            className="w-full max-w-5xl flex flex-col md:flex-row items-center gap-16"
           >
-            <div className="relative group">
-              <div className="absolute -inset-8 bg-emerald-500/15 rounded-[3rem] blur-3xl group-hover:bg-emerald-500/25 transition-all duration-700 animate-pulse"></div>
-              <div className="relative aspect-video rounded-[2.5rem] border border-black/[0.05] bg-white/40 backdrop-blur-xl flex flex-col items-center justify-center overflow-hidden shadow-2xl">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.1),transparent)]"></div>
-                
-                {/* Neural Network Visual */}
-                <div className="relative w-32 h-32 flex items-center justify-center">
-                  <div className="absolute inset-0 border-2 border-emerald-500/20 rounded-full animate-[ping_3s_linear_infinite]"></div>
-                  <div className="absolute inset-4 border border-emerald-500/30 rounded-full animate-[spin_10s_linear_infinite]"></div>
-                  <div className="relative w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.4)]">
-                    <Cpu className="w-8 h-8 text-white" />
-                  </div>
-                  {/* Floating Nodes */}
-                  {[...Array(6)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ 
-                        y: [0, -10, 0],
-                        opacity: [0.3, 0.7, 0.3]
-                      }}
-                      transition={{ 
-                        duration: 3 + i, 
-                        repeat: Infinity,
-                        delay: i * 0.5
-                      }}
-                      className="absolute w-2 h-2 bg-emerald-400 rounded-full"
-                      style={{ 
-                        top: `${20 + Math.random() * 60}%`, 
-                        left: `${20 + Math.random() * 60}%` 
-                      }}
-                    />
-                  ))}
+            <div className="flex-1 space-y-8">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 text-[10px] font-black uppercase tracking-widest">
+                  <Layers className="w-3.5 h-3.5" /> Universal Ingestion
                 </div>
+                <h2 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight tracking-tight">Universal Capture</h2>
+                <p className="text-xs md:text-sm text-foreground/60 leading-relaxed font-sans">
+                  Your brain doesn't just work in text. Neither does Pensieve. Effortlessly ingest voice notes, high-res images, PDF whitepapers, and complex spreadsheets. Our system normalizes every format into a searchable, neural-ready memory card.
+                </p>
+              </div>
 
-                <div className="mt-6 flex flex-col items-center gap-2">
-                  <div className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                    TENSOR_CORE_ACTIVE: 1.5B PARAMS
-                  </div>
-                  <div className="text-[9px] font-mono text-emerald-600/40 uppercase tracking-[0.2em]">
-                    ON-DEVICE WEBGPU INFERENCE
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-6">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 border border-emerald-500/20">
-                <Cpu className="w-5 h-5" />
-              </div>
-              <h2 className="text-3xl md:text-4xl font-display font-black text-foreground flex items-center gap-3">
-                LiteRT Intelligence
-                <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">
-                  OFFLINE
-                </span>
-              </h2>
-              <p className="text-sm text-foreground/80 leading-relaxed font-sans font-medium">
-                Experience neural analysis without the server. We compile and run a custom language model directly in your browser using Google LiteRT and WebGPU acceleration. 100% private semantic analysis—your context never touches the cloud.
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
-                  <ShieldCheck className="w-4 h-4 text-emerald-500" /> End-to-End Privacy First
-                </div>
-                <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
-                  <Zap className="w-4 h-4 text-emerald-500" /> Hardware Accelerated LLM Inference
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </section>
-
-        {/* Effect Marketplace Section */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
-          <motion.div 
-            style={{ opacity: marketOpacity, y: marketY }}
-            className="w-full max-w-5xl grid md:grid-cols-2 gap-16 items-center"
-          >
-            <div className="order-2 md:order-1 space-y-6">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-555 border border-amber-500/20">
-                <ShoppingBag className="w-5 h-5" />
-              </div>
-              <h2 className="text-3xl md:text-4xl font-display font-black text-foreground">Effect Marketplace</h2>
-              <p className="text-sm text-foreground/80 leading-relaxed font-sans font-medium">
-                Your workspace is a canvas. Exchange your earned XP for custom visual modifiers. From dynamic GLSL shaders to vintage CRT monitor filters, personalize every pixel of your digital sanctuary with high-fidelity effects.
-              </p>
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl border border-black/[0.03] bg-white/60 shadow-sm flex flex-col gap-1 items-center justify-center group/item hover:border-amber-500/30 transition-all cursor-pointer">
-                  <span className="text-[10px] font-black text-amber-600">LIQUID GLASS</span>
-                  <div className="w-full h-1 bg-amber-500/10 rounded-full overflow-hidden">
-                    <div className="w-full h-full bg-amber-500/40 translate-x-[-100%] group-hover/item:translate-x-0 transition-transform duration-500"></div>
-                  </div>
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/50 border border-black/[0.03] text-[10px] font-bold text-foreground/70">
+                  <Mic className="w-4 h-4 text-amber-500" /> Lossless Audio
                 </div>
-                <div className="p-4 rounded-2xl border border-black/[0.03] bg-white/60 shadow-sm flex flex-col gap-1 items-center justify-center group/item hover:border-amber-500/30 transition-all cursor-pointer">
-                  <span className="text-[10px] font-black text-amber-600">CRT PHOSPHOR</span>
-                  <div className="w-full h-1 bg-amber-500/10 rounded-full overflow-hidden">
-                    <div className="w-full h-full bg-amber-500/40 translate-x-[-100%] group-hover/item:translate-x-0 transition-transform duration-500"></div>
-                  </div>
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/50 border border-black/[0.03] text-[10px] font-bold text-foreground/70">
+                  <ImageIcon className="w-4 h-4 text-blue-500" /> Vision Assets
                 </div>
-              </div>
-            </div>
-            <div className="order-1 md:order-2 relative group">
-              <div className="absolute -inset-8 bg-amber-500/15 rounded-[3rem] blur-3xl group-hover:bg-amber-500/25 transition-all duration-700 animate-pulse"></div>
-              <div className="relative aspect-square max-w-[340px] mx-auto rounded-[2.5rem] border border-black/[0.05] bg-white/40 backdrop-blur-xl flex items-center justify-center overflow-hidden shadow-2xl group/market">
-                {/* Visual Effect Stack Preview */}
-                <div className="relative w-56 h-72 space-y-4">
-                  {/* Layer 3: Base */}
-                  <div className="absolute inset-0 bg-white/20 rounded-2xl border border-white/40 transform translate-x-4 translate-y-4 scale-95 opacity-50 blur-[1px]"></div>
-                  {/* Layer 2: Content */}
-                  <div className="absolute inset-0 bg-white/30 rounded-2xl border border-white/40 transform translate-x-2 translate-y-2 scale-[0.97] opacity-80 flex flex-col p-4 gap-3">
-                    <div className="h-6 w-1/2 bg-amber-500/20 rounded"></div>
-                    <div className="space-y-2">
-                      <div className="h-2 w-full bg-black/5 rounded"></div>
-                      <div className="h-2 w-full bg-black/5 rounded"></div>
-                    </div>
-                  </div>
-                  {/* Layer 1: Active Filter (Holographic/Glass) */}
-                  <div className="relative h-full w-full bg-white/40 rounded-2xl border border-white/60 shadow-xl flex flex-col overflow-hidden group-hover/market:scale-[1.02] transition-transform duration-500">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-amber-500/5"></div>
-                    {/* Scanline Overlay */}
-                    <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'repeating-linear-gradient(0deg, #000, #000 1px, transparent 1px, transparent 2px)' }}></div>
-                    {/* Dynamic "Liquid" Reflection */}
-                    <motion.div 
-                      animate={{ x: [-100, 200] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                      className="absolute top-0 bottom-0 w-20 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-[-20deg]"
-                    />
-                    <div className="p-4 space-y-3 relative z-10">
-                      <div className="h-8 w-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                        <Palette className="w-4 h-4 text-amber-600" />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="h-3 w-3/4 bg-amber-500/10 rounded"></div>
-                        <div className="h-3 w-full bg-amber-500/10 rounded"></div>
-                        <div className="h-3 w-2/3 bg-amber-500/10 rounded"></div>
-                      </div>
-                    </div>
-                    <div className="mt-auto p-4 border-t border-amber-500/10 bg-amber-500/5">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] font-black text-amber-600 uppercase">CRT_EMULATION_01</span>
-                        <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-                      </div>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/50 border border-black/[0.03] text-[10px] font-bold text-foreground/70">
+                  <FileText className="w-4 h-4 text-emerald-500" /> PDF & Docs
                 </div>
-
-                {/* Floating Price Tags */}
-                <motion.div 
-                  animate={{ y: [0, -10, 0] }} 
-                  transition={{ duration: 4, repeat: Infinity }}
-                  className="absolute top-8 -right-4 bg-amber-500 text-white text-[10px] font-black px-4 py-2 rounded-full shadow-lg border border-amber-400 z-20"
-                >
-                  600 XP
-                </motion.div>
-                <motion.div 
-                  animate={{ y: [0, 10, 0] }} 
-                  transition={{ duration: 5, repeat: Infinity, delay: 0.5 }}
-                  className="absolute bottom-8 -left-4 bg-foreground text-background text-[10px] font-black px-4 py-2 rounded-full shadow-lg border border-white/10 z-20"
-                >
-                  COLLECTIBLE
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
-        </section>
-
-        {/* XP Economy Section */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
-          <motion.div 
-            style={{ opacity: xpOpacity, y: xpY }}
-            className="w-full max-w-5xl grid md:grid-cols-2 gap-16 items-center"
-          >
-            <div className="relative group">
-              <div className="absolute -inset-8 bg-purple-500/15 rounded-[3rem] blur-3xl group-hover:bg-purple-500/25 transition-all duration-700 animate-pulse"></div>
-              <div className="relative aspect-video rounded-[2.5rem] border border-black/[0.05] bg-white/40 backdrop-blur-xl flex flex-col items-center justify-center p-8 space-y-6 shadow-2xl">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/40">
-                    <Trophy className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-3xl font-black text-foreground">LVL 24</div>
-                    <div className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Cognitive Architect</div>
-                  </div>
-                </div>
-                <div className="w-full space-y-2">
-                  <div className="flex justify-between text-[10px] font-bold text-foreground/40 uppercase">
-                    <span>XP Progress</span>
-                    <span>14,200 / 15,000</span>
-                  </div>
-                  <div className="w-full h-3 bg-purple-100 dark:bg-purple-900/30 rounded-full overflow-hidden border border-purple-200 dark:border-purple-800/50">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      whileInView={{ width: '70%' }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      className="h-full bg-gradient-to-r from-purple-500 to-indigo-500"
-                    />
-                  </div>
-                </div>
-                <div className="text-[10px] font-mono text-purple-600/60 uppercase tracking-widest animate-pulse">+150 XP EARNED FROM LAST CAPTURE</div>
-              </div>
-            </div>
-            <div className="space-y-6">
-              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-555 border border-purple-500/20">
-                <Activity className="w-5 h-5" />
-              </div>
-              <h2 className="text-3xl md:text-4xl font-display font-black text-foreground">XP Economy & Gamification</h2>
-              <p className="text-sm text-foreground/80 leading-relaxed font-sans font-medium">
-                Cognition is rewarded. Every item captured, link saved, and insight discovered contributes to your experience points. Build long-term memory habits while unlocking functional milestones and social badges.
-              </p>
-              <div className="flex gap-4">
-                <div className="flex flex-col">
-                  <span className="text-lg font-black text-foreground">14.2k</span>
-                  <span className="text-[10px] font-bold text-foreground/40 uppercase">Total XP</span>
-                </div>
-                <div className="w-px h-10 bg-black/5"></div>
-                <div className="flex flex-col">
-                  <span className="text-lg font-black text-foreground">12</span>
-                  <span className="text-[10px] font-bold text-foreground/40 uppercase">Achievements</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </section>
-
-        {/* Section 4: Architecture Grid */}
-        <section className="relative py-24 px-6 flex flex-col items-center">
-          <div className="w-full max-w-5xl space-y-16">
-            <div className="text-center space-y-4">
-              <span className="text-[10px] font-mono text-primary font-bold uppercase tracking-[0.25em] bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">TECHNICAL ARCHITECTURE</span>
-              <h2 className="text-3xl md:text-5xl font-display font-black text-foreground tracking-tight">Enterprise Infrastructure. <br/><span className="text-primary italic">Consumer Soul.</span></h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Feature 1 */}
-              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-550 border border-indigo-500/20">
-                  <Maximize2 className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Native Inspector Panel</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">A beautiful, Notion-style rich editor. Fully responsive: full-screen modal on mobile with native gestures, and a sleek focused card on desktop optimized for text and images.</p>
-              </div>
-
-              {/* Feature 2 */}
-              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-555 border border-teal-500/20">
-                  <Shield className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Firebase Auth & Security</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Enterprise-grade authentication with Google Identity Platform. Complete with admin dashboard controls and strictly protected application environments.</p>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-555 border border-rose-500/20">
-                  <Plug className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold font-display tracking-tight text-foreground flex items-center gap-2">
-                  Cloud Connections
-                  <span className="text-[10px] bg-rose-500/10 border border-rose-500/20 text-rose-500 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">BETA</span>
-                </h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Connect Google Photos, Drive, or OneDrive. Safely browse and import external photos, files, and documents directly into your memory vault.</p>
-              </div>
-
-              {/* Feature 4 */}
-              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-550 border border-indigo-500/20">
-                  <Database className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Appwrite Database Sync</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Powered by Appwrite for real-time document storage. Features scalable infrastructure that securely syncs your workspace across all devices instantly.</p>
-              </div>
-
-              {/* Feature 5 */}
-              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-555 border border-emerald-500/20">
-                  <Compass className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Offline-First Engine</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Never lose access. Our core storage utilizes a robust local-first architecture that functions perfectly without an internet connection, syncing only when you are back online.</p>
-              </div>
-
-              {/* Feature 6 */}
-              <div className="p-8 rounded-[2rem] border border-black/[0.03] shadow-sm bg-white/60 backdrop-blur-md space-y-4 hover:shadow-lg transition-all duration-300">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-555 border border-amber-500/20">
-                  <Zap className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold font-display tracking-tight text-foreground">Keyboard Driven</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed font-sans">Power user efficiency. Navigate, search, and capture using a comprehensive set of keyboard shortcuts designed for frictionless thought logging.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 4: Voice Notes & Audio Capture */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
-          <motion.div 
-            style={{ opacity: voiceOpacity, y: voiceY }}
-            className="w-full max-w-5xl flex flex-col md:flex-row items-center gap-12"
-          >
-            <div className="flex-1 space-y-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-650">
-                <Mic className="w-6 h-6 animate-pulse" />
-              </div>
-              <h2 className="text-3xl md:text-4xl font-display font-black text-foreground">Instant Voice Capture</h2>
-              <p className="text-sm text-foreground/80 leading-relaxed font-sans font-medium">
-                Never lose a fleeting thought. Tap once to initiate high-fidelity audio sampling. Our system uses zero-latency HTML5 MediaRecorder and custom WebAudio nodes to process and compress your voice notes locally before background indexing.
-              </p>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
-                  <Volume2 className="w-4 h-4 text-amber-500" /> Real-time Spectral Analysis
-                </div>
-                <div className="flex items-center gap-2 text-xs font-mono text-foreground/75">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Lossless Local Compression
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/50 border border-black/[0.03] text-[10px] font-bold text-foreground/70">
+                  <Table2 className="w-4 h-4 text-purple-500" /> Data Tables
                 </div>
               </div>
             </div>
             
-            <div className="flex-1 w-full max-w-md bg-white/60 backdrop-blur-xl border border-black/5 rounded-3xl p-6 shadow-2xl space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                  <span className="text-xs font-mono text-red-500 font-bold uppercase">Recording Voice Note</span>
-                </div>
-                <span className="text-xs font-mono text-foreground/70">0:12 / 1:00</span>
+            <div className="flex-1 w-full max-w-md relative group">
+              <div className="absolute -inset-8 bg-amber-500/10 rounded-[3rem] blur-3xl group-hover:bg-amber-500/20 transition-all duration-700"></div>
+              <div className="relative aspect-square rounded-[2.5rem] border border-black/[0.05] bg-white/40 backdrop-blur-xl flex items-center justify-center overflow-hidden shadow-2xl p-8">
+                 {/* Floating File Icons Visual */}
+                 <div className="relative w-full h-full flex items-center justify-center">
+                    <motion.div 
+                      animate={{ 
+                        y: [0, -20, 0],
+                        rotate: [0, 5, 0]
+                      }}
+                      transition={{ duration: 6, repeat: Infinity }}
+                      className="absolute top-0 left-0 p-4 bg-white rounded-2xl shadow-lg border border-black/5"
+                    >
+                      <ImageIcon className="w-8 h-8 text-blue-500" />
+                    </motion.div>
+                    <motion.div 
+                      animate={{ 
+                        y: [0, 25, 0],
+                        x: [0, -15, 0],
+                        rotate: [0, -15, 0]
+                      }}
+                      transition={{ duration: 7, repeat: Infinity, delay: 0.5 }}
+                      className="absolute top-4 right-0 p-4 bg-white rounded-2xl shadow-lg border border-black/5"
+                    >
+                      <Table2 className="w-8 h-8 text-purple-500" />
+                    </motion.div>
+                    <motion.div 
+                      animate={{ 
+                        y: [0, 20, 0],
+                        rotate: [0, -10, 0]
+                      }}
+                      transition={{ duration: 5, repeat: Infinity, delay: 1 }}
+                      className="absolute bottom-4 right-4 p-4 bg-white rounded-2xl shadow-lg border border-black/5"
+                    >
+                      <FileText className="w-8 h-8 text-emerald-500" />
+                    </motion.div>
+                    <motion.div 
+                      animate={{ 
+                        y: [0, -25, 0],
+                        x: [0, 20, 0],
+                        rotate: [0, 10, 0]
+                      }}
+                      transition={{ duration: 8, repeat: Infinity, delay: 1.5 }}
+                      className="absolute bottom-8 left-4 p-4 bg-white rounded-2xl shadow-lg border border-black/5"
+                    >
+                      <Mic className="w-8 h-8 text-amber-500" />
+                    </motion.div>
+                    <motion.div 
+                      animate={{ 
+                        scale: [1, 1.1, 1],
+                        opacity: [0.7, 1, 0.7]
+                      }}
+                      transition={{ duration: 4, repeat: Infinity }}
+                      className="w-24 h-24 bg-amber-500 rounded-3xl flex items-center justify-center shadow-xl shadow-amber-500/30"
+                    >
+                      <Zap className="w-10 h-10 text-white" />
+                    </motion.div>
+                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold text-amber-600/50 uppercase tracking-[0.3em]">
+                      Ingesting Context...
+                    </div>
+                  </div>
               </div>
-              
-              <div className="h-16 flex items-center justify-between gap-1.5 px-2">
-                {[4, 8, 12, 16, 24, 16, 12, 8, 14, 20, 28, 16, 12, 6, 10, 16, 22, 14, 8, 4].map((h, i) => (
-                  <motion.div 
-                    key={i} 
-                    className="flex-1 bg-amber-500/70 rounded-full" 
-                    style={{ height: `${h * 1.5}px` }} 
-                    animate={{ scaleY: [1, 1.3, 1] }}
-                    transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.05 }}
-                  />
-                ))}
-              </div>
-              
-              <div className="h-[1px] bg-black/10 dark:bg-white/10 w-full" />
-              <div className="text-xs text-foreground/75 font-sans italic">"Reviewing user interface transitions for the holographic milestone decks..."</div>
             </div>
           </motion.div>
         </section>
 
-        {/* Section 5: Serendipity & Intelligence (High Fidelity Achievement Cards) */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pointer-events-none py-24">
+        {/* Section 5: Gamified Intelligence & XP Economy */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-8 md:px-16 lg:px-24 pointer-events-none py-24">
           <motion.div 
-            style={{ opacity: serendipityOpacity, scale: serendipityScale }}
-            className="w-full max-w-4xl text-center space-y-12"
+            style={{ opacity: marketOpacity, y: marketY }}
+            className="w-full max-w-6xl grid lg:grid-cols-2 gap-12 lg:gap-20 items-center"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr from-amber-300 to-orange-400 shadow-xl mb-4">
-              <Compass className="w-10 h-10 text-white" />
+            <div className="order-2 lg:order-1 relative group">
+              <div className="absolute -inset-10 bg-purple-500/10 rounded-[3rem] blur-3xl group-hover:bg-purple-500/20 transition-all duration-700"></div>
+              
+              <div className="relative w-full max-w-md mx-auto aspect-[3/4] bg-white/40 backdrop-blur-2xl border border-white/60 rounded-[3.5rem] shadow-2xl p-8 flex flex-col items-center overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-amber-500/5" />
+                
+                {/* Level Orb */}
+                <div className="relative mt-4">
+                  <div className="absolute inset-0 bg-primary/20 blur-2xl animate-pulse rounded-full" />
+                  <div className="relative w-32 h-32 rounded-full border-4 border-white/80 shadow-inner flex flex-col items-center justify-center bg-gradient-to-tr from-purple-600 via-indigo-500 to-indigo-400 text-white">
+                    <Trophy className="w-8 h-8 mb-1" />
+                    <span className="text-2xl font-black">24</span>
+                  </div>
+                  {/* Decorative orbital rings */}
+                  <div className="absolute -inset-4 border border-indigo-500/20 rounded-full animate-[spin_10s_linear_infinite]" />
+                  <div className="absolute -inset-8 border border-purple-500/10 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
+                </div>
+
+                <div className="text-center mt-6 z-10">
+                  <h3 className="text-2xl font-black text-foreground">Cognitive Master</h3>
+                  <p className="text-[10px] font-mono font-bold text-indigo-500/60 tracking-[0.3em] uppercase">Pensieve Tier III</p>
+                </div>
+
+                {/* Aura Progress - Redesigned */}
+                <div className="w-full mt-10 space-y-4 z-10">
+                  <div className="flex justify-between items-end">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">Aura Progress</span>
+                      <div className="text-xs font-bold text-foreground">14,200 <span className="text-foreground/30">/ 15,000</span></div>
+                    </div>
+                    <div className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">94%</div>
+                  </div>
+                  <div className="relative h-6 bg-white/50 rounded-2xl border border-black/[0.03] p-1 overflow-hidden shadow-inner">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      whileInView={{ width: '94%' }}
+                      transition={{ duration: 2, ease: "circOut" }}
+                      className="relative h-full bg-gradient-to-r from-indigo-600 via-purple-500 to-amber-400 rounded-xl overflow-hidden"
+                    >
+                      <motion.div 
+                        animate={{ x: ['-100%', '100%'] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
+                      />
+                    </motion.div>
+                  </div>
+                </div>
+
+                {/* Effect Marketplace Grid - Redesigned for more impact */}
+                <div className="w-full mt-10 grid grid-cols-3 gap-3 z-10">
+                  <div className="group/effect p-3 rounded-2xl bg-white/80 border border-amber-500/10 flex flex-col items-center gap-1.5 hover:border-amber-500/40 hover:shadow-lg transition-all duration-300">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <span className="text-[8px] font-black uppercase text-amber-600">Liquid</span>
+                  </div>
+                  <div className="group/effect p-3 rounded-2xl bg-white/80 border border-indigo-500/10 flex flex-col items-center gap-1.5 hover:border-indigo-500/40 hover:shadow-lg transition-all duration-300">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600">
+                      <Palette className="w-4 h-4" />
+                    </div>
+                    <span className="text-[8px] font-black uppercase text-indigo-600">Aura</span>
+                  </div>
+                  <div className="group/effect p-3 rounded-2xl bg-black/[0.02] border border-black/5 flex flex-col items-center gap-1.5 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-black/[0.01] backdrop-blur-[1px]" />
+                    <div className="w-8 h-8 rounded-xl bg-black/5 flex items-center justify-center text-foreground/30">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                    <span className="text-[8px] font-black uppercase text-foreground/20">Holo</span>
+                  </div>
+                  <div className="group/effect p-3 rounded-2xl bg-white/80 border border-rose-500/10 flex flex-col items-center gap-1.5 hover:border-rose-500/40 hover:shadow-lg transition-all duration-300">
+                    <div className="w-8 h-8 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-600">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <span className="text-[8px] font-black uppercase text-rose-600">Flash</span>
+                  </div>
+                  <div className="group/effect p-3 rounded-2xl bg-white/80 border border-emerald-500/10 flex flex-col items-center gap-1.5 hover:border-emerald-500/40 hover:shadow-lg transition-all duration-300">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                      <Compass className="w-4 h-4" />
+                    </div>
+                    <span className="text-[8px] font-black uppercase text-emerald-600">Echo</span>
+                  </div>
+                   <div className="group/effect p-3 rounded-2xl bg-black/[0.02] border border-black/5 flex flex-col items-center gap-1.5 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-black/[0.01] backdrop-blur-[1px]" />
+                    <div className="w-8 h-8 rounded-xl bg-black/5 flex items-center justify-center text-foreground/30">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                    <span className="text-[8px] font-black uppercase text-foreground/20">Void</span>
+                  </div>
+                </div>
+
+                <div className="mt-auto pb-2 text-[8px] font-mono font-bold text-indigo-500/40 uppercase tracking-widest animate-pulse">
+                  System Synchronized: +120 XP today
+                </div>
+              </div>
             </div>
-            <h2 className="text-4xl md:text-5xl font-display font-black text-foreground leading-tight">
-              Rediscover your <br/> <span className="italic text-primary drop-shadow-[0_0_15px_rgba(232,180,184,0.35)]">Wandering Mind.</span>
-            </h2>
-            <p className="text-xs md:text-sm text-foreground/85 max-w-xl mx-auto font-sans leading-relaxed">
-              Earn actual collectible physical-style cards as you cultivate your vault. Tilt and pan cards to reveal rare holographic elements, golden borders, and mystical lore.
-            </p>
+
+            <div className="space-y-10 lg:pl-10">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 text-[10px] font-black uppercase tracking-widest">
+                  <Activity className="w-3.5 h-3.5" /> Intelligence Loop
+                </div>
+                <h2 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight tracking-tight">Intelligence <br/><span className="text-indigo-600 italic">Redefined.</span></h2>
+                <p className="text-xs md:text-sm text-foreground/60 leading-relaxed font-sans max-w-md">
+                  Cognition is your currency. Every thought captured, every pattern recognized, and every milestone reached fuels your neural economy.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-1 group">
+                  <div className="text-2xl font-black text-foreground group-hover:text-indigo-600 transition-colors">14.2k</div>
+                  <div className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest group-hover:text-foreground/60 transition-colors">Total Aura XP</div>
+                </div>
+                <div className="space-y-1 group">
+                  <div className="text-2xl font-black text-foreground group-hover:text-purple-600 transition-colors">12</div>
+                  <div className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest group-hover:text-foreground/60 transition-colors">Auras Unlocked</div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {[
+                  { label: "Dynamic GLSL Shader Auras", color: "text-indigo-500" },
+                  { label: "Neural Level Scaling System", color: "text-purple-500" },
+                  { label: "Effect Marketplace Rewards", color: "text-amber-500" }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 text-xs font-bold text-foreground/80 bg-white/50 border border-black/[0.03] p-2.5 rounded-xl w-fit">
+                    <CheckCircle2 className={`w-4 h-4 ${item.color}`} /> {item.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Section 6: Serendipity & Intelligence (High Fidelity Achievement Cards) */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-8 md:px-16 lg:px-24 pointer-events-none py-24">
+          <motion.div 
+            style={{ opacity: serendipityOpacity, y: serendipityY }}
+            className="w-full max-w-5xl space-y-16"
+          >
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 text-[10px] font-black uppercase tracking-widest mx-auto">
+                <Sparkles className="w-3.5 h-3.5" /> High Fidelity
+              </div>
+              <h2 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight tracking-tight">Magical Moments. <br/><span className="text-rose-600 italic">Visual Serendipity.</span></h2>
+              <p className="text-xs md:text-sm text-foreground/60 leading-relaxed font-sans max-w-xl mx-auto">
+                Every memory card is a work of art. Our generative UI engine crafts unique visual achievements for your milestones, turning data into digital keepsakes.
+              </p>
+            </div>
 
             <div className="flex flex-wrap justify-center gap-8 mt-12 scale-90 md:scale-100">
               
               {/* Achievement 1: First Spark */}
-              <div className="transform -rotate-6 translate-y-4 hover:scale-105 hover:rotate-0 transition-all duration-500 pointer-events-auto">
-                <AchievementCard 
-                  unlocked={true}
-                  achievement={{
-                    id: 'first_spark',
-                    title: 'First Spark',
-                    description: 'Save your very first card to kick off your database.',
-                    rarity: 'Common',
-                    icon: Sparkles,
-                    xp: 10,
-                    unlockedAt: new Date().toISOString()
-                  }}
-                />
-              </div>
+              <LandingAchievementCard 
+                rotationClass="-rotate-6 translate-y-4"
+                achievement={{
+                  id: 'first_spark',
+                  title: 'First Spark',
+                  description: 'Save your very first card to kick off your database.',
+                  rarity: 'Common',
+                  icon: Sparkles,
+                  xp: 10,
+                  unlockedAt: new Date().toISOString()
+                }}
+              />
 
               {/* Achievement 2: Wandering Mind */}
-              <div className="transform rotate-1 -translate-y-2 z-10 hover:scale-105 hover:rotate-0 transition-all duration-500 pointer-events-auto">
-                <AchievementCard 
-                  unlocked={true}
-                  achievement={{
-                    id: 'wandering_mind',
-                    title: 'Wandering Mind',
-                    description: 'Collect 50 distinct thoughts inside your neural context.',
-                    rarity: 'Rare',
-                    icon: Compass,
-                    xp: 50,
-                    unlockedAt: new Date().toISOString()
-                  }}
-                />
-              </div>
+              <LandingAchievementCard 
+                rotationClass="rotate-1 -translate-y-2 z-10"
+                achievement={{
+                  id: 'wandering_mind',
+                  title: 'Wandering Mind',
+                  description: 'Collect 50 distinct thoughts inside your neural context.',
+                  rarity: 'Rare',
+                  icon: Compass,
+                  xp: 50,
+                  unlockedAt: new Date().toISOString()
+                }}
+              />
 
               {/* Achievement 3: Colorful */}
-              <div className="transform rotate-6 translate-y-6 hover:scale-105 hover:rotate-0 transition-all duration-500 pointer-events-auto">
-                <AchievementCard 
-                  unlocked={true}
-                  achievement={{
-                    id: 'colorful_thinker',
-                    title: 'Colorful',
-                    description: 'Log five distinct aesthetic color palettes.',
-                    rarity: 'Epic',
-                    icon: Palette,
-                    xp: 40,
-                    unlockedAt: new Date().toISOString()
-                  }}
-                />
+              <LandingAchievementCard 
+                rotationClass="rotate-6 translate-y-6"
+                achievement={{
+                  id: 'colorful_thinker',
+                  title: 'Colorful',
+                  description: 'Log five distinct aesthetic color palettes.',
+                  rarity: 'Epic',
+                  icon: Palette,
+                  xp: 40,
+                  unlockedAt: new Date().toISOString()
+                }}
+              />
+
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Section: Technical Infrastructure Grid */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-8 md:px-16 lg:px-24 pointer-events-none py-24">
+          <motion.div 
+            style={{ opacity: infraOpacity, y: infraY }}
+            className="w-full max-w-5xl space-y-20"
+          >
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest mx-auto">
+                <Database className="w-3.5 h-3.5" /> Core Architecture
+              </div>
+              <h2 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight tracking-tight">Enterprise Infrastructure. <br/><span className="text-primary italic">Consumer Soul.</span></h2>
+              <p className="text-xs md:text-sm text-foreground/60 leading-relaxed font-sans max-w-xl mx-auto">
+                Built on a mission-critical stack with local-first persistence. Your second brain is secured by industry-leading cloud protocols while maintaining a human-centric experience.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pointer-events-auto">
+              <div className="p-8 rounded-[2.5rem] border border-black/[0.03] shadow-sm bg-white/40 backdrop-blur-md space-y-3 hover:shadow-xl transition-all duration-300">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-555 border border-indigo-500/20">
+                  <Maximize2 className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold font-display tracking-tight text-foreground">Native Inspector</h3>
+                <p className="text-xs text-foreground/60 leading-relaxed font-sans">A gesture-optimized Notion-style rich editor. Fully responsive with native haptic feedback support.</p>
               </div>
 
+              <div className="p-8 rounded-[2.5rem] border border-black/[0.03] shadow-sm bg-white/40 backdrop-blur-md space-y-3 hover:shadow-xl transition-all duration-300">
+                <div className="w-10 h-10 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-555 border border-teal-500/20">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold font-display tracking-tight text-foreground">Identity & Security</h3>
+                <p className="text-xs text-foreground/60 leading-relaxed font-sans">Firebase Identity Platform integration with encrypted session management and global edge sync.</p>
+              </div>
+
+              <div className="p-8 rounded-[2.5rem] border border-black/[0.03] shadow-sm bg-white/40 backdrop-blur-md space-y-3 hover:shadow-xl transition-all duration-300">
+                <div className="w-10 h-10 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-555 border border-rose-500/20">
+                  <Plug className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold font-display tracking-tight text-foreground">Universal Bridges</h3>
+                <p className="text-xs text-foreground/60 leading-relaxed font-sans">Import external assets from Google Photos, Drive, and OneDrive via our experimental Cloud Plugins.</p>
+              </div>
+
+              <div className="p-8 rounded-[2.5rem] border border-black/[0.03] shadow-sm bg-white/40 backdrop-blur-md space-y-3 hover:shadow-xl transition-all duration-300">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-555 border border-indigo-500/20">
+                  <Database className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold font-display tracking-tight text-foreground">Appwrite Realtime</h3>
+                <p className="text-xs text-foreground/60 leading-relaxed font-sans">High-performance document storage with sub-100ms synchronization across all linked instances.</p>
+              </div>
+
+              <div className="p-8 rounded-[2.5rem] border border-black/[0.03] shadow-sm bg-white/40 backdrop-blur-md space-y-3 hover:shadow-xl transition-all duration-300">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-555 border border-emerald-500/20">
+                  <HardDrive className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold font-display tracking-tight text-foreground">Offline Persistence</h3>
+                <p className="text-xs text-foreground/60 leading-relaxed font-sans">Robust IndexedDB implementation ensuring your data remains editable even in zero-connectivity environments.</p>
+              </div>
+
+              <div className="p-8 rounded-[2.5rem] border border-black/[0.03] shadow-sm bg-white/40 backdrop-blur-md space-y-3 hover:shadow-xl transition-all duration-300">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-555 border border-amber-500/20">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold font-display tracking-tight text-foreground">Power User Shell</h3>
+                <p className="text-xs text-foreground/60 leading-relaxed font-sans">A frictionless CLI-style keyboard interface designed for rapid thought logging and workspace navigation.</p>
+              </div>
             </div>
           </motion.div>
         </section>
@@ -886,16 +884,29 @@ export default function LandingPage() {
               <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-primary/20 blur-[130px] rounded-full animate-blob mix-blend-screen" />
               <div className="absolute bottom-1/4 left-1/4 w-[450px] h-[450px] bg-indigo-500/20 blur-[110px] rounded-full animate-blob animation-delay-2000 mix-blend-screen" />
               
-              {/* Ultra-fine backdrop star field */}
-              <div className="absolute inset-0 opacity-35" style={{ 
-                backgroundImage: 'radial-gradient(rgba(255,255,255,0.7) 1px, transparent 0)', 
-                backgroundSize: '30px 30px' 
-              }} />
-              <div className="absolute inset-0 opacity-25 animate-pulse" style={{ 
-                backgroundImage: 'radial-gradient(rgba(255,255,255,0.8) 1.5px, transparent 0)', 
-                backgroundSize: '80px 80px',
-                animationDuration: '4s'
-              }} />
+               {/* Ultra-fine randomized star field */}
+               {BACKDROP_STARS.map((star, idx) => (
+                 <motion.div
+                   key={`backdrop-${idx}`}
+                   className="absolute bg-white rounded-full pointer-events-none"
+                   style={{
+                     left: star.left,
+                     top: star.top,
+                     width: star.size,
+                     height: star.size,
+                     opacity: star.opacity
+                   }}
+                   animate={{
+                     opacity: [star.opacity, star.opacity * 0.5, star.opacity]
+                   }}
+                   transition={{
+                     duration: star.duration,
+                     delay: star.delay,
+                     repeat: Infinity,
+                     ease: "easeInOut"
+                   }}
+                 />
+               ))}
 
               {/* Twinkling Magical Fantasy Stars */}
               {FANTASY_STARS.map((star, idx) => (
