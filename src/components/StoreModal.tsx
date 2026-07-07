@@ -92,6 +92,8 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'market' | 'owned'>('market');
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
+  const [activeCategory, setActiveCategory] = useState<'all' | 'effect' | 'theme' | 'avatar'>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
@@ -398,7 +400,44 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
           </div>
 
           {/* Body */}
-          <div className="p-4 md:p-10 overflow-y-auto custom-scrollbar flex-1 space-y-8 no-scrollbar bg-foreground/[0.01]">
+          <div className="p-4 md:p-10 overflow-y-auto custom-scrollbar flex-1 space-y-6 no-scrollbar bg-foreground/[0.01]">
+            {/* Category Filter and Search Panel */}
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-foreground/[0.02] p-4 rounded-2xl border border-border-subtle/50 mb-4">
+              <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-none">
+                {[
+                  { id: 'all', label: 'All Upgrades' },
+                  { id: 'effect', label: 'Effects' },
+                  { id: 'theme', label: 'Themes' },
+                  { id: 'avatar', label: 'Avatar Sync' }
+                ].map(tab => {
+                  const isTabActive = (activeCategory || 'all') === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveCategory(tab.id as any)}
+                      className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+                        isTabActive 
+                          ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25' 
+                          : 'bg-foreground/5 text-foreground/60 hover:bg-foreground/10'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <div className="relative w-full md:w-64">
+                <input
+                  type="text"
+                  placeholder="Filter upgrades..."
+                  value={searchQuery || ''}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-background border border-border-subtle rounded-xl px-4 py-2 text-xs text-foreground focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
             {loading ? (
               <div className="flex flex-col items-center justify-center py-24 opacity-40">
                 <div className="relative">
@@ -407,85 +446,94 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
                 </div>
                 <p className="text-xs font-mono tracking-[0.3em] uppercase mt-6 text-foreground/60">Calibrating Market...</p>
               </div>
-            ) : (activeTab === 'market' ? marketItems : ownedItems).length === 0 ? (
-              <div className="text-center py-24 opacity-40">
-                <p className="text-sm font-mono uppercase tracking-widest">
-                  {activeTab === 'market' ? 'The vault is currently empty.' : 'You haven\'t unlocked any upgrades yet.'}
-                </p>
-                {activeTab === 'owned' && (
-                  <button 
-                    onClick={() => setActiveTab('market')}
-                    className="mt-4 px-6 py-2 bg-foreground text-background rounded-xl text-xs font-bold uppercase tracking-widest"
-                  >
-                    Visit Market
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 pb-20">
-                {(activeTab === 'market' ? marketItems : ownedItems).map(item => {
-                  const isOwned = unlocked.includes(item.effectId);
-                  const isEquipped = activeEffects.includes(item.effectId);
-                  const canAfford = currentXp >= item.price;
+            ) : (() => {
+              const currentList = activeTab === 'market' ? marketItems : ownedItems;
+              const filteredList = currentList.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+                  item.description.toLowerCase().includes((searchQuery || '').toLowerCase());
+                
+                if (!matchesSearch) return false;
+                if (!activeCategory || activeCategory === 'all') return true;
+                if (activeCategory === 'avatar') return item.effectId === 'avatar-glow' || item.effectId === 'rank-insignia' || item.effectId === 'icon-royal';
+                return item.type === activeCategory;
+              });
 
-                  return (
-                    <motion.div 
-                      layout
-                      key={item.$id || item.effectId} 
-                      onClick={() => setSelectedItem(item)}
-                      className={`group p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border transition-all duration-500 relative overflow-hidden flex flex-col h-full cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
-                        isEquipped 
-                          ? 'border-indigo-500/40 bg-indigo-500/[0.03] shadow-[0_20px_50px_rgba(99,102,241,0.08)]' 
-                          : isOwned
-                          ? 'border-border-subtle bg-foreground/[0.01] hover:bg-foreground/[0.03]'
-                          : 'border-border-subtle/50 bg-background hover:border-indigo-500/20 hover:shadow-xl transition-shadow'
-                      }`}
-                    >
-                      {/* Decoration */}
-                      {isEquipped && (
-                        <div className="absolute -top-12 -right-12 w-24 h-24 blur-2xl rounded-full bg-indigo-500/10" />
-                      )}
+              if (filteredList.length === 0) {
+                return (
+                  <div className="text-center py-24 opacity-40">
+                    <p className="text-sm font-mono uppercase tracking-widest">
+                      No matching items found in the vault.
+                    </p>
+                  </div>
+                );
+              }
 
-                      <div className="flex-1 space-y-3 md:space-y-4">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-0.5 md:space-y-1">
-                            <span className="text-[8px] md:text-[9px] font-bold font-mono text-indigo-500/60 uppercase tracking-[0.2em]">
-                              {item.type}
-                            </span>
-                            <h3 className="text-sm md:text-lg font-black text-text-heading tracking-tight leading-tight line-clamp-1 md:line-clamp-none">
-                              {item.name}
-                            </h3>
-                          </div>
-                          {!isOwned && (
-                            <div className={`px-2 py-0.5 md:px-3 md:py-1 rounded-full border text-[9px] md:text-xs font-black font-mono flex items-center gap-1 ${canAfford ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-foreground/5 text-foreground/30 border-foreground/10'}`}>
-                              {item.price}
-                            </div>
-                          )}
-                        </div>
+              return (
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 pb-20">
+                  {filteredList.map(item => {
+                    const isOwned = unlocked.includes(item.effectId);
+                    const isEquipped = activeEffects.includes(item.effectId);
+                    const canAfford = currentXp >= item.price;
 
-                        <p className="text-[10px] md:text-sm text-foreground/50 leading-relaxed min-h-[2rem] md:min-h-[3rem] line-clamp-2 md:line-clamp-3">
-                          {item.description}
-                        </p>
-                      </div>
-
-                      <div className="mt-4 md:mt-6">
-                        <div className={`w-full py-2 md:py-3 rounded-xl md:rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-300 text-center ${
+                    return (
+                      <motion.div 
+                        layout
+                        key={item.$id || item.effectId} 
+                        onClick={() => setSelectedItem(item)}
+                        className={`group p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border transition-all duration-500 relative overflow-hidden flex flex-col h-full cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
                           isEquipped 
-                            ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 scale-[0.98]' 
+                            ? 'border-indigo-500/40 bg-indigo-500/[0.03] shadow-[0_20px_50px_rgba(99,102,241,0.08)]' 
                             : isOwned
-                            ? 'bg-foreground/5 text-foreground/70'
-                            : canAfford
-                            ? 'bg-foreground text-background shadow-lg'
-                            : 'bg-foreground/5 text-foreground/20'
-                        }`}>
-                          {isEquipped ? 'Active' : isOwned ? 'Owned' : canAfford ? 'View Upgrade' : 'Locked'}
+                            ? 'border-border-subtle bg-foreground/[0.01] hover:bg-foreground/[0.03]'
+                            : 'border-border-subtle/50 bg-background hover:border-indigo-500/20 hover:shadow-xl transition-shadow'
+                        }`}
+                      >
+                        {/* Decoration */}
+                        {isEquipped && (
+                          <div className="absolute -top-12 -right-12 w-24 h-24 blur-2xl rounded-full bg-indigo-500/10" />
+                        )}
+
+                        <div className="flex-1 space-y-3 md:space-y-4">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-0.5 md:space-y-1">
+                              <span className="text-[8px] md:text-[9px] font-bold font-mono text-indigo-500/60 uppercase tracking-[0.2em]">
+                                {item.type}
+                              </span>
+                              <h3 className="text-sm md:text-lg font-black text-text-heading tracking-tight leading-tight line-clamp-1 md:line-clamp-none">
+                                {item.name}
+                              </h3>
+                            </div>
+                            {!isOwned && (
+                              <div className={`px-2 py-0.5 md:px-3 md:py-1 rounded-full border text-[9px] md:text-xs font-black font-mono flex items-center gap-1 ${canAfford ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-foreground/5 text-foreground/30 border-foreground/10'}`}>
+                                {item.price}
+                              </div>
+                            )}
+                          </div>
+
+                          <p className="text-[10px] md:text-sm text-foreground/50 leading-relaxed min-h-[2rem] md:min-h-[3rem] line-clamp-2 md:line-clamp-3">
+                            {item.description}
+                          </p>
                         </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
+
+                        <div className="mt-4 md:mt-6">
+                          <div className={`w-full py-2 md:py-3 rounded-xl md:rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-300 text-center ${
+                            isEquipped 
+                              ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 scale-[0.98]' 
+                              : isOwned
+                              ? 'bg-foreground/5 text-foreground/70'
+                              : canAfford
+                              ? 'bg-foreground text-background shadow-lg'
+                              : 'bg-foreground/5 text-foreground/20'
+                          }`}>
+                            {isEquipped ? 'Active' : isOwned ? 'Owned' : canAfford ? 'View Upgrade' : 'Locked'}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Sticky Close & Inventory Buttons for All Screens */}

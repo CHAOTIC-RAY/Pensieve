@@ -279,6 +279,16 @@ export function applyTheme(settings: UserSettings) {
   const activeEffects = settings.activeEffects || (settings.activeEffect ? settings.activeEffect.split(' ').filter(Boolean) : []);
   root.setAttribute('data-active-effects', activeEffects.join(' ') || 'none');
   root.setAttribute('data-active-effect', activeEffects[0] || 'none');
+
+  // Sync active effects as classes on body
+  const ALL_EFFECTS = ['search-neon', 'effect-crt', 'theme-glass', 'avatar-glow', 'rank-insignia', 'widget-weather', 'search-glass', 'icon-royal'];
+  ALL_EFFECTS.forEach(effectId => {
+    if (activeEffects.includes(effectId)) {
+      document.body.classList.add(effectId);
+    } else {
+      document.body.classList.remove(effectId);
+    }
+  });
   
   // Custom Dynamic CSS Injection from Admin Panel Workspace
   try {
@@ -316,7 +326,9 @@ export function applyTheme(settings: UserSettings) {
   // Special Handling for Glass UI (Store Version)
   if (activeEffects.includes('theme-glass')) {
     root.setAttribute('data-ui-style', 'glass');
-    root.style.setProperty('--blur-strength', '40px');
+    root.style.setProperty('--blur-strength', '35px');
+  } else if ((settings.uiStyle || 'modern') !== 'glass') {
+    root.setAttribute('data-ui-style', settings.uiStyle || 'modern');
   }
   
   // Background Image

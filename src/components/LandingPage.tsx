@@ -842,6 +842,7 @@ export default function LandingPage() {
                   rarity: 'Common',
                   icon: Sparkles,
                   xp: 10,
+                  image: '/assets/images/first_spark_art_1782894430119.jpg',
                   unlockedAt: new Date().toISOString()
                 }}
               />
@@ -856,6 +857,7 @@ export default function LandingPage() {
                   rarity: 'Rare',
                   icon: Compass,
                   xp: 50,
+                  image: '/assets/images/wandering_mind_art_1782894717720.jpg',
                   unlockedAt: new Date().toISOString()
                 }}
               />
@@ -870,6 +872,7 @@ export default function LandingPage() {
                   rarity: 'Epic',
                   icon: Palette,
                   xp: 40,
+                  image: '/assets/images/colorful_thinker_art_1782894805753.jpg',
                   unlockedAt: new Date().toISOString()
                 }}
               />
