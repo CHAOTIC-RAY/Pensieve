@@ -15,6 +15,7 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
   const y = useMotionValue(0);
 
   const [imgSrc, setImgSrc] = React.useState<string>('');
+  const [hasFailed, setHasFailed] = React.useState<boolean>(false);
 
   const getResolvedImageUrl = (path?: string) => {
     if (!path) return '';
@@ -27,16 +28,71 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
   };
 
   React.useEffect(() => {
-    if (achievement.image) {
+    setHasFailed(false);
+    
+    // Check if the image path is a known default achievement or an Unsplash URL that we need to replace
+    const isUnsplash = achievement.image && achievement.image.includes('unsplash.com');
+    
+    if (achievement.image && !isUnsplash) {
       setImgSrc(getResolvedImageUrl(achievement.image));
+    } else {
+      let resolvedFallback = '';
+      if (achievement.id.startsWith('generated_')) {
+        const parts = achievement.id.split('_');
+        const themeIdx = parseInt(parts[1], 10);
+        const itemIdx = parseInt(parts[2], 10);
+        const baseImages = [
+          '/assets/images/first_spark_1783225522306.jpg',
+          '/assets/images/wandering_mind_1783225553989.jpg',
+          '/assets/images/curator_1783225567567.jpg',
+          '/assets/images/colorful_thinker_1783225582426.jpg',
+          '/assets/images/knowledge_seeker_1783225593832.jpg',
+          '/assets/images/time_weaver_1783225609753.jpg',
+          '/assets/images/deep_thinker_1783225623783.jpg',
+          '/assets/images/cosmic_synthesis_1783225638436.jpg',
+          '/assets/images/hoarder_1783225650570.jpg',
+          '/assets/images/grand_alchemist_1783225665178.jpg'
+        ];
+        // Mirror compile-time logic exactly: const imageUrl = baseImages[(themeIdx + i) % baseImages.length];
+        const idx = (!isNaN(themeIdx) && !isNaN(itemIdx)) ? (themeIdx + itemIdx) % baseImages.length : 0;
+        resolvedFallback = baseImages[idx];
+      } else {
+        const localMap: Record<string, string> = {
+          first_spark: '/assets/images/first_spark_1783225522306.jpg',
+          wandering_mind: '/assets/images/wandering_mind_1783225553989.jpg',
+          curator: '/assets/images/curator_1783225567567.jpg',
+          colorful_thinker: '/assets/images/colorful_thinker_1783225582426.jpg',
+          colorful: '/assets/images/colorful_thinker_1783225582426.jpg',
+          knowledge_seeker: '/assets/images/knowledge_seeker_1783225593832.jpg',
+          chronomancer: '/assets/images/time_weaver_1783225609753.jpg',
+          time_weaver: '/assets/images/time_weaver_1783225609753.jpg',
+          deep_thinker: '/assets/images/deep_thinker_1783225623783.jpg',
+          mind_meld: '/assets/images/cosmic_synthesis_1783225638436.jpg',
+          cosmic_synthesis: '/assets/images/cosmic_synthesis_1783225638436.jpg',
+          hoarder: '/assets/images/hoarder_1783225650570.jpg',
+          transmuter: '/assets/images/grand_alchemist_1783225665178.jpg',
+          grand_alchemist: '/assets/images/grand_alchemist_1783225665178.jpg',
+        };
+        resolvedFallback = localMap[achievement.id] || '';
+      }
+      
+      if (resolvedFallback) {
+        setImgSrc(getResolvedImageUrl(resolvedFallback));
+      } else {
+        setImgSrc(getResolvedImageUrl('/assets/images/first_spark_1783225522306.jpg'));
+      }
     }
-  }, [achievement.image]);
+  }, [achievement.image, achievement.id]);
 
   const handleImgError = () => {
+    if (hasFailed) return;
+    setHasFailed(true);
+    
     let resolvedFallback = '';
     if (achievement.id.startsWith('generated_')) {
       const parts = achievement.id.split('_');
       const themeIdx = parseInt(parts[1], 10);
+      const itemIdx = parseInt(parts[2], 10);
       const baseImages = [
         '/assets/images/first_spark_1783225522306.jpg',
         '/assets/images/wandering_mind_1783225553989.jpg',
@@ -49,21 +105,24 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
         '/assets/images/hoarder_1783225650570.jpg',
         '/assets/images/grand_alchemist_1783225665178.jpg'
       ];
-      if (!isNaN(themeIdx) && themeIdx >= 0 && themeIdx < baseImages.length) {
-        resolvedFallback = baseImages[themeIdx];
-      }
+      const idx = (!isNaN(themeIdx) && !isNaN(itemIdx)) ? (themeIdx + itemIdx) % baseImages.length : 0;
+      resolvedFallback = baseImages[idx];
     } else {
       const localMap: Record<string, string> = {
         first_spark: '/assets/images/first_spark_1783225522306.jpg',
         wandering_mind: '/assets/images/wandering_mind_1783225553989.jpg',
         curator: '/assets/images/curator_1783225567567.jpg',
         colorful_thinker: '/assets/images/colorful_thinker_1783225582426.jpg',
+        colorful: '/assets/images/colorful_thinker_1783225582426.jpg',
         knowledge_seeker: '/assets/images/knowledge_seeker_1783225593832.jpg',
         chronomancer: '/assets/images/time_weaver_1783225609753.jpg',
+        time_weaver: '/assets/images/time_weaver_1783225609753.jpg',
         deep_thinker: '/assets/images/deep_thinker_1783225623783.jpg',
         mind_meld: '/assets/images/cosmic_synthesis_1783225638436.jpg',
+        cosmic_synthesis: '/assets/images/cosmic_synthesis_1783225638436.jpg',
         hoarder: '/assets/images/hoarder_1783225650570.jpg',
         transmuter: '/assets/images/grand_alchemist_1783225665178.jpg',
+        grand_alchemist: '/assets/images/grand_alchemist_1783225665178.jpg',
       };
       resolvedFallback = localMap[achievement.id] || '';
     }
@@ -71,7 +130,7 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
     if (resolvedFallback) {
       setImgSrc(getResolvedImageUrl(resolvedFallback));
     } else {
-      setImgSrc(getResolvedImageUrl('/assets/images/first_spark_1783225522306.jpg'));
+      setImgSrc('');
     }
   };
 
@@ -293,6 +352,11 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
                 className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none transition-transform duration-700 group-hover:scale-105"
                 referrerPolicy="no-referrer"
               />
+            ) : unlocked ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900 gap-2">
+                {Icon ? <Icon className="w-10 h-10 text-amber-400 animate-pulse" /> : <Sparkles className="w-10 h-10 text-amber-400 animate-pulse" />}
+                <span className="text-[9px] font-mono tracking-widest text-neutral-400 uppercase font-black">Celestial Art</span>
+              </div>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-950/80 gap-2">
                 <Lock className="w-8 h-8 text-neutral-600 animate-pulse" />

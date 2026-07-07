@@ -14,10 +14,14 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-// Set COOP/COEP headers to enable SharedArrayBuffer (required for local AI / WebLLM)
+// Set COOP/COEP/CORP/CORS headers to enable SharedArrayBuffer (required for local AI / WebLLM) and allow asset loading
 app.use((_req, res, next) => {
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
   res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "*");
+  res.setHeader("Access-Control-Allow-Methods", "*");
   next();
 });
 

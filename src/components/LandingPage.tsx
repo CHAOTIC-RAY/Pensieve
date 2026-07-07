@@ -20,15 +20,29 @@ interface LandingAchievementCardProps {
 function LandingAchievementCard({ achievement, rotationClass = "" }: LandingAchievementCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isInView, setIsInView] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!cardRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting);
+      },
+      {
+        rootMargin: "-20% 0px -20% 0px", // Trigger when the card is in the middle 60% of the screen
+        threshold: 0.15
+      }
+    );
+    observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Unlocked if hovered OR in view (mid-scroll on mobile)
   const unlocked = isHovered || isInView;
 
   return (
-    <motion.div
-      onViewportEnter={() => setIsInView(true)}
-      onViewportLeave={() => setIsInView(false)}
-      viewport={{ amount: 0.55 }} // Trigger when 55% of card is in viewport (mid-scroll)
+    <div
+      ref={cardRef}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={`transform transition-all duration-500 pointer-events-auto ${rotationClass} ${unlocked ? 'scale-[1.03] z-20' : 'scale-[0.98] opacity-80'}`}
@@ -37,7 +51,7 @@ function LandingAchievementCard({ achievement, rotationClass = "" }: LandingAchi
         unlocked={unlocked}
         achievement={achievement}
       />
-    </motion.div>
+    </div>
   );
 }
 
@@ -495,96 +509,99 @@ export default function LandingPage() {
         <section className="relative min-h-screen flex flex-col items-center justify-center px-8 md:px-16 lg:px-24 pointer-events-none py-24">
           <motion.div 
             style={{ opacity: captureOpacity, y: captureY }}
-            className="w-full max-w-5xl flex flex-col md:flex-row items-center gap-16"
+            className="w-full max-w-5xl flex flex-col items-center gap-16"
           >
-            <div className="flex-1 space-y-8">
-              <div className="space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 text-[10px] font-black uppercase tracking-widest">
-                  <Layers className="w-3.5 h-3.5" /> Universal Ingestion
-                </div>
-                <h2 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight tracking-tight">Universal Capture</h2>
-                <p className="text-xs md:text-sm text-foreground/60 leading-relaxed font-sans">
-                  Your brain doesn't just work in text. Neither does Pensieve. Effortlessly ingest voice notes, high-res images, PDF whitepapers, and complex spreadsheets. Our system normalizes every format into a searchable, neural-ready memory card.
-                </p>
+            {/* Centered Header */}
+            <div className="text-center space-y-4 max-w-2xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 text-[10px] font-black uppercase tracking-widest mx-auto">
+                <Layers className="w-3.5 h-3.5" /> Universal Ingestion
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/50 border border-black/[0.03] text-[10px] font-bold text-foreground/70">
-                  <Mic className="w-4 h-4 text-amber-500" /> Lossless Audio
-                </div>
-                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/50 border border-black/[0.03] text-[10px] font-bold text-foreground/70">
-                  <ImageIcon className="w-4 h-4 text-blue-500" /> Vision Assets
-                </div>
-                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/50 border border-black/[0.03] text-[10px] font-bold text-foreground/70">
-                  <FileText className="w-4 h-4 text-emerald-500" /> PDF & Docs
-                </div>
-                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/50 border border-black/[0.03] text-[10px] font-bold text-foreground/70">
-                  <Table2 className="w-4 h-4 text-purple-500" /> Data Tables
-                </div>
-              </div>
+              <h2 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight tracking-tight">Universal Capture</h2>
+              <p className="text-xs md:text-sm text-foreground/60 leading-relaxed font-sans max-w-xl mx-auto">
+                Your brain doesn't just work in text. Neither does Pensieve. Effortlessly ingest voice notes, high-res images, PDF whitepapers, and complex spreadsheets. Our system normalizes every format into a searchable, neural-ready memory card.
+              </p>
             </div>
-            
-            <div className="flex-1 w-full max-w-md relative group">
-              <div className="absolute -inset-8 bg-amber-500/10 rounded-[3rem] blur-3xl group-hover:bg-amber-500/20 transition-all duration-700"></div>
-              <div className="relative aspect-square rounded-[2.5rem] border border-black/[0.05] bg-white/40 backdrop-blur-xl flex items-center justify-center overflow-hidden shadow-2xl p-8">
-                 {/* Floating File Icons Visual */}
-                 <div className="relative w-full h-full flex items-center justify-center">
-                    <motion.div 
-                      animate={{ 
-                        y: [0, -20, 0],
-                        rotate: [0, 5, 0]
-                      }}
-                      transition={{ duration: 6, repeat: Infinity }}
-                      className="absolute top-0 left-0 p-4 bg-white rounded-2xl shadow-lg border border-black/5"
-                    >
-                      <ImageIcon className="w-8 h-8 text-blue-500" />
-                    </motion.div>
-                    <motion.div 
-                      animate={{ 
-                        y: [0, 25, 0],
-                        x: [0, -15, 0],
-                        rotate: [0, -15, 0]
-                      }}
-                      transition={{ duration: 7, repeat: Infinity, delay: 0.5 }}
-                      className="absolute top-4 right-0 p-4 bg-white rounded-2xl shadow-lg border border-black/5"
-                    >
-                      <Table2 className="w-8 h-8 text-purple-500" />
-                    </motion.div>
-                    <motion.div 
-                      animate={{ 
-                        y: [0, 20, 0],
-                        rotate: [0, -10, 0]
-                      }}
-                      transition={{ duration: 5, repeat: Infinity, delay: 1 }}
-                      className="absolute bottom-4 right-4 p-4 bg-white rounded-2xl shadow-lg border border-black/5"
-                    >
-                      <FileText className="w-8 h-8 text-emerald-500" />
-                    </motion.div>
-                    <motion.div 
-                      animate={{ 
-                        y: [0, -25, 0],
-                        x: [0, 20, 0],
-                        rotate: [0, 10, 0]
-                      }}
-                      transition={{ duration: 8, repeat: Infinity, delay: 1.5 }}
-                      className="absolute bottom-8 left-4 p-4 bg-white rounded-2xl shadow-lg border border-black/5"
-                    >
-                      <Mic className="w-8 h-8 text-amber-500" />
-                    </motion.div>
-                    <motion.div 
-                      animate={{ 
-                        scale: [1, 1.1, 1],
-                        opacity: [0.7, 1, 0.7]
-                      }}
-                      transition={{ duration: 4, repeat: Infinity }}
-                      className="w-24 h-24 bg-amber-500 rounded-3xl flex items-center justify-center shadow-xl shadow-amber-500/30"
-                    >
-                      <Zap className="w-10 h-10 text-white" />
-                    </motion.div>
-                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold text-amber-600/50 uppercase tracking-[0.3em]">
-                      Ingesting Context...
-                    </div>
+
+            <div className="w-full flex flex-col items-center gap-12 max-w-3xl mx-auto">
+              <div className="w-full max-w-xl mx-auto">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/50 border border-black/[0.03] text-[10px] font-bold text-foreground/70 justify-center">
+                    <Mic className="w-4 h-4 text-amber-500" /> Lossless Audio
                   </div>
+                  <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/50 border border-black/[0.03] text-[10px] font-bold text-foreground/70 justify-center">
+                    <ImageIcon className="w-4 h-4 text-blue-500" /> Vision Assets
+                  </div>
+                  <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/50 border border-black/[0.03] text-[10px] font-bold text-foreground/70 justify-center">
+                    <FileText className="w-4 h-4 text-emerald-500" /> PDF & Docs
+                  </div>
+                  <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/50 border border-black/[0.03] text-[10px] font-bold text-foreground/70 justify-center">
+                    <Table2 className="w-4 h-4 text-purple-500" /> Data Tables
+                  </div>
+                </div>
+              </div>
+              
+              <div className="w-full max-w-md relative group mx-auto">
+                <div className="absolute -inset-8 bg-amber-500/10 rounded-[3rem] blur-3xl group-hover:bg-amber-500/20 transition-all duration-700"></div>
+                <div className="relative aspect-square rounded-[2.5rem] border border-black/[0.05] bg-white/40 backdrop-blur-xl flex items-center justify-center overflow-hidden shadow-2xl p-8">
+                   {/* Floating File Icons Visual */}
+                   <div className="relative w-full h-full flex items-center justify-center">
+                      <motion.div 
+                        animate={{ 
+                          y: [0, -20, 0],
+                          rotate: [0, 5, 0]
+                        }}
+                        transition={{ duration: 6, repeat: Infinity }}
+                        className="absolute top-0 left-0 p-4 bg-white rounded-2xl shadow-lg border border-black/5"
+                      >
+                        <ImageIcon className="w-8 h-8 text-blue-500" />
+                      </motion.div>
+                      <motion.div 
+                        animate={{ 
+                          y: [0, 25, 0],
+                          x: [0, -15, 0],
+                          rotate: [0, -15, 0]
+                        }}
+                        transition={{ duration: 7, repeat: Infinity, delay: 0.5 }}
+                        className="absolute top-4 right-0 p-4 bg-white rounded-2xl shadow-lg border border-black/5"
+                      >
+                        <Table2 className="w-8 h-8 text-purple-500" />
+                      </motion.div>
+                      <motion.div 
+                        animate={{ 
+                          y: [0, 20, 0],
+                          rotate: [0, -10, 0]
+                        }}
+                        transition={{ duration: 5, repeat: Infinity, delay: 1 }}
+                        className="absolute bottom-4 right-4 p-4 bg-white rounded-2xl shadow-lg border border-black/5"
+                      >
+                        <FileText className="w-8 h-8 text-emerald-500" />
+                      </motion.div>
+                      <motion.div 
+                        animate={{ 
+                          y: [0, -25, 0],
+                          x: [0, 20, 0],
+                          rotate: [0, 10, 0]
+                        }}
+                        transition={{ duration: 8, repeat: Infinity, delay: 1.5 }}
+                        className="absolute bottom-8 left-4 p-4 bg-white rounded-2xl shadow-lg border border-black/5"
+                      >
+                        <Mic className="w-8 h-8 text-amber-500" />
+                      </motion.div>
+                      <motion.div 
+                        animate={{ 
+                          scale: [1, 1.1, 1],
+                          opacity: [0.7, 1, 0.7]
+                        }}
+                        transition={{ duration: 4, repeat: Infinity }}
+                        className="w-24 h-24 bg-amber-500 rounded-3xl flex items-center justify-center shadow-xl shadow-amber-500/30"
+                      >
+                        <Zap className="w-10 h-10 text-white" />
+                      </motion.div>
+                      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold text-amber-600/50 uppercase tracking-[0.3em]">
+                        Ingesting Context...
+                      </div>
+                    </div>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -594,136 +611,137 @@ export default function LandingPage() {
         <section className="relative min-h-screen flex flex-col items-center justify-center px-8 md:px-16 lg:px-24 pointer-events-none py-24">
           <motion.div 
             style={{ opacity: marketOpacity, y: marketY }}
-            className="w-full max-w-6xl grid lg:grid-cols-2 gap-12 lg:gap-20 items-center"
+            className="w-full max-w-5xl flex flex-col items-center gap-16"
           >
-            <div className="order-2 lg:order-1 relative group">
-              <div className="absolute -inset-10 bg-purple-500/10 rounded-[3rem] blur-3xl group-hover:bg-purple-500/20 transition-all duration-700"></div>
-              
-              <div className="relative w-full max-w-md mx-auto aspect-[3/4] bg-white/40 backdrop-blur-2xl border border-white/60 rounded-[3.5rem] shadow-2xl p-8 flex flex-col items-center overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-amber-500/5" />
+            {/* Centered Header */}
+            <div className="text-center space-y-4 max-w-2xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 text-[10px] font-black uppercase tracking-widest mx-auto">
+                <Activity className="w-3.5 h-3.5" /> Intelligence Loop
+              </div>
+              <h2 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight tracking-tight">Intelligence Redefined</h2>
+              <p className="text-xs md:text-sm text-foreground/60 leading-relaxed font-sans max-w-xl mx-auto">
+                Cognition is your currency. Every thought captured, every pattern recognized, and every milestone reached fuels your neural economy.
+              </p>
+            </div>            <div className="w-full flex flex-col items-center gap-12 max-w-3xl mx-auto">
+              <div className="w-full max-w-md relative group mx-auto">
+                <div className="absolute -inset-10 bg-purple-500/10 rounded-[3rem] blur-3xl group-hover:bg-purple-500/20 transition-all duration-700"></div>
                 
-                {/* Level Orb */}
-                <div className="relative mt-4">
-                  <div className="absolute inset-0 bg-primary/20 blur-2xl animate-pulse rounded-full" />
-                  <div className="relative w-32 h-32 rounded-full border-4 border-white/80 shadow-inner flex flex-col items-center justify-center bg-gradient-to-tr from-purple-600 via-indigo-500 to-indigo-400 text-white">
-                    <Trophy className="w-8 h-8 mb-1" />
-                    <span className="text-2xl font-black">24</span>
-                  </div>
-                  {/* Decorative orbital rings */}
-                  <div className="absolute -inset-4 border border-indigo-500/20 rounded-full animate-[spin_10s_linear_infinite]" />
-                  <div className="absolute -inset-8 border border-purple-500/10 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
-                </div>
-
-                <div className="text-center mt-6 z-10">
-                  <h3 className="text-2xl font-black text-foreground">Cognitive Master</h3>
-                  <p className="text-[10px] font-mono font-bold text-indigo-500/60 tracking-[0.3em] uppercase">Pensieve Tier III</p>
-                </div>
-
-                {/* Aura Progress - Redesigned */}
-                <div className="w-full mt-10 space-y-4 z-10">
-                  <div className="flex justify-between items-end">
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">Aura Progress</span>
-                      <div className="text-xs font-bold text-foreground">14,200 <span className="text-foreground/30">/ 15,000</span></div>
+                <div className="relative w-full aspect-[3/4] bg-white/40 backdrop-blur-2xl border border-white/60 rounded-[3.5rem] shadow-2xl p-8 flex flex-col items-center overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-amber-500/5" />
+                  
+                  {/* Level Orb */}
+                  <div className="relative mt-4">
+                    <div className="absolute inset-0 bg-primary/20 blur-2xl animate-pulse rounded-full" />
+                    <div className="relative w-32 h-32 rounded-full border-4 border-white/80 shadow-inner flex flex-col items-center justify-center bg-gradient-to-tr from-purple-600 via-indigo-500 to-indigo-400 text-white">
+                      <Trophy className="w-8 h-8 mb-1" />
+                      <span className="text-2xl font-black">24</span>
                     </div>
-                    <div className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">94%</div>
+                    {/* Decorative orbital rings */}
+                    <div className="absolute -inset-4 border border-indigo-500/20 rounded-full animate-[spin_10s_linear_infinite]" />
+                    <div className="absolute -inset-8 border border-purple-500/10 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
                   </div>
-                  <div className="relative h-6 bg-white/50 rounded-2xl border border-black/[0.03] p-1 overflow-hidden shadow-inner">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      whileInView={{ width: '94%' }}
-                      transition={{ duration: 2, ease: "circOut" }}
-                      className="relative h-full bg-gradient-to-r from-indigo-600 via-purple-500 to-amber-400 rounded-xl overflow-hidden"
-                    >
+
+                  <div className="text-center mt-6 z-10">
+                    <h3 className="text-2xl font-black text-foreground">Cognitive Master</h3>
+                    <p className="text-[10px] font-mono font-bold text-indigo-500/60 tracking-[0.3em] uppercase">Pensieve Tier III</p>
+                  </div>
+
+                  {/* Aura Progress - Redesigned */}
+                  <div className="w-full mt-10 space-y-4 z-10">
+                    <div className="flex justify-between items-end">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">Aura Progress</span>
+                        <div className="text-xs font-bold text-foreground">14,200 <span className="text-foreground/30">/ 15,000</span></div>
+                      </div>
+                      <div className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">94%</div>
+                    </div>
+                    <div className="relative h-6 bg-white/50 rounded-2xl border border-black/[0.03] p-1 overflow-hidden shadow-inner">
                       <motion.div 
-                        animate={{ x: ['-100%', '100%'] }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
-                      />
-                    </motion.div>
+                        initial={{ width: 0 }}
+                        whileInView={{ width: '94%' }}
+                        transition={{ duration: 2, ease: "circOut" }}
+                        className="relative h-full bg-gradient-to-r from-indigo-600 via-purple-500 to-amber-400 rounded-xl overflow-hidden"
+                      >
+                        <motion.div 
+                           animate={{ x: ['-100%', '100%'] }}
+                           transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
+                        />
+                      </motion.div>
+                    </div>
                   </div>
-                </div>
 
-                {/* Effect Marketplace Grid - Redesigned for more impact */}
-                <div className="w-full mt-10 grid grid-cols-3 gap-3 z-10">
-                  <div className="group/effect p-3 rounded-2xl bg-white/80 border border-amber-500/10 flex flex-col items-center gap-1.5 hover:border-amber-500/40 hover:shadow-lg transition-all duration-300">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600">
-                      <Sparkles className="w-4 h-4" />
+                  {/* Effect Marketplace Grid - Redesigned for more impact */}
+                  <div className="w-full mt-10 grid grid-cols-3 gap-3 z-10">
+                    <div className="group/effect p-3 rounded-2xl bg-white/80 border border-amber-500/10 flex flex-col items-center gap-1.5 hover:border-amber-500/40 hover:shadow-lg transition-all duration-300">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <span className="text-[8px] font-black uppercase text-amber-600">Liquid</span>
                     </div>
-                    <span className="text-[8px] font-black uppercase text-amber-600">Liquid</span>
-                  </div>
-                  <div className="group/effect p-3 rounded-2xl bg-white/80 border border-indigo-500/10 flex flex-col items-center gap-1.5 hover:border-indigo-500/40 hover:shadow-lg transition-all duration-300">
-                    <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600">
-                      <Palette className="w-4 h-4" />
+                    <div className="group/effect p-3 rounded-2xl bg-white/80 border border-indigo-500/10 flex flex-col items-center gap-1.5 hover:border-indigo-500/40 hover:shadow-lg transition-all duration-300">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600">
+                        <Palette className="w-4 h-4" />
+                      </div>
+                      <span className="text-[8px] font-black uppercase text-indigo-600">Aura</span>
                     </div>
-                    <span className="text-[8px] font-black uppercase text-indigo-600">Aura</span>
-                  </div>
-                  <div className="group/effect p-3 rounded-2xl bg-black/[0.02] border border-black/5 flex flex-col items-center gap-1.5 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-black/[0.01] backdrop-blur-[1px]" />
-                    <div className="w-8 h-8 rounded-xl bg-black/5 flex items-center justify-center text-foreground/30">
-                      <Lock className="w-4 h-4" />
+                    <div className="group/effect p-3 rounded-2xl bg-black/[0.02] border border-black/5 flex flex-col items-center gap-1.5 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-black/[0.01] backdrop-blur-[1px]" />
+                      <div className="w-8 h-8 rounded-xl bg-black/5 flex items-center justify-center text-foreground/30">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                      <span className="text-[8px] font-black uppercase text-foreground/20">Holo</span>
                     </div>
-                    <span className="text-[8px] font-black uppercase text-foreground/20">Holo</span>
-                  </div>
-                  <div className="group/effect p-3 rounded-2xl bg-white/80 border border-rose-500/10 flex flex-col items-center gap-1.5 hover:border-rose-500/40 hover:shadow-lg transition-all duration-300">
-                    <div className="w-8 h-8 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-600">
-                      <Zap className="w-4 h-4" />
+                    <div className="group/effect p-3 rounded-2xl bg-white/80 border border-rose-500/10 flex flex-col items-center gap-1.5 hover:border-rose-500/40 hover:shadow-lg transition-all duration-300">
+                      <div className="w-8 h-8 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-600">
+                        <Zap className="w-4 h-4" />
+                      </div>
+                      <span className="text-[8px] font-black uppercase text-rose-600">Flash</span>
                     </div>
-                    <span className="text-[8px] font-black uppercase text-rose-600">Flash</span>
-                  </div>
-                  <div className="group/effect p-3 rounded-2xl bg-white/80 border border-emerald-500/10 flex flex-col items-center gap-1.5 hover:border-emerald-500/40 hover:shadow-lg transition-all duration-300">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                      <Compass className="w-4 h-4" />
+                    <div className="group/effect p-3 rounded-2xl bg-white/80 border border-emerald-500/10 flex flex-col items-center gap-1.5 hover:border-emerald-500/40 hover:shadow-lg transition-all duration-300">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                        <Compass className="w-4 h-4" />
+                      </div>
+                      <span className="text-[8px] font-black uppercase text-emerald-600">Echo</span>
                     </div>
-                    <span className="text-[8px] font-black uppercase text-emerald-600">Echo</span>
-                  </div>
-                   <div className="group/effect p-3 rounded-2xl bg-black/[0.02] border border-black/5 flex flex-col items-center gap-1.5 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-black/[0.01] backdrop-blur-[1px]" />
-                    <div className="w-8 h-8 rounded-xl bg-black/5 flex items-center justify-center text-foreground/30">
-                      <Lock className="w-4 h-4" />
+                     <div className="group/effect p-3 rounded-2xl bg-black/[0.02] border border-black/5 flex flex-col items-center gap-1.5 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-black/[0.01] backdrop-blur-[1px]" />
+                      <div className="w-8 h-8 rounded-xl bg-black/5 flex items-center justify-center text-foreground/30">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                      <span className="text-[8px] font-black uppercase text-foreground/20">Void</span>
                     </div>
-                    <span className="text-[8px] font-black uppercase text-foreground/20">Void</span>
                   </div>
-                </div>
 
-                <div className="mt-auto pb-2 text-[8px] font-mono font-bold text-indigo-500/40 uppercase tracking-widest animate-pulse">
-                  System Synchronized: +120 XP today
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-10 lg:pl-10">
-              <div className="space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 text-[10px] font-black uppercase tracking-widest">
-                  <Activity className="w-3.5 h-3.5" /> Intelligence Loop
-                </div>
-                <h2 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight tracking-tight">Intelligence <br/><span className="text-indigo-600 italic">Redefined.</span></h2>
-                <p className="text-xs md:text-sm text-foreground/60 leading-relaxed font-sans max-w-md">
-                  Cognition is your currency. Every thought captured, every pattern recognized, and every milestone reached fuels your neural economy.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-8">
-                <div className="space-y-1 group">
-                  <div className="text-2xl font-black text-foreground group-hover:text-indigo-600 transition-colors">14.2k</div>
-                  <div className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest group-hover:text-foreground/60 transition-colors">Total Aura XP</div>
-                </div>
-                <div className="space-y-1 group">
-                  <div className="text-2xl font-black text-foreground group-hover:text-purple-600 transition-colors">12</div>
-                  <div className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest group-hover:text-foreground/60 transition-colors">Auras Unlocked</div>
+                  <div className="mt-auto pb-2 text-[8px] font-mono font-bold text-indigo-500/40 uppercase tracking-widest animate-pulse">
+                    System Synchronized: +120 XP today
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {[
-                  { label: "Dynamic GLSL Shader Auras", color: "text-indigo-500" },
-                  { label: "Neural Level Scaling System", color: "text-purple-500" },
-                  { label: "Effect Marketplace Rewards", color: "text-amber-500" }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 text-xs font-bold text-foreground/80 bg-white/50 border border-black/[0.03] p-2.5 rounded-xl w-fit">
-                    <CheckCircle2 className={`w-4 h-4 ${item.color}`} /> {item.label}
+              <div className="w-full max-w-xl space-y-8 flex flex-col items-center">
+                <div className="grid grid-cols-2 gap-12 w-full max-w-xs mx-auto text-center">
+                  <div className="space-y-1 group">
+                    <div className="text-2xl font-black text-foreground group-hover:text-indigo-600 transition-colors">14.2k</div>
+                    <div className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest group-hover:text-foreground/60 transition-colors">Total Aura XP</div>
                   </div>
-                ))}
+                  <div className="space-y-1 group">
+                    <div className="text-2xl font-black text-foreground group-hover:text-purple-600 transition-colors">12</div>
+                    <div className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest group-hover:text-foreground/60 transition-colors">Auras Unlocked</div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-3">
+                  {[
+                    { label: "Dynamic GLSL Shader Auras", color: "text-indigo-500" },
+                    { label: "Neural Level Scaling System", color: "text-purple-500" },
+                    { label: "Effect Marketplace Rewards", color: "text-amber-500" }
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-3 text-xs font-bold text-foreground/80 bg-white/50 border border-black/[0.03] p-2.5 rounded-xl">
+                      <CheckCircle2 className={`w-4 h-4 ${item.color}`} /> {item.label}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </motion.div>

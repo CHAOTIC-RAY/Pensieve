@@ -32,7 +32,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     image: '/assets/images/wandering_mind_1783225553989.jpg',
     quote: "All that is gold does not glitter, not all those who wander are lost.",
     author: "J.R.R. Tolkien",
-    lore: "In the quiet labyrinths of the wandering soul, the most beautiful paths are found."
+    lore: "In the quiet labyrin labyrinths of the wandering soul, the most beautiful paths are found."
   },
   {
     id: 'curator',

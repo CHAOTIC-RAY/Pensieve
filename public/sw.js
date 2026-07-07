@@ -7,10 +7,7 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(self.clients.claim());
 });
 
+// No-op fetch event handler to prevent proxy issues inside sandboxed iframes while maintaining PWA installability checks
 self.addEventListener('fetch', (e) => {
-  // Pass-through
-  e.respondWith(fetch(e.request).catch(() => {
-    // Basic offline fallback could go here
-    return new Response('Offline mode');
-  }));
+  // Let the browser handle all requests natively
 });
