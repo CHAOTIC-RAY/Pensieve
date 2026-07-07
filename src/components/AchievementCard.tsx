@@ -351,7 +351,6 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
                 alt={achievement.title} 
                 className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none transition-transform duration-700 group-hover:scale-105"
                 referrerPolicy="no-referrer"
-                crossOrigin="anonymous"
               />
             ) : unlocked ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900 gap-2">

@@ -280,6 +280,32 @@ export function applyTheme(settings: UserSettings) {
   root.setAttribute('data-active-effects', activeEffects.join(' ') || 'none');
   root.setAttribute('data-active-effect', activeEffects[0] || 'none');
   
+  // Custom Dynamic CSS Injection from Admin Panel Workspace
+  try {
+    let customStyleEl = document.getElementById('pensieve-custom-aura-styles');
+    if (!customStyleEl) {
+      customStyleEl = document.createElement('style');
+      customStyleEl.id = 'pensieve-custom-aura-styles';
+      document.head.appendChild(customStyleEl);
+    }
+    
+    const storedCodesJson = localStorage.getItem('pensieve_custom_effects_code');
+    if (storedCodesJson) {
+      const storedCodes = JSON.parse(storedCodesJson);
+      let cssToInject = '';
+      activeEffects.forEach(effectId => {
+        if (storedCodes[effectId] && storedCodes[effectId].cssCode) {
+          cssToInject += `\n/* Custom Dynamic Style for equipped effect: ${effectId} */\n${storedCodes[effectId].cssCode}\n`;
+        }
+      });
+      customStyleEl.textContent = cssToInject;
+    } else {
+      customStyleEl.textContent = '';
+    }
+  } catch (err) {
+    console.error('Error applying custom dynamic aura CSS:', err);
+  }
+  
   // Special Handling for CRT
   if (activeEffects.includes('effect-crt')) {
     document.body.classList.add('crt-active');
