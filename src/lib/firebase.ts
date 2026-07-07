@@ -46,7 +46,7 @@ export const auth = getAuth(app);
 import { getFirestore } from 'firebase/firestore';
 // Initialize Firestore with the custom database ID if configured
 const customDbId = isBrowser ? localStorage.getItem('pensieve_firebase_databaseId') : null;
-const dbId = customDbId || firebaseConfig.firestoreDatabaseId;
+const dbId = customDbId || (firebaseConfig as any).firestoreDatabaseId;
 export const db = dbId ? getFirestore(app, dbId) : getFirestore(app);
 
 export default app;

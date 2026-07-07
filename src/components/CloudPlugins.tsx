@@ -48,6 +48,116 @@ export default function CloudPlugins({ onItemCreated, onTriggerToast, initialAct
   const [realDriveFiles, setRealDriveFiles] = useState<MockFile[] | null>(null);
   const [realPhotosFiles, setRealPhotosFiles] = useState<MockFile[] | null>(null);
   const [isLoadingRealFiles, setIsLoadingRealFiles] = useState(false);
+  const [isPickerLoaded, setIsPickerLoaded] = useState(false);
+
+  useEffect(() => {
+    // Dynamically load the Google API (gapi) script for Picker
+    const loadScript = async () => {
+      try {
+        const script = document.createElement('script');
+        script.src = 'https://apis.google.com/js/api.js';
+        script.onload = () => {
+          (window as any).gapi.load('picker', {
+            callback: () => {
+              setIsPickerLoaded(true);
+            },
+            onerror: () => {
+              console.warn('Google Picker API load failed');
+            }
+          });
+        };
+        script.onerror = () => {
+          console.warn('gapi script load failed');
+        };
+        document.body.appendChild(script);
+      } catch (err) {
+        console.error('Error loading Google Picker scripts:', err);
+      }
+    };
+    
+    loadScript();
+  }, []);
+
+  const handleImportGooglePickerFile = async (file: any) => {
+    try {
+      const isImage = file.mimeType && file.mimeType.startsWith('image/');
+      const sizeStr = file.sizeBytes ? `${(file.sizeBytes / 1024).toFixed(0)} KB` : 'Unknown size';
+      
+      await onItemCreated({
+        type: isImage ? 'image' : 'document',
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        content: `File ID: ${file.id}\nMimeType: ${file.mimeType}\nURL: ${file.url || file.embedUrl || 'https://drive.google.com'}\n\nThis file was selected using the real Google Picker API and imported into your secure Pensieve vault.`,
+        imageUrl: isImage ? (file.url || file.embedUrl) : undefined,
+        tags: ['Google Picker', 'Google Drive', isImage ? 'Photos' : 'Documents'],
+        manualTags: ['imported', 'google-picker'],
+        isFavorite: false,
+        fileSize: sizeStr,
+        aiSummary: `Imported via Google Picker: ${file.name}`
+      });
+
+      if (onTriggerToast) {
+        onTriggerToast(`"${file.name}" selected via Google Picker and imported!`, 'success');
+      }
+    } catch (err) {
+      console.error('Failed to import Google Picker file', err);
+      if (onTriggerToast) {
+        onTriggerToast('Failed to import file into Pensieve', 'error');
+      }
+    }
+  };
+
+  const launchPicker = () => {
+    const driveConn = localStorage.getItem('pensieve_plugin_google_drive');
+    if (!driveConn) {
+      if (onTriggerToast) {
+        onTriggerToast('Please connect your Google Drive account first', 'warning');
+      }
+      return;
+    }
+    
+    try {
+      const conn = JSON.parse(driveConn);
+      const accessToken = conn.accessToken;
+      if (!accessToken) {
+        if (onTriggerToast) {
+          onTriggerToast('Access token not found. Please reconnect your account.', 'warning');
+        }
+        return;
+      }
+      
+      if (!isPickerLoaded || !(window as any).google?.picker) {
+        if (onTriggerToast) {
+          onTriggerToast('Google Picker API is still loading. Please wait a moment...', 'info');
+        }
+        return;
+      }
+      
+      const pickerOrigin =
+        window.location.ancestorOrigins &&
+        window.location.ancestorOrigins.length > 0
+          ? window.location.ancestorOrigins[window.location.ancestorOrigins.length - 1]
+          : window.location.origin;
+
+      const picker = new (window as any).google.picker.PickerBuilder()
+        .addView((window as any).google.picker.ViewId.DOCS)
+        .setOAuthToken(accessToken)
+        .setCallback((data: any) => {
+          if (data.action === (window as any).google.picker.Action.PICKED) {
+            const file = data.docs[0];
+            handleImportGooglePickerFile(file);
+          }
+        })
+        .setOrigin(pickerOrigin)
+        .build();
+        
+      picker.setVisible(true);
+    } catch (err) {
+      console.error('Error launching Google Picker:', err);
+      if (onTriggerToast) {
+        onTriggerToast('Failed to open Google Picker', 'error');
+      }
+    }
+  };
 
   const fetchRealCloudFiles = async (type: 'googleDrive' | 'googlePhotos', token: string) => {
     setIsLoadingRealFiles(true);
@@ -397,7 +507,8 @@ export default function CloudPlugins({ onItemCreated, onTriggerToast, initialAct
 
       const provider = new GoogleAuthProvider();
       if (pluginId === 'googleDrive') {
-        provider.addScope('https://www.googleapis.com/auth/drive.readonly');
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        provider.addScope('https://www.googleapis.com/auth/drive.metadata.readonly');
       } else if (pluginId === 'googlePhotos') {
         provider.addScope('https://www.googleapis.com/auth/photoslibrary.readonly');
       }
@@ -771,6 +882,14 @@ export default function CloudPlugins({ onItemCreated, onTriggerToast, initialAct
             </div>
 
             <div className="flex items-center gap-2">
+              {activeExplorer === 'googleDrive' && (
+                <button
+                  onClick={launchPicker}
+                  className="py-1.5 px-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-[10px] uppercase tracking-wider rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                >
+                  <HardDrive className="w-3.5 h-3.5 animate-pulse" /> Launch Google Picker
+                </button>
+              )}
               <div className="text-[9px] font-bold text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full uppercase border border-amber-500/20 font-mono">
                 No Cloud Backups Active
               </div>
