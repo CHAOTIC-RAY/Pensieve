@@ -842,7 +842,7 @@ export default function LandingPage() {
                   rarity: 'Common',
                   icon: Sparkles,
                   xp: 10,
-                  image: '/assets/images/first_spark_1783225522306.jpg',
+                  image: 'https://iili.io/Clop9gS.jpg',
                   unlockedAt: new Date().toISOString()
                 }}
               />
@@ -857,7 +857,7 @@ export default function LandingPage() {
                   rarity: 'Rare',
                   icon: Compass,
                   xp: 50,
-                  image: '/assets/images/wandering_mind_1783225553989.jpg',
+                  image: 'https://iili.io/Cloyits.jpg',
                   unlockedAt: new Date().toISOString()
                 }}
               />
@@ -872,7 +872,7 @@ export default function LandingPage() {
                   rarity: 'Epic',
                   icon: Palette,
                   xp: 40,
-                  image: '/assets/images/colorful_thinker_1783225582426.jpg',
+                  image: 'https://iili.io/CloyzG4.jpg',
                   unlockedAt: new Date().toISOString()
                 }}
               />

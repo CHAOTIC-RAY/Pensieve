@@ -16,8 +16,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     description: 'Save your first item.',
     rarity: 'Common',
     icon: Sparkles,
-    xp: 10,
-    image: '/assets/images/first_spark_1783225522306.jpg',
+    image: 'https://iili.io/Clop9gS.jpg',
     quote: "The important thing is not to stop questioning. Curiosity has its own reason for existing.",
     author: "Albert Einstein",
     lore: "Even the grandest constellation begins with a single burning particle of ambition."
@@ -28,8 +27,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     description: 'Use Serendipity to explore your thoughts.',
     rarity: 'Common',
     icon: Compass,
-    xp: 50,
-    image: '/assets/images/wandering_mind_1783225553989.jpg',
+    image: 'https://iili.io/Cloyits.jpg',
     quote: "All that is gold does not glitter, not all those who wander are lost.",
     author: "J.R.R. Tolkien",
     lore: "In the quiet labyrinths of the wandering soul, the most beautiful paths are found."
@@ -40,8 +38,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     description: 'Favorite at least 5 items.',
     rarity: 'Rare',
     icon: Heart,
-    xp: 100,
-    image: '/assets/images/curator_1783225567567.jpg',
+    image: 'https://iili.io/Cloywwg.jpg',
     quote: "Memory is the diary that we all carry about with us.",
     author: "Oscar Wilde",
     lore: "To preserve a moment is to immortalize a piece of the cosmos."
@@ -52,8 +49,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     description: 'Save a color swatch.',
     rarity: 'Rare',
     icon: Palette,
-    xp: 100,
-    image: '/assets/images/colorful_thinker_1783225582426.jpg',
+    image: 'https://iili.io/CloyzG4.jpg',
     quote: "I found I could say things with color and shapes that I couldn't say any other way.",
     author: "Georgia O'Keeffe",
     lore: "A mind that thinks in hues can paint the void with starlight."
@@ -64,8 +60,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     description: 'Save 3 articles or links.',
     rarity: 'Rare',
     icon: Bookmark,
-    xp: 150,
-    image: '/assets/images/knowledge_seeker_1783225593832.jpg',
+    image: 'https://iili.io/CloyDKl.jpg',
     quote: "The only true wisdom is in knowing you know nothing.",
     author: "Socrates",
     lore: "Gathering fragments of the truth to assemble the ultimate grimoire of reality."
@@ -76,8 +71,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     description: 'Log memories across 3 distinct calendar days.',
     rarity: 'Rare',
     icon: Clock,
-    xp: 200,
-    image: '/assets/images/time_weaver_1783225609753.jpg',
+    image: 'https://iili.io/Cloyh91.jpg',
     quote: "Yesterday is but today's memory, and tomorrow is today's dream.",
     author: "Kahlil Gibran",
     lore: "To master time is to see the past, present, and future woven as one single tapestry."
@@ -88,8 +82,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     description: 'Let the Local AI analyze 5 items.',
     rarity: 'Epic',
     icon: Brain,
-    xp: 300,
-    image: '/assets/images/deep_thinker_1783225623783.jpg',
+    image: 'https://iili.io/CloyI6l.jpg',
     quote: "The mind is not a vessel to be filled, but a fire to be kindled.",
     author: "Plutarch",
     lore: "Allowing synthetic sparks to merge with human grace, uncovering hidden geometries."
@@ -100,8 +93,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     description: 'Initiate a deep conversation in the Local AI Playground.',
     rarity: 'Epic',
     icon: MessageSquare,
-    xp: 350,
-    image: '/assets/images/cosmic_synthesis_1783225638436.jpg',
+    image: 'https://iili.io/CloycZb.jpg',
     quote: "The cosmos is within us. We are made of star-stuff. We are a way for the universe to know itself.",
     author: "Carl Sagan",
     lore: "When mind and machine hum in harmony, the secrets of the cosmos lay bare."
@@ -112,8 +104,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     description: 'Amass a collection of 20 items.',
     rarity: 'Legendary',
     icon: Archive,
-    xp: 500,
-    image: '/assets/images/hoarder_1783225650570.jpg',
+    image: 'https://iili.io/CloyuF2.jpg',
     quote: "An index to the world's ancient wisdom is worth more than all the gold of the dragon.",
     author: "Ancient Proverb",
     lore: "He who holds a thousand scrolls is wealthy beyond measure, for knowledge never decays."
@@ -124,8 +115,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     description: 'Customize a magic design template in the Theme Studio.',
     rarity: 'Legendary',
     icon: Zap,
-    xp: 600,
-    image: '/assets/images/grand_alchemist_1783225665178.jpg',
+    image: 'https://iili.io/Cloy799.jpg',
     quote: "True alchemy is not the transmuting of lead into gold, but the transformation of the mind.",
     author: "Hermes Trismegistus",
     lore: "By altering the canvas, you change the reflection; your perspective is your magic wand."
@@ -663,16 +653,16 @@ export const ACHIEVEMENTS: Achievement[] = (() => {
   // Theme-specific images: each of the 10 generated themes gets its own
   // dedicated artwork instead of cycling through unrelated images
   const themeImages: Record<number, string> = {
-    0: '/assets/images/theme_cosmic_cartography.png',      // Cosmic Cartography
-    1: '/assets/images/time_weaver_1783225609753.jpg',     // Temporal Weaver
-    2: '/assets/images/wandering_mind_1783225553989.jpg',  // Zen Archivist
-    3: '/assets/images/cosmic_synthesis_1783225638436.jpg',// Silicon Sage
-    4: '/assets/images/colorful_thinker_1783225582426.jpg',// Chroma Muse
-    5: '/assets/images/hoarder_1783225650570.jpg',         // Literary Wanderer
-    6: '/assets/images/curator_1783225567567.jpg',         // Acoustic Whisperer
-    7: '/assets/images/grand_alchemist_1783225665178.jpg', // Celluloid Dreamer
-    8: '/assets/images/first_spark_1783225522306.jpg',     // Midnight Mystic
-    9: '/assets/images/deep_thinker_1783225623783.jpg',    // Architect of Thought
+    0: 'https://iili.io/CloyUcN.jpg',      // Cosmic Cartography
+    1: 'https://iili.io/Cloyh91.jpg',     // Temporal Weaver
+    2: 'https://iili.io/Cloyits.jpg',     // Zen Archivist
+    3: 'https://iili.io/CloycZb.jpg',     // Silicon Sage
+    4: 'https://iili.io/CloyzG4.jpg',     // Chroma Muse
+    5: 'https://iili.io/CloyuF2.jpg',     // Literary Wanderer
+    6: 'https://iili.io/Cloywwg.jpg',     // Acoustic Whisperer
+    7: 'https://iili.io/Cloy799.jpg',     // Celluloid Dreamer
+    8: 'https://iili.io/Clop9gS.jpg',     // Midnight Mystic
+    9: 'https://iili.io/CloyI6l.jpg',     // Architect of Thought
   };
 
   // Generate 100 achievements (10 themes * 10 items)
@@ -685,7 +675,7 @@ export const ACHIEVEMENTS: Achievement[] = (() => {
       const author = theme.authors[i];
       const lore = theme.lores[i];
       
-      const imageUrl = themeImages[themeIdx] || '/assets/images/first_spark_1783225522306.jpg';
+      const imageUrl = themeImages[themeIdx] || 'https://iili.io/Clop9gS.jpg';
       
       list.push({
         id,

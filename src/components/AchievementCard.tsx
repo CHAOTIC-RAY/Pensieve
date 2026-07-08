@@ -34,39 +34,35 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
       setImgSrc(getResolvedImageUrl(achievement.image));
     } else {
       let resolvedFallback = '';
-      if (achievement.id.startsWith('generated_')) {
-        const parts = achievement.id.split('_');
-        const themeIdx = parseInt(parts[1], 10);
-        const itemIdx = parseInt(parts[2], 10);
         const themeImages: Record<number, string> = {
-          0: '/assets/images/theme_cosmic_cartography.png',
-          1: '/assets/images/time_weaver_1783225609753.jpg',
-          2: '/assets/images/wandering_mind_1783225553989.jpg',
-          3: '/assets/images/cosmic_synthesis_1783225638436.jpg',
-          4: '/assets/images/colorful_thinker_1783225582426.jpg',
-          5: '/assets/images/hoarder_1783225650570.jpg',
-          6: '/assets/images/curator_1783225567567.jpg',
-          7: '/assets/images/grand_alchemist_1783225665178.jpg',
-          8: '/assets/images/first_spark_1783225522306.jpg',
-          9: '/assets/images/deep_thinker_1783225623783.jpg',
+          0: 'https://iili.io/CloyUcN.jpg',
+          1: 'https://iili.io/Cloyh91.jpg',
+          2: 'https://iili.io/Cloyits.jpg',
+          3: 'https://iili.io/CloycZb.jpg',
+          4: 'https://iili.io/CloyzG4.jpg',
+          5: 'https://iili.io/CloyuF2.jpg',
+          6: 'https://iili.io/Cloywwg.jpg',
+          7: 'https://iili.io/Cloy799.jpg',
+          8: 'https://iili.io/Clop9gS.jpg',
+          9: 'https://iili.io/CloyI6l.jpg',
         };
-        resolvedFallback = themeImages[themeIdx] || '/assets/images/first_spark_1783225522306.jpg';
+        resolvedFallback = themeImages[themeIdx] || 'https://iili.io/Clop9gS.jpg';
       } else {
         const localMap: Record<string, string> = {
-          first_spark: '/assets/images/first_spark_1783225522306.jpg',
-          wandering_mind: '/assets/images/wandering_mind_1783225553989.jpg',
-          curator: '/assets/images/curator_1783225567567.jpg',
-          colorful_thinker: '/assets/images/colorful_thinker_1783225582426.jpg',
-          colorful: '/assets/images/colorful_thinker_1783225582426.jpg',
-          knowledge_seeker: '/assets/images/knowledge_seeker_1783225593832.jpg',
-          chronomancer: '/assets/images/time_weaver_1783225609753.jpg',
-          time_weaver: '/assets/images/time_weaver_1783225609753.jpg',
-          deep_thinker: '/assets/images/deep_thinker_1783225623783.jpg',
-          mind_meld: '/assets/images/cosmic_synthesis_1783225638436.jpg',
-          cosmic_synthesis: '/assets/images/cosmic_synthesis_1783225638436.jpg',
-          hoarder: '/assets/images/hoarder_1783225650570.jpg',
-          transmuter: '/assets/images/grand_alchemist_1783225665178.jpg',
-          grand_alchemist: '/assets/images/grand_alchemist_1783225665178.jpg',
+          first_spark: 'https://iili.io/Clop9gS.jpg',
+          wandering_mind: 'https://iili.io/Cloyits.jpg',
+          curator: 'https://iili.io/Cloywwg.jpg',
+          colorful_thinker: 'https://iili.io/CloyzG4.jpg',
+          colorful: 'https://iili.io/CloyzG4.jpg',
+          knowledge_seeker: 'https://iili.io/CloyDKl.jpg',
+          chronomancer: 'https://iili.io/Cloyh91.jpg',
+          time_weaver: 'https://iili.io/Cloyh91.jpg',
+          deep_thinker: 'https://iili.io/CloyI6l.jpg',
+          mind_meld: 'https://iili.io/CloycZb.jpg',
+          cosmic_synthesis: 'https://iili.io/CloycZb.jpg',
+          hoarder: 'https://iili.io/CloyuF2.jpg',
+          transmuter: 'https://iili.io/Cloy799.jpg',
+          grand_alchemist: 'https://iili.io/Cloy799.jpg',
         };
         resolvedFallback = localMap[achievement.id] || '';
       }
@@ -74,7 +70,7 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
       if (resolvedFallback) {
         setImgSrc(getResolvedImageUrl(resolvedFallback));
       } else {
-        setImgSrc(getResolvedImageUrl('/assets/images/first_spark_1783225522306.jpg'));
+        setImgSrc(getResolvedImageUrl('https://iili.io/Clop9gS.jpg'));
       }
     }
   }, [achievement.image, achievement.id]);
@@ -89,34 +85,34 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
       const themeIdx = parseInt(parts[1], 10);
       const itemIdx = parseInt(parts[2], 10);
         const themeImages: Record<number, string> = {
-          0: '/assets/images/theme_cosmic_cartography.png',
-          1: '/assets/images/time_weaver_1783225609753.jpg',
-          2: '/assets/images/wandering_mind_1783225553989.jpg',
-          3: '/assets/images/cosmic_synthesis_1783225638436.jpg',
-          4: '/assets/images/colorful_thinker_1783225582426.jpg',
-          5: '/assets/images/hoarder_1783225650570.jpg',
-          6: '/assets/images/curator_1783225567567.jpg',
-          7: '/assets/images/grand_alchemist_1783225665178.jpg',
-          8: '/assets/images/first_spark_1783225522306.jpg',
-          9: '/assets/images/deep_thinker_1783225623783.jpg',
+          0: 'https://iili.io/CloyUcN.jpg',
+          1: 'https://iili.io/Cloyh91.jpg',
+          2: 'https://iili.io/Cloyits.jpg',
+          3: 'https://iili.io/CloycZb.jpg',
+          4: 'https://iili.io/CloyzG4.jpg',
+          5: 'https://iili.io/CloyuF2.jpg',
+          6: 'https://iili.io/Cloywwg.jpg',
+          7: 'https://iili.io/Cloy799.jpg',
+          8: 'https://iili.io/Clop9gS.jpg',
+          9: 'https://iili.io/CloyI6l.jpg',
         };
-        resolvedFallback = themeImages[themeIdx] || '/assets/images/first_spark_1783225522306.jpg';
+        resolvedFallback = themeImages[themeIdx] || 'https://iili.io/Clop9gS.jpg';
     } else {
       const localMap: Record<string, string> = {
-        first_spark: '/assets/images/first_spark_1783225522306.jpg',
-        wandering_mind: '/assets/images/wandering_mind_1783225553989.jpg',
-        curator: '/assets/images/curator_1783225567567.jpg',
-        colorful_thinker: '/assets/images/colorful_thinker_1783225582426.jpg',
-        colorful: '/assets/images/colorful_thinker_1783225582426.jpg',
-        knowledge_seeker: '/assets/images/knowledge_seeker_1783225593832.jpg',
-        chronomancer: '/assets/images/time_weaver_1783225609753.jpg',
-        time_weaver: '/assets/images/time_weaver_1783225609753.jpg',
-        deep_thinker: '/assets/images/deep_thinker_1783225623783.jpg',
-        mind_meld: '/assets/images/cosmic_synthesis_1783225638436.jpg',
-        cosmic_synthesis: '/assets/images/cosmic_synthesis_1783225638436.jpg',
-        hoarder: '/assets/images/hoarder_1783225650570.jpg',
-        transmuter: '/assets/images/grand_alchemist_1783225665178.jpg',
-        grand_alchemist: '/assets/images/grand_alchemist_1783225665178.jpg',
+        first_spark: 'https://iili.io/Clop9gS.jpg',
+        wandering_mind: 'https://iili.io/Cloyits.jpg',
+        curator: 'https://iili.io/Cloywwg.jpg',
+        colorful_thinker: 'https://iili.io/CloyzG4.jpg',
+        colorful: 'https://iili.io/CloyzG4.jpg',
+        knowledge_seeker: 'https://iili.io/CloyDKl.jpg',
+        chronomancer: 'https://iili.io/Cloyh91.jpg',
+        time_weaver: 'https://iili.io/Cloyh91.jpg',
+        deep_thinker: 'https://iili.io/CloyI6l.jpg',
+        mind_meld: 'https://iili.io/CloycZb.jpg',
+        cosmic_synthesis: 'https://iili.io/CloycZb.jpg',
+        hoarder: 'https://iili.io/CloyuF2.jpg',
+        transmuter: 'https://iili.io/Cloy799.jpg',
+        grand_alchemist: 'https://iili.io/Cloy799.jpg',
       };
       resolvedFallback = localMap[achievement.id] || '';
     }
