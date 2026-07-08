@@ -30,10 +30,7 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
   React.useEffect(() => {
     setHasFailed(false);
     
-    // Check if the image path is a known default achievement or an Unsplash URL that we need to replace
-    const isUnsplash = achievement.image && achievement.image.includes('unsplash.com');
-    
-    if (achievement.image && !isUnsplash) {
+    if (achievement.image) {
       setImgSrc(getResolvedImageUrl(achievement.image));
     } else {
       let resolvedFallback = '';
@@ -41,37 +38,35 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
         const parts = achievement.id.split('_');
         const themeIdx = parseInt(parts[1], 10);
         const itemIdx = parseInt(parts[2], 10);
-        const baseImages = [
-          'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=600&q=80',
-          'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=600&q=80',
-          'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80',
-          'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=600&q=80',
-          'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?auto=format&fit=crop&w=600&q=80',
-          'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80',
-          'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=600&q=80',
-          'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=80',
-          'https://images.unsplash.com/photo-1589782182703-2add672684f2?auto=format&fit=crop&w=600&q=80',
-          'https://images.unsplash.com/photo-1532187643603-ba119ca4109e?auto=format&fit=crop&w=600&q=80'
-        ];
-        // Mirror compile-time logic exactly: const imageUrl = baseImages[(themeIdx + i) % baseImages.length];
-        const idx = (!isNaN(themeIdx) && !isNaN(itemIdx)) ? (themeIdx + itemIdx) % baseImages.length : 0;
-        resolvedFallback = baseImages[idx];
+        const themeImages: Record<number, string> = {
+          0: '/assets/images/theme_cosmic_cartography.png',
+          1: '/assets/images/time_weaver_1783225609753.jpg',
+          2: '/assets/images/wandering_mind_1783225553989.jpg',
+          3: '/assets/images/cosmic_synthesis_1783225638436.jpg',
+          4: '/assets/images/colorful_thinker_1783225582426.jpg',
+          5: '/assets/images/hoarder_1783225650570.jpg',
+          6: '/assets/images/curator_1783225567567.jpg',
+          7: '/assets/images/grand_alchemist_1783225665178.jpg',
+          8: '/assets/images/first_spark_1783225522306.jpg',
+          9: '/assets/images/deep_thinker_1783225623783.jpg',
+        };
+        resolvedFallback = themeImages[themeIdx] || '/assets/images/first_spark_1783225522306.jpg';
       } else {
         const localMap: Record<string, string> = {
-          first_spark: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=600&q=80',
-          wandering_mind: 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=600&q=80',
-          curator: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80',
-          colorful_thinker: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=600&q=80',
-          colorful: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=600&q=80',
-          knowledge_seeker: 'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?auto=format&fit=crop&w=600&q=80',
-          chronomancer: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80',
-          time_weaver: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80',
-          deep_thinker: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=600&q=80',
-          mind_meld: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=80',
-          cosmic_synthesis: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=80',
-          hoarder: 'https://images.unsplash.com/photo-1589782182703-2add672684f2?auto=format&fit=crop&w=600&q=80',
-          transmuter: 'https://images.unsplash.com/photo-1532187643603-ba119ca4109e?auto=format&fit=crop&w=600&q=80',
-          grand_alchemist: 'https://images.unsplash.com/photo-1532187643603-ba119ca4109e?auto=format&fit=crop&w=600&q=80',
+          first_spark: '/assets/images/first_spark_1783225522306.jpg',
+          wandering_mind: '/assets/images/wandering_mind_1783225553989.jpg',
+          curator: '/assets/images/curator_1783225567567.jpg',
+          colorful_thinker: '/assets/images/colorful_thinker_1783225582426.jpg',
+          colorful: '/assets/images/colorful_thinker_1783225582426.jpg',
+          knowledge_seeker: '/assets/images/knowledge_seeker_1783225593832.jpg',
+          chronomancer: '/assets/images/time_weaver_1783225609753.jpg',
+          time_weaver: '/assets/images/time_weaver_1783225609753.jpg',
+          deep_thinker: '/assets/images/deep_thinker_1783225623783.jpg',
+          mind_meld: '/assets/images/cosmic_synthesis_1783225638436.jpg',
+          cosmic_synthesis: '/assets/images/cosmic_synthesis_1783225638436.jpg',
+          hoarder: '/assets/images/hoarder_1783225650570.jpg',
+          transmuter: '/assets/images/grand_alchemist_1783225665178.jpg',
+          grand_alchemist: '/assets/images/grand_alchemist_1783225665178.jpg',
         };
         resolvedFallback = localMap[achievement.id] || '';
       }
@@ -79,7 +74,7 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
       if (resolvedFallback) {
         setImgSrc(getResolvedImageUrl(resolvedFallback));
       } else {
-        setImgSrc(getResolvedImageUrl('https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=600&q=80'));
+        setImgSrc(getResolvedImageUrl('/assets/images/first_spark_1783225522306.jpg'));
       }
     }
   }, [achievement.image, achievement.id]);
@@ -93,36 +88,35 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
       const parts = achievement.id.split('_');
       const themeIdx = parseInt(parts[1], 10);
       const itemIdx = parseInt(parts[2], 10);
-      const baseImages = [
-        'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=600&q=80',
-        'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=600&q=80',
-        'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80',
-        'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=600&q=80',
-        'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?auto=format&fit=crop&w=600&q=80',
-        'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80',
-        'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=600&q=80',
-        'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=80',
-        'https://images.unsplash.com/photo-1589782182703-2add672684f2?auto=format&fit=crop&w=600&q=80',
-        'https://images.unsplash.com/photo-1532187643603-ba119ca4109e?auto=format&fit=crop&w=600&q=80'
-      ];
-      const idx = (!isNaN(themeIdx) && !isNaN(itemIdx)) ? (themeIdx + itemIdx) % baseImages.length : 0;
-      resolvedFallback = baseImages[idx];
+        const themeImages: Record<number, string> = {
+          0: '/assets/images/theme_cosmic_cartography.png',
+          1: '/assets/images/time_weaver_1783225609753.jpg',
+          2: '/assets/images/wandering_mind_1783225553989.jpg',
+          3: '/assets/images/cosmic_synthesis_1783225638436.jpg',
+          4: '/assets/images/colorful_thinker_1783225582426.jpg',
+          5: '/assets/images/hoarder_1783225650570.jpg',
+          6: '/assets/images/curator_1783225567567.jpg',
+          7: '/assets/images/grand_alchemist_1783225665178.jpg',
+          8: '/assets/images/first_spark_1783225522306.jpg',
+          9: '/assets/images/deep_thinker_1783225623783.jpg',
+        };
+        resolvedFallback = themeImages[themeIdx] || '/assets/images/first_spark_1783225522306.jpg';
     } else {
       const localMap: Record<string, string> = {
-        first_spark: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=600&q=80',
-        wandering_mind: 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&w=600&q=80',
-        curator: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80',
-        colorful_thinker: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=600&q=80',
-        colorful: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=600&q=80',
-        knowledge_seeker: 'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?auto=format&fit=crop&w=600&q=80',
-        chronomancer: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80',
-        time_weaver: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80',
-        deep_thinker: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=600&q=80',
-        mind_meld: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=80',
-        cosmic_synthesis: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=80',
-        hoarder: 'https://images.unsplash.com/photo-1589782182703-2add672684f2?auto=format&fit=crop&w=600&q=80',
-        transmuter: 'https://images.unsplash.com/photo-1532187643603-ba119ca4109e?auto=format&fit=crop&w=600&q=80',
-        grand_alchemist: 'https://images.unsplash.com/photo-1532187643603-ba119ca4109e?auto=format&fit=crop&w=600&q=80',
+        first_spark: '/assets/images/first_spark_1783225522306.jpg',
+        wandering_mind: '/assets/images/wandering_mind_1783225553989.jpg',
+        curator: '/assets/images/curator_1783225567567.jpg',
+        colorful_thinker: '/assets/images/colorful_thinker_1783225582426.jpg',
+        colorful: '/assets/images/colorful_thinker_1783225582426.jpg',
+        knowledge_seeker: '/assets/images/knowledge_seeker_1783225593832.jpg',
+        chronomancer: '/assets/images/time_weaver_1783225609753.jpg',
+        time_weaver: '/assets/images/time_weaver_1783225609753.jpg',
+        deep_thinker: '/assets/images/deep_thinker_1783225623783.jpg',
+        mind_meld: '/assets/images/cosmic_synthesis_1783225638436.jpg',
+        cosmic_synthesis: '/assets/images/cosmic_synthesis_1783225638436.jpg',
+        hoarder: '/assets/images/hoarder_1783225650570.jpg',
+        transmuter: '/assets/images/grand_alchemist_1783225665178.jpg',
+        grand_alchemist: '/assets/images/grand_alchemist_1783225665178.jpg',
       };
       resolvedFallback = localMap[achievement.id] || '';
     }
