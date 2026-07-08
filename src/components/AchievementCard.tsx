@@ -34,6 +34,9 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
       setImgSrc(getResolvedImageUrl(achievement.image));
     } else {
       let resolvedFallback = '';
+      if (achievement.id.startsWith('generated_')) {
+        const parts = achievement.id.split('_');
+        const themeIdx = parseInt(parts[1], 10);
         const themeImages: Record<number, string> = {
           0: 'https://iili.io/CloyUcN.jpg',
           1: 'https://iili.io/Cloyh91.jpg',
