@@ -346,6 +346,7 @@ export default function AchievementCard({ achievement, unlocked = false, onClick
                   unlocked ? '' : 'blur-sm brightness-[0.4] grayscale'
                 }`}
                 referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
               />
             ) : unlocked ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900 gap-2">
