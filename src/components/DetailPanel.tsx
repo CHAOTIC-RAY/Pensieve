@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import { MindItem, NoteStyle } from '../types';
+import { getBacklinks, syncLinkedItemIds } from '../lib/wikiLinks';
 
 interface DetailPanelProps {
   item: MindItem | null;
@@ -17,6 +18,8 @@ interface DetailPanelProps {
   onDeleteItem: (item: MindItem) => Promise<void>;
   onSetVibeFilter?: (type: 'color' | 'tag', value: string, label: string) => void;
   onOpenReader?: (item: MindItem) => void;
+  allItems?: MindItem[];
+  onNavigateToItem?: (item: MindItem) => void;
 }
 
 export default function DetailPanel({ 
@@ -25,7 +28,9 @@ export default function DetailPanel({
   onUpdateItem, 
   onDeleteItem,
   onSetVibeFilter,
-  onOpenReader
+  onOpenReader,
+  allItems = [],
+  onNavigateToItem,
 }: DetailPanelProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -42,6 +47,7 @@ export default function DetailPanel({
   const [showLightbox, setShowLightbox] = useState(false);
   const [imageAnnotation, setImageAnnotation] = useState('');
   const [annotations, setAnnotations] = useState<{ id: string; text: string; time: string }[]>([]);
+  const [linkPickerQuery, setLinkPickerQuery] = useState('');
 
   // Sheet / Table state
   const [tableData, setTableData] = useState<string[][]>([]);
@@ -465,24 +471,24 @@ export default function DetailPanel({
               </div>
             )}
 
-            {/* Color Palette / Swatch Inspector */}
+            {/* Color Palette / Swatch Inspector — compact */}
             {item.type === 'color' && item.colorHex && (
-              <div className="p-6 border border-border-subtle rounded-3xl bg-foreground/[0.01] space-y-6">
-                <div className="flex flex-col sm:flex-row items-center gap-6">
+              <div className="p-4 border border-border-subtle rounded-2xl bg-foreground/[0.01] space-y-4">
+                <div className="flex flex-row items-center gap-4">
                   {/* Swatch visual */}
                   <div 
-                    className="w-32 h-32 rounded-3xl shadow-lg border border-white/20 cursor-pointer relative group flex items-end p-2.5"
+                    className="w-16 h-16 rounded-2xl shadow-md border border-white/20 cursor-pointer relative group shrink-0"
                     style={{ backgroundColor: item.colorHex }}
                     onClick={() => copyToClipboard(item.colorHex!)}
                   >
-                    <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 rounded-3xl transition flex items-center justify-center text-white text-xs font-bold font-mono">
-                      Copy Hex
+                    <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 rounded-2xl transition flex items-center justify-center text-white text-[10px] font-bold font-mono">
+                      Copy
                     </div>
                   </div>
                   
                   {/* Swatch detail */}
-                  <div className="flex-1 space-y-2 text-center sm:text-left">
-                    <h3 className="text-xl font-bold uppercase tracking-wide text-foreground">{title || 'Untitled Color'}</h3>
+                  <div className="flex-1 space-y-1.5 text-left min-w-0">
+                    <h3 className="text-base font-bold uppercase tracking-wide text-foreground font-mono truncate">{item.colorHex.toUpperCase()}</h3>
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 pt-1">
                       <button 
                         onClick={() => copyToClipboard(item.colorHex!)}
@@ -802,6 +808,109 @@ export default function DetailPanel({
                     Add
                   </button>
                 </form>
+              </div>
+            )}
+
+            {/* Bidirectional links (mymind-style) */}
+            {item && (
+              <div className="pt-8 border-t border-border-subtle/50 space-y-4">
+                <span className="text-[10px] font-mono text-foreground/45 uppercase tracking-widest flex items-center gap-1.5">
+                  <LinkIcon className="w-3.5 h-3.5" />
+                  Linked Ideas
+                </span>
+                <p className="text-[11px] text-foreground/45 leading-relaxed">
+                  Type <code className="px-1 py-0.5 rounded bg-foreground/5 font-mono text-[10px]">[[Note Title]]</code> in the body, or link an item below.
+                </p>
+                {(() => {
+                  const outboundIds = syncLinkedItemIds(item, allItems);
+                  const outbound = outboundIds
+                    .map((id) => allItems.find((i) => i.id === id))
+                    .filter(Boolean) as MindItem[];
+                  const backlinks = getBacklinks(item.id, allItems);
+                  return (
+                    <>
+                      {outbound.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {outbound.map((linked) => (
+                            <button
+                              key={linked.id}
+                              type="button"
+                              onClick={() => onNavigateToItem?.(linked)}
+                              className="text-xs px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition cursor-pointer"
+                            >
+                              → {linked.title || linked.type}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {backlinks.length > 0 && (
+                        <div className="space-y-2">
+                          <span className="text-[9px] font-mono uppercase tracking-wider text-foreground/40">
+                            Backlinks
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {backlinks.map((bl) => (
+                              <button
+                                key={bl.id}
+                                type="button"
+                                onClick={() => onNavigateToItem?.(bl)}
+                                className="text-xs px-3 py-1.5 rounded-lg border border-border-subtle bg-foreground/[0.02] text-foreground/70 hover:border-foreground/20 transition cursor-pointer"
+                              >
+                                ← {bl.title || bl.type}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={linkPickerQuery}
+                          onChange={(e) => setLinkPickerQuery(e.target.value)}
+                          placeholder="Search vault to link…"
+                          className="w-full bg-input-bg border border-border-subtle rounded-xl px-3.5 py-2 text-xs text-foreground placeholder-foreground/35 outline-none focus:border-primary/40"
+                        />
+                        {linkPickerQuery.trim().length > 0 && (
+                          <div className="max-h-36 overflow-y-auto rounded-xl border border-border-subtle divide-y divide-border-subtle/60">
+                            {allItems
+                              .filter(
+                                (i) =>
+                                  i.id !== item.id &&
+                                  (i.title || i.content)
+                                    .toLowerCase()
+                                    .includes(linkPickerQuery.toLowerCase())
+                              )
+                              .slice(0, 8)
+                              .map((candidate) => {
+                                const already = (item.linkedItemIds || []).includes(candidate.id);
+                                return (
+                                  <button
+                                    key={candidate.id}
+                                    type="button"
+                                    onClick={async () => {
+                                      const nextIds = already
+                                        ? (item.linkedItemIds || []).filter((id) => id !== candidate.id)
+                                        : Array.from(new Set([...(item.linkedItemIds || []), candidate.id]));
+                                      await onUpdateItem({ ...item, linkedItemIds: nextIds });
+                                      setLinkPickerQuery('');
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-foreground/[0.03] flex items-center justify-between gap-2 cursor-pointer"
+                                  >
+                                    <span className="truncate font-medium text-foreground/80">
+                                      {candidate.title || candidate.content.slice(0, 40) || candidate.type}
+                                    </span>
+                                    <span className="text-[9px] font-mono text-foreground/40 shrink-0">
+                                      {already ? 'Unlink' : 'Link'}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
 

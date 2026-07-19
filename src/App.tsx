@@ -6,13 +6,20 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag, Store, X, Database, Plug, Clock, Calendar } from 'lucide-react';
+import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, RefreshCw, Pin, Tv, Music, Twitter, Utensils, FileText, ChevronDown, Settings2, Aperture, Camera, BookOpen, ExternalLink, LayoutGrid, List, Columns2 as Columns, ArrowUpDown, SlidersHorizontal, Quote, Trophy, Film, Disc, ShoppingBag, Store, X, Database, Plug, Clock, Calendar, Layers, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as chrono from 'chrono-node';
 import { auth } from './lib/firebase';
 import { DbStrategy, getDbStrategy, getEffectiveDbStrategy, loadDbItems, saveDbItems, processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured, isAppwriteConfigured, drainSyncOutbox, describeStrategy, SyncStatus } from './services/dbStrategyService';
 import { MindItem, MindItemType } from './types';
 import { ensureLocalMigration } from './lib/localDb';
+import {
+  SmartSpace,
+  loadSmartSpaces,
+  createSmartSpace,
+  deleteSmartSpace,
+} from './lib/smartSpaces';
+import { syncLinkedItemIds } from './lib/wikiLinks';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import Logo from './components/Logo';
@@ -226,6 +233,7 @@ export default function App() {
   const handleCategoryChange = (catId: string) => {
     setActiveCategory(catId);
     setActiveColorFilter(null);
+    setActiveSpaceId(null);
     setIsSettingsOpen(false);
 
     if (typingTimer) {
@@ -237,6 +245,7 @@ export default function App() {
       favorites: 'favorite',
       'read-later': 'read later',
       note: 'notes',
+      color: 'colors',
       link: 'bookmarks',
       image: 'images',
       quote: 'quotes',
@@ -299,6 +308,8 @@ export default function App() {
   // Layout & Sorting (Rearranging) States
   const [viewType, setViewType] = useState<'grid' | 'list' | 'kanban'>('grid');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'alphabetical' | 'type'>('newest');
+  const [smartSpaces, setSmartSpaces] = useState<SmartSpace[]>(() => loadSmartSpaces());
+  const [activeSpaceId, setActiveSpaceId] = useState<string | null>(null);
 
   // Local AI (LiteRT / WebGPU) States
   const [aiStrategy, setAiStrategyState] = useState<AiStrategy>(getAiStrategy());
@@ -751,13 +762,45 @@ export default function App() {
 
   // Update item (used for inline edits in inspector or checklist toggles)
   const handleUpdateItem = async (updatedItem: MindItem) => {
-    setItems(prev =>
-      persistItems(
-        prev.map((i) =>
-          i.id === updatedItem.id ? { ...i, ...updatedItem } : i
-        )
-      )
-    );
+    setItems(prev => {
+      const withLinks = {
+        ...updatedItem,
+        linkedItemIds: syncLinkedItemIds(updatedItem, prev),
+      };
+      return persistItems(
+        prev.map((i) => (i.id === withLinks.id ? { ...i, ...withLinks } : i))
+      );
+    });
+  };
+
+  const applySmartSpace = (space: SmartSpace | null) => {
+    if (!space) {
+      setActiveSpaceId(null);
+      return;
+    }
+    setActiveSpaceId(space.id);
+    setSearchQuery(space.query || '');
+    setActiveCategory(space.category || 'all');
+    setActiveColorFilter(space.colorFilter);
+    setVibeFilter(null);
+  };
+
+  const handleSaveSmartSpace = () => {
+    const defaultName =
+      searchQuery.trim() ||
+      (activeCategory !== 'all' ? activeCategory : '') ||
+      (activeColorFilter ? `${activeColorFilter} colors` : '') ||
+      'New Space';
+    const name = window.prompt('Name this Smart Space', defaultName);
+    if (!name) return;
+    const space = createSmartSpace({
+      name,
+      query: searchQuery,
+      category: activeCategory,
+      colorFilter: activeColorFilter,
+    });
+    setSmartSpaces(loadSmartSpaces());
+    setActiveSpaceId(space.id);
   };
 
   // Interactive Checklist toggling helper
@@ -1162,6 +1205,7 @@ export default function App() {
                   { id: 'favorites', label: 'Favorites', icon: Heart, count: items.filter(i => i.isFavorite).length },
                   { id: 'read-later', label: 'Read Later', icon: Clock, count: items.filter(i => i.readLater && (i.type === 'article' || i.type === 'link')).length },
                   { id: 'note', label: 'Notes', icon: BookOpen, count: items.filter(i => i.type === 'note').length },
+                  { id: 'color', label: 'Colors', icon: Palette, count: items.filter(i => i.type === 'color').length },
                   { id: 'link', label: 'Bookmarks', icon: ExternalLink, count: items.filter(i => i.type === 'link').length },
                   { id: 'image', label: 'Images', icon: Camera, count: items.filter(i => i.type === 'image').length },
                   { id: 'quote', label: 'Quotes', icon: Quote, count: items.filter(i => i.type === 'quote').length },
@@ -1209,6 +1253,7 @@ export default function App() {
                     <button
                       key={col.name}
                       onClick={() => {
+                        setActiveSpaceId(null);
                         if (activeColorFilter === col.name) {
                           setActiveColorFilter(null);
                         } else {
@@ -1226,6 +1271,57 @@ export default function App() {
                   ))}
                 </div>
               </div>
+            </div>
+
+            {/* Smart Spaces — saved searches (mymind-style) */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full px-1 py-2 mt-1">
+              <span className="text-[10px] font-mono uppercase text-foreground/45 tracking-wider font-bold flex items-center gap-1.5 shrink-0">
+                <Layers className="w-3.5 h-3.5" /> Spaces:
+              </span>
+              <button
+                type="button"
+                onClick={handleSaveSmartSpace}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold border border-dashed border-primary/40 text-primary hover:bg-primary/5 cursor-pointer shrink-0"
+                title="Save current search & filters as a Smart Space"
+              >
+                <Plus className="w-3 h-3" />
+                Save Space
+              </button>
+              {smartSpaces.map((space) => (
+                <div key={space.id} className="relative group/space shrink-0">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      applySmartSpace(activeSpaceId === space.id ? null : space)
+                    }
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition cursor-pointer ${
+                      activeSpaceId === space.id
+                        ? 'bg-primary text-white border-primary'
+                        : 'bg-card-bg border-border-subtle text-foreground/70 hover:border-foreground/25'
+                    }`}
+                  >
+                    <Layers className="w-3 h-3 opacity-70" />
+                    {space.name}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSmartSpaces(deleteSmartSpace(space.id));
+                      if (activeSpaceId === space.id) setActiveSpaceId(null);
+                    }}
+                    className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-foreground text-background text-[9px] opacity-0 group-hover/space:opacity-100 flex items-center justify-center cursor-pointer"
+                    title="Delete space"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {smartSpaces.length === 0 && (
+                <span className="text-[10px] text-foreground/35 font-sans shrink-0">
+                  Save a search to auto-collect matching cards
+                </span>
+              )}
             </div>
           </div>
 
@@ -1614,6 +1710,8 @@ export default function App() {
             onDeleteItem={handleDeleteItem}
             onSetVibeFilter={(type, val, label) => setVibeFilter({ type, value: val, label })}
             onOpenReader={setReaderItem}
+            allItems={items}
+            onNavigateToItem={(target) => setSelectedItem(target)}
           />
         )}
       </AnimatePresence>

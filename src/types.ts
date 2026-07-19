@@ -86,6 +86,9 @@ export interface MindItem {
   // Storage bucket file IDs (for Appwrite media management)
   imageFileId?: string; // File ID in storage bucket for uploaded images
   audioFileId?: string; // File ID in storage bucket for voice recordings
+
+  // Bidirectional links (mymind-style knowledge graph)
+  linkedItemIds?: string[]; // Explicit outbound links to other mind items
 }
 
 export interface SerendipityPrompt {

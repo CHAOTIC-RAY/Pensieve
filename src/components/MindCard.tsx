@@ -234,8 +234,10 @@ export default function MindCard({
         id={`mind-card-${item.id}`}
         onClick={onClick}
         onContextMenu={handleRightClick}
-        className="group relative break-inside-avoid mb-6 w-full cursor-pointer transition-all duration-500 flex flex-col text-foreground"
-        whileHover={{ y: -4 }}
+        className={`group relative break-inside-avoid w-full cursor-pointer transition-all duration-500 flex flex-col text-foreground ${
+          item.type === 'color' ? 'mb-4' : 'mb-6'
+        }`}
+        whileHover={{ y: item.type === 'color' ? -2 : -4 }}
       >
         {/* Animated glow effects visible on hover, matching key tags/colors */}
         <div className="absolute -inset-[3px] bg-gradient-to-r from-primary via-[#a855f7] to-[#8b5cf6] rounded-[26px] opacity-0 group-hover:opacity-75 transition-all duration-500 blur-[8px] z-0 animate-gradient pointer-events-none" />
@@ -296,20 +298,20 @@ export default function MindCard({
 
         {/* CARD CONTENT TYPES */}
 
-        {/* 1. COLOR SWATCH */}
+        {/* 1. COLOR SWATCH — compact mymind-style card */}
         {item.type === 'color' && (item.colorHex || item.colorPalette) && (
           <div className="flex flex-col w-full">
             {item.colorPalette && item.colorPalette.length > 0 ? (
-              <div className="w-full h-32 flex rounded-t-3xl overflow-hidden relative group/palette">
+              <div className="w-full h-12 flex overflow-hidden relative group/palette">
                 {item.colorPalette.map((colHex, index) => (
                   <div 
                     key={index}
-                    className="flex-1 h-full hover:flex-[1.8] transition-all duration-300 relative cursor-pointer group/swatch"
+                    className="flex-1 h-full hover:flex-[1.6] transition-all duration-300 relative cursor-pointer group/swatch"
                     style={{ backgroundColor: colHex }}
                     onClick={(e) => handleCopyColor(e, colHex)}
                     title={`Click to copy hex ${colHex}`}
                   >
-                    <div className="absolute inset-0 bg-black/10 opacity-0 group-hover/swatch:opacity-100 flex items-center justify-center transition-opacity text-[10px] font-mono text-white select-none font-bold">
+                    <div className="absolute inset-0 bg-black/15 opacity-0 group-hover/swatch:opacity-100 flex items-center justify-center transition-opacity text-[9px] font-mono text-white select-none font-bold">
                       Copy
                     </div>
                   </div>
@@ -317,34 +319,35 @@ export default function MindCard({
               </div>
             ) : (
               <div 
-                className="w-full h-32 relative transition-all duration-300 group-hover:h-36 flex items-end justify-end p-2.5"
+                className="w-full h-12 relative flex items-center justify-end px-2.5"
                 style={{ backgroundColor: item.colorHex }}
               >
                 <button
                   onClick={(e) => handleCopyColor(e, item.colorHex || '')}
-                  className="p-1.5 rounded-lg bg-black/40 text-white backdrop-blur-md hover:bg-black/60 transition flex items-center gap-1 text-[10px] font-mono font-medium"
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md bg-black/35 text-white backdrop-blur-md hover:bg-black/55 transition flex items-center gap-1 text-[9px] font-mono font-medium"
                 >
-                  {copied ? <Check className="w-3 h-3 stroke-[2.5]" /> : <Copy className="w-3 h-3" />}
+                  {copied ? <Check className="w-2.5 h-2.5 stroke-[2.5]" /> : <Copy className="w-2.5 h-2.5" />}
                   <span>{copied ? 'Copied' : 'Copy'}</span>
                 </button>
               </div>
             )}
-            <div className="p-4 flex flex-col gap-1.5 bg-card-bg border-t border-card-border">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold text-card-title tracking-tight uppercase truncate max-w-[70%]">
-                  {item.colorPalette ? item.colorPalette.slice(0, 3).join(', ') + (item.colorPalette.length > 3 ? '...' : '') : item.colorHex}
+            <div className="px-3 py-2.5 flex flex-col gap-0.5 bg-card-bg">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-sm font-bold text-card-title tracking-tight uppercase truncate">
+                  {item.colorPalette
+                    ? item.colorPalette.slice(0, 2).join(' · ') + (item.colorPalette.length > 2 ? '…' : '')
+                    : (item.colorHex || '').toUpperCase()}
                 </span>
-                <span className="text-[10px] font-sans font-medium text-card-desc flex items-center gap-1 bg-card-footer px-2 py-0.5 rounded-md border border-card-border shrink-0">
-                  <Palette className="w-3 h-3 text-card-desc" />
+                <span className="text-[9px] font-sans font-medium text-card-desc flex items-center gap-1 shrink-0 opacity-70">
+                  <Palette className="w-2.5 h-2.5" />
                   {item.colorPalette ? 'Palette' : 'Color'}
                 </span>
               </div>
-              <h3 className="font-display font-medium text-sm text-card-title line-clamp-1 leading-snug">
-                {item.title}
-              </h3>
-              <p className="text-[11px] text-card-desc font-sans leading-relaxed line-clamp-2">
-                {item.content}
-              </p>
+              {item.title && item.title.toLowerCase() !== 'color swatch' && item.title.toLowerCase() !== (item.colorHex || '').toLowerCase() && (
+                <h3 className="font-display font-medium text-xs text-card-title/80 line-clamp-1 leading-snug">
+                  {item.title}
+                </h3>
+              )}
             </div>
           </div>
         )}
@@ -1053,8 +1056,10 @@ export default function MindCard({
 
         {/* Bottom info: Tags footer */}
         {item.tags && item.tags.length > 0 && (
-          <div className="px-4 pb-3 pt-1 flex items-center gap-1 flex-wrap overflow-hidden min-h-[28px] border-t border-card-border bg-foreground/[0.02] group-hover:bg-transparent">
-            {item.tags.slice(0, 3).map((tag, idx) => {
+          <div className={`flex items-center gap-1 flex-wrap overflow-hidden border-t border-card-border bg-foreground/[0.02] group-hover:bg-transparent ${
+            item.type === 'color' ? 'px-3 pb-2 pt-1 min-h-0' : 'px-4 pb-3 pt-1 min-h-[28px]'
+          }`}>
+            {item.tags.slice(0, item.type === 'color' ? 2 : 3).map((tag, idx) => {
               const isAiTag = item.aiTags?.includes(tag);
               return (
                 <span 
