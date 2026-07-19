@@ -534,7 +534,7 @@ export default function SettingsModal({
     {
       role: "assistant",
       content:
-        "Hi! I'm your on-device local AI running completely client-side via WebGPU. Ask me anything, or try uploading an image to test my capabilities!",
+        "Hi — I'm Pensieve Brain (default). I search your vault, summarize stats, and index captures without AI models. Say “help”, “stats”, or “find …” — switch to Local/Cloud AI only if you want model chat.",
     },
   ]);
   const [playgroundLoading, setPlaygroundLoading] = useState(false);
@@ -1576,21 +1576,11 @@ export default function SettingsModal({
 
     try {
       if (aiStrategy === "off") {
-        const { organizeWithBrain } = await import("../services/pensieveBrain");
-        const sample = items[0];
-        const brain = organizeWithBrain(
-          sample || {
-            type: "note",
-            title: userMsg.slice(0, 80),
-            content: userMsg,
-          },
-        );
+        const { answerWithBrain } = await import("../services/pensieveBrain");
+        const reply = answerWithBrain(userMsg, items, playgroundHistory);
         setPlaygroundHistory((prev) => [
           ...prev,
-          {
-            role: "assistant",
-            content: `Pensieve Brain (no AI models):\n\n• Title: ${brain.title}\n• Type: ${brain.category || "note"}\n• Tags: ${brain.tags.join(", ")}\n• Summary: ${brain.aiSummary}\n• Color vibe: ${brain.dominantColor}\n\nTurn on Local AI or Cloud AI in Intelligence mode if you want model chat.`,
-          },
+          { role: "assistant", content: reply },
         ]);
         setPlaygroundLoading(false);
       } else if (aiStrategy === "api_key") {
@@ -1742,7 +1732,7 @@ export default function SettingsModal({
           {deviceAi.reason}
         </p>
         <p className="text-[10px] text-foreground/45 leading-relaxed">
-          Pensieve Brain classifies links, tags notes, names colors, and estimates reading time with no models. Turn on Local or Cloud AI only when you want model upgrades.
+          Pensieve Brain searches your vault, summarizes themes, and indexes captures with no models. Local/Cloud AI are optional upgrades for generative chat.
         </p>
       </div>
     </section>
@@ -2392,7 +2382,7 @@ export default function SettingsModal({
               onKeyDown={(e) => e.key === "Enter" && handleSendPlaygroundMessage()}
               placeholder={
                 aiStrategy === "off"
-                  ? "Try Pensieve Brain indexing…"
+                  ? "Ask Brain: help, stats, find design, or paste a URL…"
                   : aiStrategy === "local"
                     ? "Ask the local engine anything..."
                     : "Send a message to Cloud AI..."
