@@ -1,6 +1,7 @@
 
 /**
  * Safe Local Storage wrapper to handle QuotaExceededError and other potential issues.
+ * Note: mind items now live in IndexedDB (`localDb`). Prefer that for large payloads.
  */
 
 export const saveToLocalStorage = (key: string, value: any): boolean => {
@@ -14,10 +15,9 @@ export const saveToLocalStorage = (key: string, value: any): boolean => {
       error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
     ) {
       console.error(`[Storage] Quota Exceeded for key: ${key}. Local storage is full.`);
-      // Optional: Trigger a custom event to show a toast or alert to the user
       window.dispatchEvent(new CustomEvent('pensieve_storage_error', { 
         detail: { 
-          message: 'Local storage is full! Please connect to a cloud database (Appwrite/Firebase) to save more items with images.',
+          message: 'Browser settings storage is full. Your vault uses IndexedDB — export a backup from Settings → Profile, or free space and reload.',
           type: 'quota'
         } 
       }));

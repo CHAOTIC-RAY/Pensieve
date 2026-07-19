@@ -146,7 +146,7 @@ export default function LoginPage() {
             <p className="text-neutral-500 text-sm font-sans max-w-[240px] mx-auto leading-relaxed">
               {isSignUp 
                 ? 'Join the collective intelligence and start mapping your mind.' 
-                : 'Sign in to access your sovereign memory vault.'}
+                : 'Sign in to sync across devices — or continue locally with no account.'}
             </p>
           </div>
 

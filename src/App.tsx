@@ -10,8 +10,9 @@ import { Sparkles, Heart, Palette, Brain, ListFilter as Filter, Check, Star, Ref
 import { motion, AnimatePresence } from 'motion/react';
 import * as chrono from 'chrono-node';
 import { auth } from './lib/firebase';
-import { DbStrategy, getDbStrategy, loadDbItems, saveDbItems, processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured, isAppwriteConfigured } from './services/dbStrategyService';
+import { DbStrategy, getDbStrategy, getEffectiveDbStrategy, loadDbItems, saveDbItems, processItemMediaForUpload, deleteItemMedia, isStorageBucketConfigured, isAppwriteConfigured, drainSyncOutbox, describeStrategy, SyncStatus } from './services/dbStrategyService';
 import { MindItem, MindItemType } from './types';
+import { ensureLocalMigration } from './lib/localDb';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import Logo from './components/Logo';
@@ -48,7 +49,6 @@ import AdminPanel from './components/AdminPanel';
 import { useAchievements } from './hooks/useAchievements';
 import AchievementsModal from './components/AchievementsModal';
 import AchievementToast from './components/AchievementToast';
-import { saveToLocalStorage, getFromLocalStorage } from './lib/safeStorage';
 import PinnedWidgets from './components/PinnedWidgets';
 
 const GalaxyBackground = () => {
@@ -320,6 +320,9 @@ export default function App() {
   const [availableModels, setAvailableModels] = useState<ModelManifestEntry[]>([]);
   const [sidebarPosition, setSidebarPosition] = useState<'left' | 'right'>('left');
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(
+    !navigator.onLine ? 'offline' : getEffectiveDbStrategy() === 'local' ? 'local' : 'syncing'
+  );
 
   // User Profile States
   const [profileName, setProfileName] = useState(() => localStorage.getItem('pensieve_profile_name') || 'Ray Dark');
@@ -385,15 +388,31 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
-    
+    const handleOnline = () => {
+      setIsOffline(false);
+      setSyncStatus(getEffectiveDbStrategy() === 'local' ? 'local' : 'syncing');
+      drainSyncOutbox().then((n) => {
+        if (n > 0 || getEffectiveDbStrategy() !== 'local') {
+          setSyncStatus(getEffectiveDbStrategy() === 'local' ? 'local' : 'synced');
+        }
+      });
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+      setSyncStatus('offline');
+    };
+    const handleSyncStatus = (e: any) => {
+      if (e?.detail?.status) setSyncStatus(e.detail.status);
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
+    window.addEventListener('pensieve_sync_status', handleSyncStatus);
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('pensieve_sync_status', handleSyncStatus);
     };
   }, []);
 
@@ -414,53 +433,59 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Real-time Cloud database/storage strategy sync
+  // Local-first load + optional cloud merge
   useEffect(() => {
-    const localItems = JSON.parse(localStorage.getItem('pensieve_local_items') || '[]');
-    
-    if (!user) {
-      if (localItems.length > 0) {
-        setItems(localItems);
-      }
-      setIsSyncing(false);
-      return;
-    }
+    let cancelled = false;
 
-    setIsSyncing(true);
-    console.log(`[Pensieve Sync] Loading items from strategy: ${dbStrategy} for user: ${user.uid}`);
+    (async () => {
+      await ensureLocalMigration();
 
-    // Fetch from the active database strategy
-    loadDbItems(user.uid, dbStrategy)
-      .then((remoteList) => {
-        if (remoteList && remoteList.length > 0) {
-          // Merge local and remote list to prevent any data loss
-          const remoteIds = new Set(remoteList.map(i => i.id));
-          const localOnly = localItems.filter((item: MindItem) => !remoteIds.has(item.id));
-          const merged = [...localOnly, ...remoteList].sort(
-            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-
-          setItems(merged);
-          saveToLocalStorage('pensieve_local_items', merged);
-          
-          // If there were local-only unsynced items, persist them to the active strategy
-          if (localOnly.length > 0) {
-            saveDbItems(user.uid, merged, dbStrategy);
-          }
-        } else if (localItems.length > 0) {
-          // First time syncing with a fresh database connection, push local items
-          setItems(localItems);
-          saveDbItems(user.uid, localItems, dbStrategy);
-        } else {
-          setItems([]);
+      if (!user) {
+        const localOnly = await loadDbItems('', 'local');
+        if (!cancelled) {
+          setItems(localOnly);
+          setIsSyncing(false);
+          setSyncStatus(isOffline ? 'offline' : 'local');
         }
-        setIsSyncing(false);
-      })
-      .catch((err) => {
+        return;
+      }
+
+      setIsSyncing(true);
+      const effective = getEffectiveDbStrategy();
+      setSyncStatus(isOffline || effective === 'local' ? (isOffline ? 'offline' : 'local') : 'syncing');
+      console.log(`[Pensieve Sync] Loading items (requested=${dbStrategy}, effective=${effective}) for user: ${user.uid}`);
+
+      try {
+        const list = await loadDbItems(user.uid, dbStrategy);
+        if (cancelled) return;
+        setItems(list);
+
+        // If cloud is configured and we have local data, ensure push of merged vault
+        if (effective !== 'local' && navigator.onLine && list.length > 0) {
+          await saveDbItems(user.uid, list, dbStrategy);
+          await drainSyncOutbox();
+        }
+
+        if (!cancelled) {
+          setSyncStatus(
+            !navigator.onLine ? 'offline' : effective === 'local' ? 'local' : 'synced'
+          );
+        }
+      } catch (err) {
         console.error(`[Pensieve Sync] Sync failed for strategy ${dbStrategy}:`, err);
-        setItems(localItems);
-        setIsSyncing(false);
-      });
+        const fallback = await loadDbItems('', 'local');
+        if (!cancelled) {
+          setItems(fallback);
+          setSyncStatus(!navigator.onLine ? 'offline' : 'error');
+        }
+      } finally {
+        if (!cancelled) setIsSyncing(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, dbStrategy]);
 
   const { results: searchedItems } = useSearch(items, searchQuery);
@@ -505,15 +530,24 @@ export default function App() {
         return 0;
       });
 
-  // Helper to safely update an item with DB Strategy / LocalStorage fallback
+  // Persist vault to IndexedDB (+ optional cloud / outbox)
+  const persistItems = (updated: MindItem[]) => {
+    const stamped = updated.map((item) => ({
+      ...item,
+      updatedAt: new Date().toISOString(),
+    }));
+    const uid = user?.uid || 'guest-user';
+    void saveDbItems(uid, stamped, dbStrategy);
+    return stamped;
+  };
+
+  // Helper to safely update an item with local-first persistence
   const safeUpdateItem = async (itemId: string, updates: Partial<MindItem>) => {
     setItems(prev => {
-      const updated = prev.map(item => item.id === itemId ? { ...item, ...updates } : item);
-      saveToLocalStorage('pensieve_local_items', updated);
-      if (user) {
-        saveDbItems(user.uid, updated, dbStrategy);
-      }
-      return updated;
+      const updated = prev.map(item =>
+        item.id === itemId ? { ...item, ...updates, updatedAt: new Date().toISOString() } : item
+      );
+      return persistItems(updated);
     });
   };
 
@@ -538,23 +572,22 @@ export default function App() {
       }
     }
 
-    // Put it in local state and active database instantly
-    setItems(prev => {
-      const updated = [fallbackItem, ...prev];
-      saveToLocalStorage('pensieve_local_items', updated);
-      if (user) {
-        saveDbItems(user.uid, updated, dbStrategy);
-      }
-      return updated;
-    });
+    // Put it in local state and IndexedDB instantly
+    const createdItem = {
+      ...fallbackItem,
+      updatedAt: new Date().toISOString(),
+      analyzing: true,
+    } as MindItem;
+    setItems(prev => persistItems([createdItem, ...prev]));
 
     // Stage 2: Background processing on client or server
     (async () => {
       try {
-        let processedItem = { ...fallbackItem };
+        let processedItem = { ...createdItem };
+        const offline = !navigator.onLine;
 
-        // 2A. Scrape link/article metadata
-        if ((newItem.type === 'link' || newItem.type === 'article') && newItem.url) {
+        // 2A. Scrape link/article metadata (requires network)
+        if (!offline && (newItem.type === 'link' || newItem.type === 'article') && newItem.url) {
           try {
             const scrapeResponse = await fetch('/api/scrape', {
               method: 'POST',
@@ -586,7 +619,7 @@ export default function App() {
           }
         }
 
-        // 2B. Local WebGPU AI analysis
+        // 2B. Local WebGPU AI analysis (works offline when model is ready)
         if (aiStrategy === 'local' && isLocalAiEnabled()) {
           console.log('[Pensieve Local AI] Initiating on-device WebGPU model...');
           try {
@@ -616,45 +649,49 @@ export default function App() {
           }
         }
 
-        // 2C. Server-side Gemini API fallback
-        try {
-          const analyzeResponse = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ item: processedItem })
-          });
+        // 2C. Server-side Gemini API fallback (skip when offline)
+        if (!offline) {
+          try {
+            const analyzeResponse = await fetch('/api/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ item: processedItem })
+            });
 
-          if (analyzeResponse.ok) {
-            const aiResult = await analyzeResponse.json();
-            if (aiResult.success) {
-              const finalDoc = {
-                title: aiResult.title || processedItem.title,
-                content: aiResult.content || processedItem.content,
-                type: aiResult.category || processedItem.type,
-                tags: Array.from(new Set([...(docData.tags), ...(aiResult.tags || [])])),
-                aiTags: aiResult.tags || [],
-                manualTags: docData.manualTags || [],
-                aiSummary: aiResult.aiSummary || '',
-                dominantColor: aiResult.dominantColor || 'grey',
-                analyzing: false
-              } as any;
+            if (analyzeResponse.ok) {
+              const aiResult = await analyzeResponse.json();
+              if (aiResult.success) {
+                const finalDoc = {
+                  title: aiResult.title || processedItem.title,
+                  content: aiResult.content || processedItem.content,
+                  type: aiResult.category || processedItem.type,
+                  tags: Array.from(new Set([...(docData.tags), ...(aiResult.tags || [])])),
+                  aiTags: aiResult.tags || [],
+                  manualTags: docData.manualTags || [],
+                  aiSummary: aiResult.aiSummary || '',
+                  dominantColor: aiResult.dominantColor || 'grey',
+                  analyzing: false
+                } as any;
 
-              if (aiResult.author) finalDoc.author = aiResult.author;
-              if (aiResult.readingTime) finalDoc.readingTime = aiResult.readingTime;
-              if (aiResult.siteName) finalDoc.siteName = aiResult.siteName;
+                if (aiResult.author) finalDoc.author = aiResult.author;
+                if (aiResult.readingTime) finalDoc.readingTime = aiResult.readingTime;
+                if (aiResult.siteName) finalDoc.siteName = aiResult.siteName;
 
-              await safeUpdateItem(createdId, finalDoc);
-              return;
+                await safeUpdateItem(createdId, finalDoc);
+                return;
+              }
             }
+          } catch (serverErr) {
+            console.warn('[Pensieve] Server AI analysis failed.', serverErr);
           }
-        } catch (serverErr) {
-          console.warn('[Pensieve] Server AI analysis failed.', serverErr);
         }
 
         // Final fallback: Ensure item is saved even if all AI analysis fails
         await safeUpdateItem(createdId, {
           analyzing: false,
-          aiSummary: 'Not analyzed (AI unavailable).'
+          aiSummary: offline
+            ? 'Saved locally (offline indexing)'
+            : 'Not analyzed (AI unavailable).'
         });
       } catch (error) {
         console.error("Background indexing failed:", error);
@@ -678,27 +715,25 @@ export default function App() {
 
   const handleToggleFavorite = async (item: MindItem) => {
     const newIsFavorite = !item.isFavorite;
-    setItems(prev => {
-      const updated = prev.map(i => i.id === item.id ? { ...i, isFavorite: newIsFavorite } : i);
-      saveToLocalStorage('pensieve_local_items', updated);
-      if (user) {
-        saveDbItems(user.uid, updated, dbStrategy);
-      }
-      return updated;
-    });
+    setItems(prev =>
+      persistItems(
+        prev.map((i) =>
+          i.id === item.id ? { ...i, isFavorite: newIsFavorite } : i
+        )
+      )
+    );
   };
 
   // Toggle Top of Mind focus pin
   const handleToggleTopMind = async (item: MindItem) => {
     const newIsTopMind = !item.isTopMind;
-    setItems(prev => {
-      const updated = prev.map(i => i.id === item.id ? { ...i, isTopMind: newIsTopMind } : i);
-      saveToLocalStorage('pensieve_local_items', updated);
-      if (user) {
-        saveDbItems(user.uid, updated, dbStrategy);
-      }
-      return updated;
-    });
+    setItems(prev =>
+      persistItems(
+        prev.map((i) =>
+          i.id === item.id ? { ...i, isTopMind: newIsTopMind } : i
+        )
+      )
+    );
   };
 
   // Delete item
@@ -708,14 +743,7 @@ export default function App() {
       await deleteItemMedia(item);
     }
 
-    setItems(prev => {
-      const updated = prev.filter(i => i.id !== item.id);
-      saveToLocalStorage('pensieve_local_items', updated);
-      if (user) {
-        saveDbItems(user.uid, updated, dbStrategy);
-      }
-      return updated;
-    });
+    setItems(prev => persistItems(prev.filter((i) => i.id !== item.id)));
     if (selectedItem?.id === item.id) {
       setSelectedItem(null);
     }
@@ -723,26 +751,24 @@ export default function App() {
 
   // Update item (used for inline edits in inspector or checklist toggles)
   const handleUpdateItem = async (updatedItem: MindItem) => {
-    setItems(prev => {
-      const updated = prev.map(i => i.id === updatedItem.id ? { ...i, ...updatedItem } : i);
-      saveToLocalStorage('pensieve_local_items', updated);
-      if (user) {
-        saveDbItems(user.uid, updated, dbStrategy);
-      }
-      return updated;
-    });
+    setItems(prev =>
+      persistItems(
+        prev.map((i) =>
+          i.id === updatedItem.id ? { ...i, ...updatedItem } : i
+        )
+      )
+    );
   };
 
   // Interactive Checklist toggling helper
   const handleUpdateChecklist = async (item: MindItem, updatedContent: string) => {
-    setItems(prev => {
-      const updated = prev.map(i => i.id === item.id ? { ...i, content: updatedContent } : i);
-      saveToLocalStorage('pensieve_local_items', updated);
-      if (user) {
-        saveDbItems(user.uid, updated, dbStrategy);
-      }
-      return updated;
-    });
+    setItems(prev =>
+      persistItems(
+        prev.map((i) =>
+          i.id === item.id ? { ...i, content: updatedContent } : i
+        )
+      )
+    );
   };
 
   if (location.pathname === '/admin') {
@@ -961,6 +987,50 @@ export default function App() {
 
         {/* Floating Status & Profile - Top Right */}
         <div className="hidden md:flex flex-row items-center gap-3.5 fixed top-6 right-6 z-40 select-none">
+          {/* Sync / offline status chip */}
+          <button
+            type="button"
+            onClick={() => {
+              setSettingsTab('db');
+              setIsSettingsOpen(true);
+            }}
+            title={describeStrategy(getEffectiveDbStrategy()).title}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-wider backdrop-blur-xl border cursor-pointer transition-all hover:scale-[1.02] ${
+              syncStatus === 'offline'
+                ? 'bg-amber-500/10 border-amber-500/25 text-amber-600'
+                : syncStatus === 'error'
+                ? 'bg-rose-500/10 border-rose-500/25 text-rose-600'
+                : syncStatus === 'syncing' || isSyncing
+                ? 'bg-sky-500/10 border-sky-500/25 text-sky-600'
+                : syncStatus === 'synced'
+                ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-600'
+                : 'bg-foreground/5 border-foreground/10 text-foreground/60'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                syncStatus === 'offline'
+                  ? 'bg-amber-500'
+                  : syncStatus === 'error'
+                  ? 'bg-rose-500'
+                  : syncStatus === 'syncing' || isSyncing
+                  ? 'bg-sky-500 animate-pulse'
+                  : syncStatus === 'synced'
+                  ? 'bg-emerald-500'
+                  : 'bg-foreground/40'
+              }`}
+            />
+            {syncStatus === 'offline'
+              ? 'Offline'
+              : syncStatus === 'error'
+              ? 'Sync error'
+              : syncStatus === 'syncing' || isSyncing
+              ? 'Syncing'
+              : syncStatus === 'synced'
+              ? 'Synced'
+              : 'Local'}
+          </button>
+
           {/* Store Button */}
           <button
             onClick={() => setIsStoreOpen(true)}
@@ -1594,7 +1664,7 @@ export default function App() {
                   }}
                   className="text-[10px] font-bold underline decoration-white/30 cursor-pointer"
                 >
-                  Configure Cloud Sync
+                  Open Storage Settings
                 </button>
                 <button
                   onClick={() => setStorageError(null)}
@@ -1608,9 +1678,9 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Appwrite recommendation toast */}
+      {/* Optional cloud recommendation — hide when already on local-first */}
       <AnimatePresence>
-        {!appwriteToastDismissed && !isAppwriteConfigured() && (
+        {!appwriteToastDismissed && !isAppwriteConfigured() && getEffectiveDbStrategy() !== 'local' && dbStrategy !== 'local' && (
           <motion.div 
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}

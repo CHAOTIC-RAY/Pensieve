@@ -1,5 +1,7 @@
 # Offline & Local-First Improvement Plan
 
+> **Status: Implemented** (Phases 0–5 landed in code). This document remains the design reference.
+
 **Goal:** Pensieve must run fully offline on local data when Supabase (or any cloud backend) is missing, misconfigured, or unreachable — without blocking capture, browse, search, or edit.
 
 **Current reality (as of this plan):**

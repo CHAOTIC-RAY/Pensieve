@@ -57,7 +57,8 @@ import {
   setAiStrategy,
   AiStrategy,
 } from "../services/localAiBackendLitert";
-import { DbStrategy, setDbStrategy } from "../services/dbStrategyService";
+import { DbStrategy, setDbStrategy, describeStrategy, isStrategyConfigured, drainSyncOutbox } from "../services/dbStrategyService";
+import { exportVaultJson, importVaultJson, getStorageEstimate } from "../lib/localDb";
 import { auth } from "../lib/firebase";
 import {
   signInWithEmailAndPassword,
@@ -648,23 +649,64 @@ export default function SettingsModal({
     window.dispatchEvent(new Event("app-settings-updated"));
   };
 
-  const handleExportData = () => {
+  const [storageHealth, setStorageHealth] = useState<{
+    usage: number;
+    quota: number;
+    itemCount: number;
+    mediaCount: number;
+    outboxCount: number;
+  } | null>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    getStorageEstimate()
+      .then(setStorageHealth)
+      .catch(() => setStorageHealth(null));
+  }, [isOpen, items.length, dbStrategy]);
+
+  const handleExportData = async () => {
     try {
-      const dataStr = JSON.stringify(items, null, 2);
-      const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
-
-      const exportFileDefaultName = `pensieve-mind-data-${new Date().toISOString().slice(0, 10)}.json`;
-
+      const dataStr = await exportVaultJson();
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const exportFileDefaultName = `pensieve-vault-${new Date().toISOString().slice(0, 10)}.json`;
       const linkElement = document.createElement("a");
-      linkElement.setAttribute("href", dataUri);
+      linkElement.setAttribute("href", url);
       linkElement.setAttribute("download", exportFileDefaultName);
       linkElement.click();
-
-      triggerToast("Data exported successfully!");
+      URL.revokeObjectURL(url);
+      triggerToast("Vault exported successfully!");
     } catch (err) {
       console.error("Failed to export data:", err);
       triggerToast("Failed to export data.");
     }
+  };
+
+  const handleImportData = async (file: File) => {
+    try {
+      const text = await file.text();
+      const count = await importVaultJson(text);
+      triggerToast(`Imported vault — ${count} items in local database.`);
+      window.dispatchEvent(new Event("app-settings-updated"));
+      // Force reload so App re-hydrates from IndexedDB
+      setTimeout(() => window.location.reload(), 600);
+    } catch (err) {
+      console.error("Failed to import data:", err);
+      triggerToast("Import failed. Check the JSON export format.");
+    }
+  };
+
+  const formatBytes = (n: number) => {
+    if (!n) return "0 B";
+    const units = ["B", "KB", "MB", "GB"];
+    let i = 0;
+    let v = n;
+    while (v >= 1024 && i < units.length - 1) {
+      v /= 1024;
+      i++;
+    }
+    return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
   };
 
   const handleProfileGradientChange = (val: string) => {
@@ -1346,17 +1388,66 @@ export default function SettingsModal({
 
           <div className="space-y-1.5">
             <label className="block text-xs font-mono uppercase tracking-wider text-foreground/60">
-              Backup &amp; Export
+              Backup &amp; Restore
             </label>
-            <button
-              onClick={handleExportData}
-              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl transition-all text-xs font-bold active:scale-95 duration-200 cursor-pointer"
-            >
-              <Download className="w-4 h-4" />
-              Export Mind Data (.json)
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleExportData}
+                className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl transition-all text-xs font-bold active:scale-95 duration-200 cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                Export
+              </button>
+              <button
+                onClick={() => importFileRef.current?.click()}
+                className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2.5 bg-foreground/5 hover:bg-foreground/10 text-foreground border border-border-subtle rounded-xl transition-all text-xs font-bold active:scale-95 duration-200 cursor-pointer"
+              >
+                Import
+              </button>
+              <input
+                ref={importFileRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleImportData(file);
+                  e.target.value = "";
+                }}
+              />
+            </div>
           </div>
         </div>
+
+        {storageHealth && (
+          <div className="p-4 rounded-2xl border border-border-subtle bg-foreground/[0.02] space-y-2">
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
+              Local Storage Health
+            </label>
+            <div className="grid grid-cols-2 gap-2 text-[11px] text-foreground/70">
+              <span>Items: <strong className="text-text-heading">{storageHealth.itemCount}</strong></span>
+              <span>Media blobs: <strong className="text-text-heading">{storageHealth.mediaCount}</strong></span>
+              <span>Pending sync: <strong className="text-text-heading">{storageHealth.outboxCount}</strong></span>
+              <span>
+                Usage:{" "}
+                <strong className="text-text-heading">
+                  {formatBytes(storageHealth.usage)}
+                  {storageHealth.quota ? ` / ${formatBytes(storageHealth.quota)}` : ""}
+                </strong>
+              </span>
+            </div>
+            {storageHealth.quota > 0 && (
+              <div className="w-full h-1.5 bg-foreground/5 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary/70"
+                  style={{
+                    width: `${Math.min(100, (storageHealth.usage / storageHealth.quota) * 100)}%`,
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Avatar Colors/Gradients */}
         <div className="space-y-2.5 pt-2">
@@ -2284,23 +2375,31 @@ export default function SettingsModal({
   );
 
   const renderDatabasesContent = () => {
+    const strategyInfo = describeStrategy(dbStrategy);
+    const configured = isStrategyConfigured(dbStrategy);
+
     return (
       <div className="space-y-8 max-h-[60vh] overflow-y-auto pr-2 text-foreground scrollbar-thin scrollbar-thumb-foreground/10">
         <div className="p-5 bg-primary/5 rounded-3xl border border-primary/10 flex items-center justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-mono font-bold text-emerald-600 uppercase tracking-widest">Active Connection</span>
+              <div className={`w-2 h-2 rounded-full ${dbStrategy === 'local' ? 'bg-sky-500' : configured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span className={`text-[10px] font-mono font-bold uppercase tracking-widest ${dbStrategy === 'local' ? 'text-sky-600' : configured ? 'text-emerald-600' : 'text-amber-600'}`}>
+                {dbStrategy === 'local' ? 'Local First' : configured ? 'Active Connection' : 'Credentials Missing'}
+              </span>
             </div>
             <h3 className="text-lg font-display font-bold text-text-heading">
-              {dbStrategy === 'appwrite' ? 'Appwrite Cloud Storage' : dbStrategy === 'supabase' ? 'Supabase Relational' : dbStrategy === 'box' ? 'Box Storage' : 'Firebase Firestore'}
+              {strategyInfo.title}
             </h3>
             <p className="text-[10px] text-foreground/50 font-medium">
-              Synchronizing with {dbStrategy === 'appwrite' ? 'Appwrite Database' : dbStrategy === 'supabase' ? 'Supabase PostgreSQL' : dbStrategy === 'box' ? 'Box API' : 'Google Firebase'}
+              {configured || dbStrategy === 'local'
+                ? strategyInfo.subtitle
+                : `No ${dbStrategy} credentials — vault stays on this device until configured.`}
             </p>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-border-subtle flex items-center justify-center">
-            {dbStrategy === 'appwrite' ? <Database className="w-6 h-6 text-pink-400" /> :
+            {dbStrategy === 'local' ? <MonitorSmartphone className="w-6 h-6 text-sky-500" /> :
+             dbStrategy === 'appwrite' ? <Database className="w-6 h-6 text-pink-400" /> :
              dbStrategy === 'supabase' ? <Database className="w-6 h-6 text-emerald-400" /> :
              dbStrategy === 'box' ? <Database className="w-6 h-6 text-blue-400" /> :
              <Aperture className="w-6 h-6 text-orange-400" />}
@@ -2312,8 +2411,7 @@ export default function SettingsModal({
             Database &amp; Storage Connections
           </h3>
           <p className="text-xs text-foreground/70 mt-1 leading-relaxed">
-            Configure external cloud databases to sync and persist your
-            thoughts. Connect your own Appwrite instance for secure, self-hosted storage.
+            Local IndexedDB is always the source of truth. Cloud backends are optional sync targets — leave them empty to run fully offline.
           </p>
         </div>
 
@@ -2322,7 +2420,22 @@ export default function SettingsModal({
           <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
             Storage Strategy Selector
           </label>
-          <div className="grid grid-cols-3 p-1 bg-foreground/5 rounded-2xl border border-border-subtle">
+          <div className="grid grid-cols-2 sm:grid-cols-4 p-1 bg-foreground/5 rounded-2xl border border-border-subtle gap-1">
+            <button
+              onClick={() => {
+                setDbStrategy("local");
+                setDbStrategyState("local");
+                window.dispatchEvent(new Event('app-settings-updated'));
+              }}
+              className={`flex items-center justify-center gap-1.5 py-2.5 px-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                dbStrategy === "local"
+                  ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
+                  : "text-foreground/60 hover:text-foreground"
+              }`}
+            >
+              <MonitorSmartphone className="w-3.5 h-3.5 text-sky-500" />
+              Local
+            </button>
             <button
               onClick={() => {
                 setDbStrategy("appwrite");
@@ -2370,12 +2483,28 @@ export default function SettingsModal({
             </button>
           </div>
           <p className="text-[10px] text-foreground/50 leading-relaxed px-1">
-            {dbStrategy === "appwrite"
-              ? "Appwrite Strategy: Connect to your own Appwrite backend for secure database syncing. Requires manual configuration."
+            {dbStrategy === "local"
+              ? "Local Strategy: Vault stays in this browser's IndexedDB. Export a backup regularly. No account or network required."
+              : dbStrategy === "appwrite"
+              ? "Appwrite Strategy: Optional sync to your Appwrite backend. Without credentials, Pensieve stays local."
               : dbStrategy === "supabase"
-              ? "Supabase Strategy: Sync your personal mind items to a secure, relational Supabase database table."
-              : "Firebase Strategy: Sync your personal mind items to your own Firebase Firestore collection."}
+              ? "Supabase Strategy: Optional sync to pensieve_kv. Without URL/key, Pensieve stays local."
+              : "Firebase Strategy: Optional sync to Firestore. Without credentials, Pensieve stays local."}
           </p>
+          {dbStrategy !== "local" && configured && (
+            <button
+              type="button"
+              onClick={async () => {
+                const n = await drainSyncOutbox();
+                triggerToast(n > 0 ? `Flushed ${n} queued sync job(s).` : "Outbox empty — nothing to sync.");
+                getStorageEstimate().then(setStorageHealth).catch(() => {});
+              }}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 border border-emerald-500/20 rounded-xl text-[11px] font-bold cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Flush sync outbox now
+            </button>
+          )}
         </section>
 
         {/* Appwrite Connection Section */}

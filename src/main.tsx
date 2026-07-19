@@ -21,13 +21,29 @@ window.addEventListener('appinstalled', () => {
   window.dispatchEvent(new CustomEvent('pwa-installed'));
 });
 
-// Unregister Service Worker to prevent intercepting/proxying bugs in sandboxed iframes
+const isIframe = (() => {
+  try {
+    return window !== window.parent;
+  } catch {
+    return true;
+  }
+})();
+
+// Register SW for real offline shell; unregister inside iframes (preview sandboxes)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const registration of registrations) {
-      registration.unregister();
-    }
-  });
+  if (isIframe) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        registration.unregister();
+      }
+    });
+  } else {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.warn('[PWA] Service worker registration failed:', err);
+      });
+    });
+  }
 }
 
 createRoot(document.getElementById('root')!).render(

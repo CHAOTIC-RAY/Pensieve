@@ -258,13 +258,13 @@ export async function deleteItemMedia(item: MindItem): Promise<void> {
 /**
  * Fetch all Mind Items from Appwrite
  */
-export async function getAppwriteItems(userId: string): Promise<MindItem[]> {
+export async function getAppwriteItems(userId: string): Promise<MindItem[] | null> {
   if (!userId) return [];
 
   const config = getAppwriteConfig();
   if (!config) {
-    console.warn('[Appwrite] Not configured. Falling back to localStorage.');
-    return getLocalItems();
+    console.warn('[Appwrite] Not configured.');
+    return null;
   }
 
   try {
@@ -315,22 +315,21 @@ export async function getAppwriteItems(userId: string): Promise<MindItem[]> {
     console.error('[Appwrite] Error fetching items:', error);
   }
 
-  // Fallback to localStorage
-  return getLocalItems();
+  // Signal failure so the strategy layer keeps IndexedDB vault intact
+  return null;
 }
 
 /**
  * Save all Mind Items to Appwrite
  */
 export async function saveAppwriteItems(userId: string, items: MindItem[]): Promise<boolean> {
-  // Always save to localStorage first for offline safety
-  saveLocalItems(items);
+  // Local persistence is handled by dbStrategyService / IndexedDB
 
   if (!userId) return false;
 
   const config = getAppwriteConfig();
   if (!config) {
-    console.warn('[Appwrite] Not configured. Items saved to localStorage only.');
+    console.warn('[Appwrite] Not configured.');
     return false;
   }
 
@@ -423,25 +422,3 @@ export async function saveAppwriteItems(userId: string, items: MindItem[]): Prom
   return false;
 }
 
-/**
- * Local storage fallback functions
- */
-function getLocalItems(): MindItem[] {
-  try {
-    const local = localStorage.getItem('pensieve_local_items');
-    if (local) {
-      return JSON.parse(local);
-    }
-  } catch (e) {
-    console.error('[Local Storage] Failed to load items', e);
-  }
-  return [];
-}
-
-function saveLocalItems(items: MindItem[]): void {
-  try {
-    localStorage.setItem('pensieve_local_items', JSON.stringify(items));
-  } catch (e) {
-    console.error('[Local Storage] Failed to save items', e);
-  }
-}

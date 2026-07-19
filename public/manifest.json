@@ -4,8 +4,8 @@
   "description": "A private digital sanctuary for your thoughts, bookmarks, quotes, images, and tasks.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#4f46e5",
+  "background_color": "#FDFCFB",
+  "theme_color": "#FDFCFB",
   "orientation": "portrait-primary",
   "icons": [
     {
