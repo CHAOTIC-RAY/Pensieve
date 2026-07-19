@@ -1,6 +1,6 @@
 import { CreateMLCEngine } from '@mlc-ai/web-llm';
 import { manageContextBudget } from './localAiContext';
-import { getMlcAppConfig } from '../services/mlcFetchProxy';
+import { getMlcAppConfigSafe } from '../services/mlcFetchProxy';
 
 let activeEngine: any = null;
 let activeModelId: string | null = null;
@@ -28,7 +28,8 @@ export async function initVisionModel(
     }
 
     onProgress({ progress: 0.1, text: `Initializing WebGPU engine for ${modelId}...` });
-    
+    const appConfig = await getMlcAppConfigSafe();
+
     // Phi-3.5-vision-instruct needs specific configuration or just normal engine init
     const engine = await CreateMLCEngine(
       modelId,
@@ -39,7 +40,7 @@ export async function initVisionModel(
             text: report.text || 'Downloading weights...'
           });
         },
-        appConfig: getMlcAppConfig()
+        appConfig,
       }
     );
 
@@ -48,8 +49,13 @@ export async function initVisionModel(
     return true;
   } catch (error: any) {
     console.error('[Builtin AI Init Error]', error);
-    onProgress({ progress: 0, text: `Initialization failed: ${error.message || error}` });
-    throw error;
+    const msg = String(error?.message || error);
+    const friendly =
+      msg.includes("Unexpected token '<'") || msg.includes('<!doctype')
+        ? 'Model config download returned HTML instead of JSON. Redeploy with the Worker /api proxy, then clear offline cache.'
+        : msg;
+    onProgress({ progress: 0, text: `Initialization failed: ${friendly}` });
+    throw new Error(friendly);
   }
 }
 

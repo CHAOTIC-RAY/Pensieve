@@ -1,7 +1,7 @@
 /* Pensieve PWA service worker — offline app shell + runtime asset cache */
 
-const CACHE_VERSION = 'pensieve-shell-v2';
-const RUNTIME_CACHE = 'pensieve-runtime-v2';
+const CACHE_VERSION = 'pensieve-shell-v3';
+const RUNTIME_CACHE = 'pensieve-runtime-v3';
 
 const PRECACHE = [
   '/',
@@ -131,16 +131,37 @@ async function staleWhileRevalidate(request) {
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-  if (request.method !== 'GET') return;
+  if (request.method !== 'GET' && request.method !== 'HEAD') return;
 
   const url = new URL(request.url);
 
-  // Never cache cloud / API traffic — network only
-  if (isCloudHost(url)) {
+  // Never intercept API / cloud — let the network (or Worker) handle it.
+  // Critical: /api/* must not fall through to SPA index.html caching.
+  if (url.pathname.startsWith('/api/') || isCloudHost(url)) {
     return;
   }
 
   if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Model manifests / JSON configs: network-only (never serve cached HTML)
+  if (
+    url.pathname.endsWith('.json') ||
+    url.pathname.includes('mlc-chat-config') ||
+    url.pathname.includes('tensor-cache')
+  ) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const ct = response.headers.get('content-type') || '';
+          if (ct.includes('text/html')) {
+            return Response.error();
+          }
+          return response;
+        })
+        .catch(() => caches.match(request).then((c) => c || Response.error()))
+    );
     return;
   }
 

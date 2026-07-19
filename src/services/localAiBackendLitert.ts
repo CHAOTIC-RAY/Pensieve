@@ -5,7 +5,7 @@
 
 import { CreateMLCEngine } from '@mlc-ai/web-llm';
 import { resolveModelById } from './litertModelResolver';
-import { getMlcAppConfig } from './mlcFetchProxy';
+import { getMlcAppConfigSafe } from './mlcFetchProxy';
 
 // Local storage keys to persist user preferences
 const LOCAL_AI_ENABLED_KEY = 'pensieve_local_ai_enabled';
@@ -99,7 +99,8 @@ export async function initLocalAiModel(
     }
 
     onProgress({ progress: 0.1, text: `Initializing WebGPU engine for ${resolved.name}...` });
-    
+    const appConfig = await getMlcAppConfigSafe();
+
     if (resolved.runtime === 'webllm') {
       // Initialize WebLLM engine
       // If it's a vision model, we use the vision-specific init if needed, 
@@ -115,7 +116,7 @@ export async function initLocalAiModel(
               text: report.text || 'Downloading weights...'
             });
           },
-          appConfig: getMlcAppConfig()
+          appConfig,
         }
       );
       activeEngine = engine;
@@ -137,7 +138,7 @@ export async function initLocalAiModel(
               text: report.text || 'Warming Gemma 3 LiteRT pipeline...'
             });
           },
-          appConfig: getMlcAppConfig()
+          appConfig,
         }
       );
       activeEngine = engine;
@@ -146,8 +147,13 @@ export async function initLocalAiModel(
     }
   } catch (error: any) {
     console.error('[Local AI Init Error]', error);
-    onProgress({ progress: 0, text: `Initialization failed: ${error.message || error}` });
-    throw error;
+    const msg = String(error?.message || error);
+    const friendly =
+      msg.includes("Unexpected token '<'") || msg.includes('<!doctype')
+        ? 'Model config download returned HTML instead of JSON. The /api model proxy is missing or returning the SPA shell — redeploy with the Worker API, then clear offline cache in Preferences.'
+        : msg;
+    onProgress({ progress: 0, text: `Initialization failed: ${friendly}` });
+    throw new Error(friendly);
   }
 }
 

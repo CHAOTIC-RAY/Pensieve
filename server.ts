@@ -199,6 +199,11 @@ app.post("/api/scrape", async (req, res) => {
   res.json(result);
 });
 
+// Health probe used by the client to detect SPA-vs-API hosting
+app.get("/api/mlc-health", (_req, res) => {
+  res.json({ ok: true, service: "pensieve-mlc-proxy", runtime: "express" });
+});
+
 // Hugging Face proxy for WebGPU vision models
 app.all("/api/hf-proxy/*", async (req, res) => {
   try {
@@ -810,6 +815,11 @@ async function startServer() {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
+      // Never serve the SPA shell for API routes (avoids JSON.parse('<!doctype...'))
+      if (req.path.startsWith("/api/")) {
+        res.status(404).json({ error: "API route not found" });
+        return;
+      }
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
