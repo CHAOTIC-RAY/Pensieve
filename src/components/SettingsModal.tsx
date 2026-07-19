@@ -142,6 +142,11 @@ export default function SettingsModal({
     (window.navigator as any).standalone || 
     false
   );
+  const [pwaUpdateAvailable, setPwaUpdateAvailable] = useState<boolean>(
+    !!(window as any).pwaWaitingWorker
+  );
+  const [pwaCacheBusy, setPwaCacheBusy] = useState(false);
+  const [swActive, setSwActive] = useState(false);
 
   useEffect(() => {
     const handlePromptReady = () => {
@@ -151,13 +156,25 @@ export default function SettingsModal({
       setPwaInstalled(true);
       setPwaPrompt(null);
     };
+    const handleUpdateAvailable = () => {
+      setPwaUpdateAvailable(true);
+    };
 
     window.addEventListener('pwa-prompt-ready', handlePromptReady);
     window.addEventListener('pwa-installed', handleInstalled);
+    window.addEventListener('pwa-update-available', handleUpdateAvailable);
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        setSwActive(!!reg?.active);
+        if (reg?.waiting) setPwaUpdateAvailable(true);
+      });
+    }
 
     return () => {
       window.removeEventListener('pwa-prompt-ready', handlePromptReady);
       window.removeEventListener('pwa-installed', handleInstalled);
+      window.removeEventListener('pwa-update-available', handleUpdateAvailable);
     };
   }, []);
 
@@ -170,6 +187,31 @@ export default function SettingsModal({
       setPwaInstalled(true);
       setPwaPrompt(null);
       (window as any).deferredPrompt = null;
+    }
+  };
+
+  const applyPwaUpdate = () => {
+    const waiting = (window as any).pwaWaitingWorker as ServiceWorker | undefined;
+    if (waiting) {
+      waiting.postMessage({ type: 'SKIP_WAITING' });
+      return;
+    }
+    // Fallback: reload to pick up a newly activated controller
+    window.location.reload();
+  };
+
+  const clearPwaCaches = async () => {
+    if (!('caches' in window)) return;
+    setPwaCacheBusy(true);
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+      const reg = await navigator.serviceWorker?.getRegistration();
+      reg?.active?.postMessage({ type: 'CLEAR_CACHES' });
+      await reg?.unregister();
+      window.location.reload();
+    } finally {
+      setPwaCacheBusy(false);
     }
   };
 
@@ -3548,6 +3590,30 @@ export default function SettingsModal({
                 </div>
               </div>
             )}
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-foreground/[0.03] border border-border-subtle text-[11px] text-foreground/60">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${swActive ? 'bg-emerald-500' : 'bg-foreground/30'}`} />
+                Offline shell: {swActive ? 'cached & ready' : 'not registered'}
+              </div>
+              {pwaUpdateAvailable && (
+                <button
+                  type="button"
+                  onClick={applyPwaUpdate}
+                  className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold transition-colors"
+                >
+                  Update app
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={clearPwaCaches}
+                disabled={pwaCacheBusy}
+                className="px-4 py-2.5 rounded-xl border border-border-subtle bg-foreground/5 hover:bg-foreground/10 text-xs font-semibold text-foreground/70 transition-colors disabled:opacity-50"
+              >
+                {pwaCacheBusy ? 'Clearing…' : 'Clear offline cache'}
+              </button>
+            </div>
           </div>
         </section>
       </div>

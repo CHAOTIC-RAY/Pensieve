@@ -180,6 +180,22 @@ const MOCK_ITEMS: StoreItem[] = [
     description: 'Adds a subtle sparkle shimmer to interactive surfaces and the omnibar edge.',
     price: 260,
     effectId: 'effect-sparkle'
+  },
+  {
+    $id: 'item-theme-neko',
+    name: 'Neko Café Theme',
+    type: 'theme',
+    description: 'Pastel sakura workspace — soft blush surfaces, mint accents, and cozy cat-café vibes.',
+    price: 420,
+    effectId: 'theme-neko'
+  },
+  {
+    $id: 'item-effect-neko',
+    name: 'Dancing Neko',
+    type: 'effect',
+    description: 'A tiny dancing cat buddy that bounces in the corner while you capture thoughts.',
+    price: 380,
+    effectId: 'effect-neko'
   }
 ];
 

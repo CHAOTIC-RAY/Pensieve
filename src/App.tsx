@@ -334,6 +334,7 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(
     !navigator.onLine ? 'offline' : getEffectiveDbStrategy() === 'local' ? 'local' : 'syncing'
   );
+  const [pwaUpdateAvailable, setPwaUpdateAvailable] = useState(!!(window as any).pwaWaitingWorker);
 
   // User Profile States
   const [profileName, setProfileName] = useState(() => localStorage.getItem('pensieve_profile_name') || 'Ray Dark');
@@ -416,14 +417,18 @@ export default function App() {
       if (e?.detail?.status) setSyncStatus(e.detail.status);
     };
 
+    const handlePwaUpdate = () => setPwaUpdateAvailable(true);
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     window.addEventListener('pensieve_sync_status', handleSyncStatus);
+    window.addEventListener('pwa-update-available', handlePwaUpdate);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('pensieve_sync_status', handleSyncStatus);
+      window.removeEventListener('pwa-update-available', handlePwaUpdate);
     };
   }, []);
 
@@ -866,6 +871,30 @@ export default function App() {
 
         {/* Paper Texture Overlay — skip for clean MyMind canvas */}
         {!isMyMindLook && <div className="paper-texture" />}
+
+        {pwaUpdateAvailable && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[130000] flex items-center gap-3 px-4 py-2.5 rounded-full bg-sky-600 text-white shadow-lg border border-sky-400/30">
+            <span className="text-xs font-semibold tracking-wide">App update ready</span>
+            <button
+              type="button"
+              onClick={() => {
+                const waiting = (window as any).pwaWaitingWorker as ServiceWorker | undefined;
+                if (waiting) waiting.postMessage({ type: 'SKIP_WAITING' });
+                else window.location.reload();
+              }}
+              className="text-xs font-bold px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+            >
+              Reload
+            </button>
+            <button
+              type="button"
+              onClick={() => setPwaUpdateAvailable(false)}
+              className="text-[10px] font-mono uppercase tracking-wider text-white/70 hover:text-white"
+            >
+              Later
+            </button>
+          </div>
+        )}
 
       {/* Compact Mobile-Only Header */}
       <header className="flex md:hidden items-center justify-between px-4 py-3 bg-card-bg/50 backdrop-blur-md border-b border-border-subtle/40 shrink-0 z-40 select-none">

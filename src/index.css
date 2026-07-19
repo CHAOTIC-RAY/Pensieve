@@ -1289,3 +1289,119 @@ body.aura-sunset #pensieve-workspace > *:not(.galaxy-background) {
   position: relative;
   z-index: 1;
 }
+
+/* ─── Neko Café Theme ──────────────────────────────────────────────── */
+:root[data-neko-theme="true"] {
+  --bg-color: #fff5f8;
+  --bg-card: #fffafc;
+  --bg-modal: #fff8fb;
+  --bg-modal-sidebar: #ffe9f1;
+  --border-subtle: rgba(255, 143, 171, 0.22);
+  --border-card: rgba(255, 143, 171, 0.16);
+  --text-heading: #5c3d4a;
+  --text-card-title: #5c3d4a;
+  --bg-input: #fffafc;
+  --primary: #ff8fab;
+}
+
+:root[data-theme="dark"][data-neko-theme="true"] {
+  --bg-color: #1a1218;
+  --bg-card: #241820;
+  --bg-modal: #1f151c;
+  --bg-modal-sidebar: #2a1a24;
+  --border-subtle: rgba(255, 143, 171, 0.28);
+  --border-card: rgba(255, 143, 171, 0.2);
+  --text-heading: #ffe4ef;
+  --text-card-title: #ffe4ef;
+  --bg-input: #241820;
+  --primary: #ff8fab;
+}
+
+body.theme-neko #pensieve-workspace {
+  background:
+    radial-gradient(ellipse 70% 50% at 10% 0%, rgba(255, 182, 193, 0.35), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 90% 15%, rgba(186, 230, 215, 0.28), transparent 50%),
+    var(--bg-color, #fff5f8);
+}
+
+body.theme-neko .mind-card-shell {
+  border-color: rgba(255, 143, 171, 0.2) !important;
+}
+
+body.theme-neko #pensieve-omnibar-box {
+  border-color: rgba(255, 143, 171, 0.35) !important;
+  box-shadow: 0 4px 24px rgba(255, 143, 171, 0.12);
+}
+
+/* ─── Dancing Neko Mascot ──────────────────────────────────────────── */
+.pensieve-neko-buddy {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 72px;
+  height: 72px;
+  z-index: 120000;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 10px rgba(255, 143, 171, 0.35));
+  animation: neko-bounce 0.55s ease-in-out infinite alternate;
+}
+
+.pensieve-neko-buddy svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transform-origin: 50% 85%;
+  animation: neko-wiggle 0.55s ease-in-out infinite alternate;
+}
+
+.pensieve-neko-buddy .neko-paw-l {
+  transform-origin: 24px 56px;
+  animation: neko-paw 0.35s ease-in-out infinite alternate;
+}
+
+.pensieve-neko-buddy .neko-paw-r {
+  transform-origin: 40px 56px;
+  animation: neko-paw 0.35s ease-in-out infinite alternate-reverse;
+}
+
+.pensieve-neko-buddy .neko-tail {
+  transform-origin: 46px 48px;
+  animation: neko-tail 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes neko-bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10px); }
+}
+
+@keyframes neko-wiggle {
+  from { transform: rotate(-6deg); }
+  to { transform: rotate(6deg); }
+}
+
+@keyframes neko-paw {
+  from { transform: translateY(0); }
+  to { transform: translateY(-3px); }
+}
+
+@keyframes neko-tail {
+  from { transform: rotate(-12deg); }
+  to { transform: rotate(18deg); }
+}
+
+.motion-reduce .pensieve-neko-buddy,
+.motion-reduce .pensieve-neko-buddy svg,
+.motion-reduce .pensieve-neko-buddy .neko-paw-l,
+.motion-reduce .pensieve-neko-buddy .neko-paw-r,
+.motion-reduce .pensieve-neko-buddy .neko-tail {
+  animation: none !important;
+}
+
+@media (max-width: 640px) {
+  .pensieve-neko-buddy {
+    right: 10px;
+    bottom: 72px;
+    width: 56px;
+    height: 56px;
+  }
+}

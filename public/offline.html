@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#F0F0F2" />
+    <title>Pensieve — Offline</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(ellipse 80% 50% at 20% 0%, rgba(255, 107, 53, 0.12), transparent 55%),
+          #f0f0f2;
+        color: #1a1a1a;
+        padding: 1.5rem;
+      }
+      main {
+        max-width: 26rem;
+        text-align: center;
+      }
+      h1 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.75rem;
+      }
+      p {
+        margin: 0 0 1.25rem;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        color: #5a5a5e;
+      }
+      button {
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: none;
+        border-radius: 999px;
+        padding: 0.7rem 1.25rem;
+        background: #ff6b35;
+        color: #fff;
+        cursor: pointer;
+      }
+      button:hover { filter: brightness(1.05); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>You're offline</h1>
+      <p>
+        Pensieve couldn't reach the network. Your vault stays on this device —
+        reconnect and reload to continue, or open the installed app if you already have it.
+      </p>
+      <button type="button" onclick="location.href='/'">Try again</button>
+    </main>
+  </body>
+</html>

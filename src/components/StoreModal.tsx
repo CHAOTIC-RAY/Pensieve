@@ -192,6 +192,24 @@ const EFFECT_CHANGES: Record<string, { impact: string; details: string[] }> = {
       'Lightweight pulse that never fights typed text.',
       'Shares the search-bar slot with neon and crystal styles.'
     ]
+  },
+  'theme-neko': {
+    impact: 'Workspace Theme Palette',
+    details: [
+      'Soft sakura blush canvas with mint ambient blooms.',
+      'Pastel card borders and cozy café-tinted chrome.',
+      'Accent color shifts to warm pink for buttons and focus rings.',
+      'Exclusive theme slot — swaps with Frosted Glass when equipped.'
+    ]
+  },
+  'effect-neko': {
+    impact: 'Floating Mascot Buddy',
+    details: [
+      'Spawns a tiny dancing neko in the corner of your vault.',
+      'Bouncy paw and tail animation while you browse and capture.',
+      'Respects reduced-motion preferences automatically.',
+      'Exclusive mascot slot — one buddy at a time.'
+    ]
   }
 };
 
@@ -589,6 +607,44 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
               </div>
             </div>
             <p className="text-[9px] text-violet-300/70 font-mono uppercase tracking-widest mt-4">Search pulse</p>
+          </div>
+        );
+
+      case 'theme-neko':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden flex items-center justify-center p-6"
+            style={{
+              background:
+                'radial-gradient(ellipse at 15% 0%, rgba(255,182,193,0.55), transparent 50%), radial-gradient(ellipse at 90% 20%, rgba(186,230,215,0.4), transparent 45%), #fff5f8',
+            }}
+          >
+            <div className="w-full max-w-[200px] p-4 rounded-xl bg-[#fffafc] border border-pink-200/70 shadow-sm space-y-2">
+              <div className="w-16 h-2.5 rounded bg-pink-300/70" />
+              <div className="w-full h-2 rounded bg-pink-100" />
+              <div className="w-3/4 h-2 rounded bg-pink-100" />
+              <p className="text-[9px] font-mono uppercase tracking-widest text-pink-400 pt-1">Neko café</p>
+            </div>
+          </div>
+        );
+
+      case 'effect-neko':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-gradient-to-br from-pink-50 via-rose-50 to-mint-50 flex flex-col items-center justify-center gap-3"
+            style={{ background: 'linear-gradient(135deg, #fff5f8, #e8fff6)' }}
+          >
+            <div
+              className="text-5xl select-none"
+              style={{ animation: 'nekoPreviewBounce 0.55s ease-in-out infinite alternate', display: 'inline-block' }}
+            >
+              🐱
+            </div>
+            <p className="text-[9px] font-mono uppercase tracking-widest text-pink-500/80">Dancing neko</p>
+            <style>{`
+              @keyframes nekoPreviewBounce {
+                from { transform: translateY(0) rotate(-6deg); }
+                to { transform: translateY(-10px) rotate(6deg); }
+              }
+            `}</style>
           </div>
         );
 

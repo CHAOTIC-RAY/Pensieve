@@ -1,3 +1,5 @@
+import { syncNekoBuddy } from '../lib/nekoBuddy';
+
 export type UserSettings = {
   xp?: number;
   unlockedEffects?: string[];
@@ -307,6 +309,8 @@ export function applyTheme(settings: UserSettings) {
     'avatar-orbit',
     'search-pulse',
     'effect-sparkle',
+    'theme-neko',
+    'effect-neko',
   ];
   ALL_EFFECTS.forEach(effectId => {
     if (activeEffects.includes(effectId)) {
@@ -315,6 +319,9 @@ export function applyTheme(settings: UserSettings) {
       document.body.classList.remove(effectId);
     }
   });
+
+  // Dancing neko mascot (DOM buddy; respects reduceMotion via CSS)
+  syncNekoBuddy(activeEffects.includes('effect-neko'));
   
   // Custom Dynamic CSS Injection from Admin Panel Workspace
   try {
@@ -355,6 +362,17 @@ export function applyTheme(settings: UserSettings) {
     root.style.setProperty('--blur-strength', '35px');
   } else if ((settings.uiStyle || 'modern') !== 'glass') {
     root.setAttribute('data-ui-style', settings.uiStyle || 'modern');
+  }
+
+  // Neko Café theme overrides
+  if (activeEffects.includes('theme-neko')) {
+    root.setAttribute('data-neko-theme', 'true');
+    root.style.setProperty('--primary', '#ff8fab');
+    root.style.setProperty('--primary-rgb', '255, 143, 171');
+    root.style.setProperty('--primary-hover', '#ff6b9d');
+  } else {
+    root.removeAttribute('data-neko-theme');
+    root.style.removeProperty('--primary-hover');
   }
   
   // Background Image
@@ -451,7 +469,8 @@ export function saveSettings(settings: UserSettings) {
 }
 
 export function getEffectCategory(effectId: string): string {
-  if (effectId === 'theme-glass') return 'theme';
+  if (effectId === 'theme-glass' || effectId === 'theme-neko') return 'theme';
+  if (effectId === 'effect-neko') return 'mascot';
   if (
     effectId === 'effect-crt' ||
     effectId === 'effect-film-grain' ||

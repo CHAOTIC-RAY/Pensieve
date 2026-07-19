@@ -1,12 +1,19 @@
 {
+  "id": "/",
   "name": "Pensieve — Beautiful Mind Palace",
   "short_name": "Pensieve",
-  "description": "A private digital sanctuary for your thoughts, bookmarks, quotes, images, and tasks.",
+  "description": "A private digital sanctuary for your thoughts, bookmarks, quotes, images, and tasks. Works offline as an installed app.",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#FDFCFB",
-  "theme_color": "#FDFCFB",
-  "orientation": "portrait-primary",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "background_color": "#F0F0F2",
+  "theme_color": "#F0F0F2",
+  "orientation": "any",
+  "categories": ["productivity", "utilities", "lifestyle"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.jpg",
@@ -25,6 +32,15 @@
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open vault",
+      "short_name": "Vault",
+      "description": "Jump straight into your mind palace",
+      "url": "/",
+      "icons": [{ "src": "/icon-192.jpg", "sizes": "192x192" }]
     }
   ]
 }
