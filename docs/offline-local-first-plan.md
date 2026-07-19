@@ -37,7 +37,8 @@ Make “no Supabase / no cloud” a deliberate, selectable mode.
 
 - Extend `DbStrategy` with `'local'`:
   ```ts
-  export type DbStrategy = 'local' | 'appwrite' | 'supabase' | 'firebase' | 'box';
+  export type DbStrategy = 'local' | 'appwrite' | 'supabase' | 'box';
+  // Firebase Auth is login-only; Firestore sync was removed.
   ```
 - Default strategy when no cloud credentials are present: `'local'` (instead of always `'appwrite'`).
 - Auto-detect / degrade:

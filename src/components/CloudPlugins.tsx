@@ -905,7 +905,7 @@ export default function CloudPlugins({ onItemCreated, onTriggerToast, initialAct
           <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[9px] text-foreground/60 leading-relaxed font-medium">
-              <strong>Isolated Client Sandbox:</strong> Notes created inside Pensieve are purely kept in your local mind space or private Firestore database. They are <strong>never</strong> backed up, read, or modified by your connected {pluginName} account.
+              <strong>Isolated Client Sandbox:</strong> Notes created inside Pensieve stay in your local vault (and optional Appwrite/Supabase sync). They are <strong>never</strong> backed up, read, or modified by your connected {pluginName} account.
             </p>
           </div>
 

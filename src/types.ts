@@ -33,6 +33,8 @@ export interface MindItem {
   readLater?: boolean;
   isTopMind?: boolean; // Focus-mode pinning
   analyzing?: boolean; // True while Gemini is parsing/scraping in background
+  needsAnalysis?: boolean; // Deferred enrichment for capable desktop / cloud sync
+  analyzedBy?: 'local' | 'cloud' | 'deferred' | 'none';
   dominantColor?: string; // Close color group (e.g. "blue", "red")
   audioUrl?: string; // Base64 or Blob URL for recorded voice notes
   aiSummary?: string; // 1-sentence AI summary of the item

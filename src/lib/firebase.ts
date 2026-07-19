@@ -1,12 +1,15 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * Firebase Auth only — Google / email / anonymous login.
+ * Vault data uses IndexedDB + optional Appwrite/Supabase sync (not Firestore).
  */
 
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 
-// Detect if running in browser
 const isBrowser = typeof window !== 'undefined';
 
 const getFirebaseConfig = () => {
@@ -14,39 +17,29 @@ const getFirebaseConfig = () => {
     const customApiKey = localStorage.getItem('pensieve_firebase_apiKey');
     const customAuthDomain = localStorage.getItem('pensieve_firebase_authDomain');
     const customProjectId = localStorage.getItem('pensieve_firebase_projectId');
-    const customStorageBucket = localStorage.getItem('pensieve_firebase_storageBucket');
-    const customMessagingSenderId = localStorage.getItem('pensieve_firebase_messagingSenderId');
     const customAppId = localStorage.getItem('pensieve_firebase_appId');
 
-    // If at least project ID and API key are customized, use the custom config
+    // Optional Auth project override (Google Sign-In only — no Firestore)
     if (customProjectId && customApiKey) {
       return {
         apiKey: customApiKey,
-        authDomain: customAuthDomain || undefined,
+        authDomain: customAuthDomain || `${customProjectId}.firebaseapp.com`,
         projectId: customProjectId,
-        storageBucket: customStorageBucket || undefined,
-        messagingSenderId: customMessagingSenderId || undefined,
-        appId: customAppId || undefined
+        appId: customAppId || undefined,
       };
     }
   }
-  
-  // Fallback to platform-generated config from firebase-applet-config.json
-  return firebaseConfig;
+
+  return {
+    apiKey: firebaseConfig.apiKey,
+    authDomain: firebaseConfig.authDomain,
+    projectId: firebaseConfig.projectId,
+    appId: firebaseConfig.appId,
+  };
 };
 
 const activeConfig = getFirebaseConfig();
+const app = getApps().length ? getApp() : initializeApp(activeConfig);
 
-// Initialize Firebase
-const app = initializeApp(activeConfig);
-
-import { getAuth } from 'firebase/auth';
 export const auth = getAuth(app);
-
-import { getFirestore } from 'firebase/firestore';
-// Initialize Firestore with the custom database ID if configured
-const customDbId = isBrowser ? localStorage.getItem('pensieve_firebase_databaseId') : null;
-const dbId = customDbId || (firebaseConfig as any).firestoreDatabaseId;
-export const db = dbId ? getFirestore(app, dbId) : getFirestore(app);
-
 export default app;

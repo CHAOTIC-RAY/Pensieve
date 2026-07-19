@@ -35,6 +35,7 @@ export function setLocalAiEnabled(enabled: boolean): void {
   localStorage.setItem(LOCAL_AI_ENABLED_KEY, enabled ? 'true' : 'false');
 }
 
+/** User preference (global). Use getEffectiveAiStrategy() for per-device routing. */
 export type AiStrategy = 'local' | 'api_key';
 
 export function getAiStrategy(): AiStrategy {

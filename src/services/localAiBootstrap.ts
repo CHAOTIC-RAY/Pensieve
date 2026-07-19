@@ -3,13 +3,13 @@
  */
 
 import { 
-  isWebLiteRtSupported, 
   isLocalAiEnabled, 
   getSelectedLocalModelId, 
   getSelectedVisionModelId,
   initLocalAiModel,
   ProgressReport
 } from './localAiBackendLitert';
+import { isLikelyMobileDevice } from './aiDeviceStrategy';
 
 export type BootstrapPhase = 'idle' | 'unsupported' | 'downloading' | 'ready' | 'failed';
 
@@ -94,6 +94,16 @@ export async function bootstrapLocalAiOnLaunch(force: boolean = false): Promise<
   if (!force && !shouldAutoBootstrapLocalAi()) {
     console.log('[LocalAI Bootstrap] Auto-bootstrap skipped: local AI is disabled.');
     updateStatus('idle', 0, 'On-device local AI is currently disabled. Enable it in the settings.');
+    return;
+  }
+
+  // Mobile: skip heavy WebLLM downloads — cloud API + vault sync is the cross-device path
+  if (!force && isLikelyMobileDevice()) {
+    updateStatus(
+      'unsupported',
+      0,
+      'Mobile device — local WebGPU models stay on desktop. This device uses cloud API; enriched items sync through your vault (Appwrite/Supabase).'
+    );
     return;
   }
 

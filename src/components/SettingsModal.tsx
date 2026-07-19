@@ -61,14 +61,11 @@ import { DbStrategy, setDbStrategy, describeStrategy, isStrategyConfigured, drai
 import { exportVaultJson, importVaultJson, getStorageEstimate } from "../lib/localDb";
 import { auth } from "../lib/firebase";
 import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
   User as FirebaseUser,
 } from "firebase/auth";
+import { getEffectiveAiInfo } from "../services/aiDeviceStrategy";
 import { bootstrapLocalAiOnLaunch } from "../services/localAiBootstrap";
 import {
   UserSettings,
@@ -421,15 +418,11 @@ export default function SettingsModal({
     "from-orange-200 to-rose-200",
   );
 
-  // Custom Firebase States
+  // Optional Firebase Auth project override (Google Sign-In only — no Firestore)
   const [firebaseApiKey, setFirebaseApiKey] = useState("");
   const [firebaseAuthDomain, setFirebaseAuthDomain] = useState("");
   const [firebaseProjectId, setFirebaseProjectId] = useState("");
-  const [firebaseStorageBucket, setFirebaseStorageBucket] = useState("");
-  const [firebaseMessagingSenderId, setFirebaseMessagingSenderId] =
-    useState("");
   const [firebaseAppId, setFirebaseAppId] = useState("");
-  const [firebaseDatabaseId, setFirebaseDatabaseId] = useState("");
 
   // LM Studio & BYOK States
   const [apiProvider, setApiProvider] = useState<
@@ -511,10 +504,7 @@ export default function SettingsModal({
     firebaseApiKey,
     firebaseAuthDomain,
     firebaseProjectId,
-    firebaseStorageBucket,
-    firebaseMessagingSenderId,
     firebaseAppId,
-    firebaseDatabaseId,
     profileName,
     profileEmail,
     profileGradient,
@@ -532,7 +522,8 @@ export default function SettingsModal({
     setAiStrategyState(strategy);
     setLocalAiEnabledState(strategy === "local");
     if (strategy === "local") {
-      bootstrapLocalAiOnLaunch(true);
+      // force=false so mobile skips heavy downloads; desktop still bootstraps
+      bootstrapLocalAiOnLaunch(getEffectiveAiInfo().localCapable);
     }
   };
 
@@ -575,7 +566,7 @@ export default function SettingsModal({
           "http://localhost:1234/v1",
       );
 
-      // Load custom Firebase keys
+      // Load optional Firebase Auth override keys (Google Sign-In only)
       setFirebaseApiKey(localStorage.getItem("pensieve_firebase_apiKey") || "");
       setFirebaseAuthDomain(
         localStorage.getItem("pensieve_firebase_authDomain") || "",
@@ -583,16 +574,7 @@ export default function SettingsModal({
       setFirebaseProjectId(
         localStorage.getItem("pensieve_firebase_projectId") || "",
       );
-      setFirebaseStorageBucket(
-        localStorage.getItem("pensieve_firebase_storageBucket") || "",
-      );
-      setFirebaseMessagingSenderId(
-        localStorage.getItem("pensieve_firebase_messagingSenderId") || "",
-      );
       setFirebaseAppId(localStorage.getItem("pensieve_firebase_appId") || "");
-      setFirebaseDatabaseId(
-        localStorage.getItem("pensieve_firebase_firestoreDatabaseId") || "",
-      );
 
       // Load specific LM Studio & BYOK settings
       const storedProvider =
@@ -644,40 +626,6 @@ export default function SettingsModal({
     localStorage.setItem("pensieve_local_lm_url", val);
   };
 
-  const handleFirebaseApiKeyChange = (val: string) => {
-    setFirebaseApiKey(val);
-    localStorage.setItem("pensieve_firebase_apiKey", val);
-  };
-
-  const handleFirebaseAuthDomainChange = (val: string) => {
-    setFirebaseAuthDomain(val);
-    localStorage.setItem("pensieve_firebase_authDomain", val);
-  };
-
-  const handleFirebaseProjectIdChange = (val: string) => {
-    setFirebaseProjectId(val);
-    localStorage.setItem("pensieve_firebase_projectId", val);
-  };
-
-  const handleFirebaseStorageBucketChange = (val: string) => {
-    setFirebaseStorageBucket(val);
-    localStorage.setItem("pensieve_firebase_storageBucket", val);
-  };
-
-  const handleFirebaseMessagingSenderIdChange = (val: string) => {
-    setFirebaseMessagingSenderId(val);
-    localStorage.setItem("pensieve_firebase_messagingSenderId", val);
-  };
-
-  const handleFirebaseAppIdChange = (val: string) => {
-    setFirebaseAppId(val);
-    localStorage.setItem("pensieve_firebase_appId", val);
-  };
-
-  const handleFirebaseDatabaseIdChange = (val: string) => {
-    setFirebaseDatabaseId(val);
-    localStorage.setItem("pensieve_firebase_firestoreDatabaseId", val);
-  };
 
   const handleProfileNameChange = (val: string) => {
     setProfileName(val);
@@ -757,22 +705,19 @@ export default function SettingsModal({
     window.dispatchEvent(new Event("app-settings-updated"));
   };
 
-  const handleClearFirebaseCustom = () => {
+  const handleClearFirebaseAuthOverride = () => {
     setFirebaseApiKey("");
     setFirebaseAuthDomain("");
     setFirebaseProjectId("");
-    setFirebaseStorageBucket("");
-    setFirebaseMessagingSenderId("");
     setFirebaseAppId("");
-    setFirebaseDatabaseId("");
     localStorage.removeItem("pensieve_firebase_apiKey");
     localStorage.removeItem("pensieve_firebase_authDomain");
     localStorage.removeItem("pensieve_firebase_projectId");
+    localStorage.removeItem("pensieve_firebase_appId");
     localStorage.removeItem("pensieve_firebase_storageBucket");
     localStorage.removeItem("pensieve_firebase_messagingSenderId");
-    localStorage.removeItem("pensieve_firebase_appId");
     localStorage.removeItem("pensieve_firebase_firestoreDatabaseId");
-    triggerToast("Cleared custom Firebase. Using default backend database.");
+    triggerToast("Cleared Firebase Auth override. Using bundled Google Sign-In project.");
   };
 
   const handleApiProviderChange = (
@@ -1722,12 +1667,14 @@ export default function SettingsModal({
     setPlaygroundImageName(randomName);
   };
 
-  const renderStrategySelector = () => (
+  const renderStrategySelector = () => {
+    const deviceAi = getEffectiveAiInfo();
+    return (
     <section className="space-y-3">
       <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
-        Global AI Reasoning Strategy
+        Preferred AI Strategy (cross-device)
       </label>
-      <div className="grid grid-cols-3 p-1 bg-foreground/5 rounded-2xl border border-border-subtle">
+      <div className="grid grid-cols-2 p-1 bg-foreground/5 rounded-2xl border border-border-subtle">
         <button
           onClick={() => handleStrategyChange("local")}
           className={`flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl text-xs font-semibold transition-all ${
@@ -1737,7 +1684,7 @@ export default function SettingsModal({
           }`}
         >
           <Brain className="w-3.5 h-3.5 text-indigo-400" />
-          Local WebGPU
+          Prefer Local
         </button>
         <button
           onClick={() => handleStrategyChange("api_key")}
@@ -1751,13 +1698,21 @@ export default function SettingsModal({
           Cloud API
         </button>
       </div>
-      <p className="text-[10px] text-foreground/50 leading-relaxed px-1">
-        {aiStrategy === "local"
-          ? "Using on-device WebGPU shaders for private, offline intelligence. Your data never leaves this browser."
-          : "Routing requests to high-performance cloud models via secure API keys for deeper reasoning and vision."}
-      </p>
+      <div className="rounded-xl border border-border-subtle bg-foreground/[0.02] px-3 py-2.5 space-y-1">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-foreground/45">
+          On this device: {deviceAi.effective === "local" ? "Local WebGPU" : "Cloud API"}
+          {deviceAi.isMobile ? " · mobile" : ""}
+        </p>
+        <p className="text-[10px] text-foreground/55 leading-relaxed">
+          {deviceAi.reason}
+        </p>
+        <p className="text-[10px] text-foreground/45 leading-relaxed">
+          Capture on phone → cloud enrich (or queue). Desktop local enrichments sync through Appwrite/Supabase so every device sees the same vault.
+        </p>
+      </div>
     </section>
-  );
+    );
+  };
 
   const renderLocalAIContent = () => (
     <section
@@ -2462,7 +2417,7 @@ export default function SettingsModal({
           <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
             Storage Strategy Selector
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 p-1 bg-foreground/5 rounded-2xl border border-border-subtle gap-1">
+          <div className="grid grid-cols-3 p-1 bg-foreground/5 rounded-2xl border border-border-subtle gap-1">
             <button
               onClick={() => {
                 setDbStrategy("local");
@@ -2508,30 +2463,13 @@ export default function SettingsModal({
               <Database className="w-3.5 h-3.5 text-emerald-400" />
               Supabase
             </button>
-            <button
-              onClick={() => {
-                setDbStrategy("firebase");
-                setDbStrategyState("firebase");
-                window.dispatchEvent(new Event('app-settings-updated'));
-              }}
-              className={`flex items-center justify-center gap-1.5 py-2.5 px-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
-                dbStrategy === "firebase"
-                  ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
-                  : "text-foreground/60 hover:text-foreground"
-              }`}
-            >
-              <Aperture className="w-3.5 h-3.5 text-orange-400" />
-              Firebase
-            </button>
           </div>
           <p className="text-[10px] text-foreground/50 leading-relaxed px-1">
             {dbStrategy === "local"
               ? "Local Strategy: Vault stays in this browser's IndexedDB. Export a backup regularly. No account or network required."
               : dbStrategy === "appwrite"
-              ? "Appwrite Strategy: Optional sync to your Appwrite backend. Without credentials, Pensieve stays local."
-              : dbStrategy === "supabase"
-              ? "Supabase Strategy: Optional sync to pensieve_kv. Without URL/key, Pensieve stays local."
-              : "Firebase Strategy: Optional sync to Firestore. Without credentials, Pensieve stays local."}
+              ? "Appwrite Strategy: Optional sync for cross-device vault + AI enrichments. Without credentials, Pensieve stays local."
+              : "Supabase Strategy: Optional sync to pensieve_kv for cross-device vault. Without URL/key, Pensieve stays local."}
           </p>
           {dbStrategy !== "local" && configured && (
             <button
@@ -2715,19 +2653,19 @@ export default function SettingsModal({
           </div>
         </section>
 
-        {/* Firebase Connection Section */}
-        <section className={`space-y-4 pt-6 border-t border-border-subtle transition-all duration-300 ${dbStrategy !== "firebase" ? "opacity-35 pointer-events-none grayscale" : ""}`}>
+        {/* Optional Firebase Auth override — login only, not vault storage */}
+        <section className="space-y-4 pt-6 border-t border-border-subtle">
           <div className="flex items-center gap-2 text-sm font-semibold text-text-heading select-none">
             <Aperture className="w-4 h-4 text-orange-400" />
-            Custom Firebase Connection
+            Google Sign-In (Firebase Auth)
           </div>
           <div className="space-y-3 bg-foreground/[0.02] border border-border-subtle/80 p-5 rounded-2xl">
             <p className="text-[11px] text-foreground/60 leading-normal mb-1">
-              Connect your own Firebase project for cloud Firestore syncing.
+              Firebase is used only for Google / email login. Vault data stays in IndexedDB and optional Appwrite or Supabase sync — Firestore is not used.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">API Key</label>
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-foreground/60 mb-1">API Key (optional override)</label>
                 <input
                   type="password"
                   value={firebaseApiKey}
@@ -2735,6 +2673,7 @@ export default function SettingsModal({
                     setFirebaseApiKey(e.target.value);
                     localStorage.setItem('pensieve_firebase_apiKey', e.target.value);
                   }}
+                  placeholder="Uses bundled project when empty"
                   className="w-full bg-input-bg border border-border-subtle rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/40 transition-colors"
                 />
               </div>
@@ -2776,10 +2715,10 @@ export default function SettingsModal({
               </div>
             </div>
             <button 
-              onClick={handleClearFirebaseCustom}
+              onClick={handleClearFirebaseAuthOverride}
               className="text-[10px] text-rose-500 hover:underline mt-2 flex items-center gap-1"
             >
-              <Trash2 className="w-3 h-3" /> Clear Custom Firebase
+              <Trash2 className="w-3 h-3" /> Clear Auth override
             </button>
           </div>
         </section>

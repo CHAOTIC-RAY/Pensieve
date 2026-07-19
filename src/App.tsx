@@ -43,7 +43,8 @@ import {
   setAiStrategy,
   AiStrategy
 } from './services/localAiBackendLitert';
-import { subscribeToBootstrap, bootstrapLocalAiOnLaunch } from './services/localAiBootstrap';
+import { getEffectiveAiStrategy, getEffectiveAiInfo } from './services/aiDeviceStrategy';
+import { subscribeToBootstrap, bootstrapLocalAiOnLaunch, getCurrentBootstrapStatus } from './services/localAiBootstrap';
 import { fetchModelManifest, ModelManifestEntry } from './services/litertModelResolver';
 import { 
   UserSettings, loadSettings, saveSettings, applyTheme as applyStudioTheme, calculateLevel
@@ -449,6 +450,81 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Cross-device: finish items queued with needsAnalysis when this device can enrich
+  useEffect(() => {
+    if (!user) return;
+    const pending = items.filter((i) => i.needsAnalysis && !i.analyzing);
+    if (pending.length === 0) return;
+
+    const effective = getEffectiveAiStrategy();
+    const boot = getCurrentBootstrapStatus();
+    const canLocal = effective === 'local' && boot.phase === 'ready';
+    const canCloud = navigator.onLine;
+    if (!canLocal && !canCloud) return;
+
+    let cancelled = false;
+    (async () => {
+      for (const item of pending.slice(0, 3)) {
+        if (cancelled) break;
+        await safeUpdateItem(item.id, { analyzing: true, needsAnalysis: true });
+        try {
+          if (canLocal) {
+            const aiResult = await organizeAndTagItemLocally(item);
+            if (aiResult?.success) {
+              await safeUpdateItem(item.id, {
+                title: aiResult.title || item.title,
+                content: aiResult.content || item.content,
+                type: (aiResult.category as MindItemType) || item.type,
+                tags: Array.from(new Set([...(item.tags || []), ...(aiResult.tags || [])])),
+                aiTags: aiResult.tags || [],
+                aiSummary: aiResult.aiSummary || 'Enriched on desktop local engine',
+                dominantColor: aiResult.dominantColor || item.dominantColor,
+                analyzing: false,
+                needsAnalysis: false,
+                analyzedBy: 'local',
+              });
+              continue;
+            }
+          }
+          if (canCloud) {
+            const res = await fetch('/api/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ item }),
+            });
+            if (res.ok) {
+              const aiResult = await res.json();
+              if (aiResult.success) {
+                await safeUpdateItem(item.id, {
+                  title: aiResult.title || item.title,
+                  content: aiResult.content || item.content,
+                  type: aiResult.category || item.type,
+                  tags: Array.from(new Set([...(item.tags || []), ...(aiResult.tags || [])])),
+                  aiTags: aiResult.tags || [],
+                  aiSummary: aiResult.aiSummary || '',
+                  dominantColor: aiResult.dominantColor || item.dominantColor,
+                  analyzing: false,
+                  needsAnalysis: false,
+                  analyzedBy: 'cloud',
+                });
+                continue;
+              }
+            }
+          }
+          await safeUpdateItem(item.id, { analyzing: false });
+        } catch (err) {
+          console.warn('[Pensieve AI] Deferred enrich failed', item.id, err);
+          await safeUpdateItem(item.id, { analyzing: false });
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, items.length, bootstrapState.phase, aiStrategy]);
+
   // Local-first load + optional cloud merge
   useEffect(() => {
     let cancelled = false;
@@ -635,8 +711,11 @@ export default function App() {
           }
         }
 
-        // 2B. Local WebGPU AI analysis (works offline when model is ready)
-        if (aiStrategy === 'local' && isLocalAiEnabled()) {
+        // 2B/2C. Device-aware AI: local WebGPU on capable desktops, cloud on mobile
+        const effectiveAi = getEffectiveAiStrategy();
+        console.log('[Pensieve AI]', getEffectiveAiInfo());
+
+        if (effectiveAi === 'local' && isLocalAiEnabled()) {
           console.log('[Pensieve Local AI] Initiating on-device WebGPU model...');
           try {
             const aiResult = await organizeAndTagItemLocally(processedItem);
@@ -650,7 +729,9 @@ export default function App() {
                 manualTags: docData.manualTags || [],
                 aiSummary: aiResult.aiSummary || 'Organized and tagged locally on your device.',
                 dominantColor: aiResult.dominantColor || 'grey',
-                analyzing: false
+                analyzing: false,
+                needsAnalysis: false,
+                analyzedBy: 'local' as const,
               } as any;
 
               if (aiResult.author) finalDoc.author = aiResult.author;
@@ -665,7 +746,7 @@ export default function App() {
           }
         }
 
-        // 2C. Server-side Gemini API fallback (skip when offline)
+        // Cloud / Gemini (primary path on mobile and when local unavailable)
         if (!offline) {
           try {
             const analyzeResponse = await fetch('/api/analyze', {
@@ -686,7 +767,9 @@ export default function App() {
                   manualTags: docData.manualTags || [],
                   aiSummary: aiResult.aiSummary || '',
                   dominantColor: aiResult.dominantColor || 'grey',
-                  analyzing: false
+                  analyzing: false,
+                  needsAnalysis: false,
+                  analyzedBy: 'cloud' as const,
                 } as any;
 
                 if (aiResult.author) finalDoc.author = aiResult.author;
@@ -702,18 +785,22 @@ export default function App() {
           }
         }
 
-        // Final fallback: Ensure item is saved even if all AI analysis fails
+        // Defer enrichment: syncs via vault so a desktop/cloud session can finish later
         await safeUpdateItem(createdId, {
           analyzing: false,
+          needsAnalysis: true,
+          analyzedBy: 'deferred',
           aiSummary: offline
-            ? 'Saved locally (offline indexing)'
-            : 'Not analyzed (AI unavailable).'
+            ? 'Saved locally — will enrich when online or on a capable device'
+            : 'Queued for enrichment (AI unavailable on this device)',
         });
       } catch (error) {
         console.error("Background indexing failed:", error);
         await safeUpdateItem(createdId, {
           analyzing: false,
-          aiSummary: 'Saved locally (offline indexing)'
+          needsAnalysis: true,
+          analyzedBy: 'deferred',
+          aiSummary: 'Saved locally — queued for enrichment',
         });
       }
     })();

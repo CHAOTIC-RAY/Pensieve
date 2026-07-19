@@ -14,8 +14,6 @@ import {
   deleteItemMedia,
   isStorageBucketConfigured,
 } from '../lib/appwrite';
-import { db } from '../lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   ensureLocalMigration,
   getLocalItems,
@@ -28,7 +26,7 @@ import {
   expandItemsMedia,
 } from '../lib/localDb';
 
-export type DbStrategy = 'local' | 'appwrite' | 'supabase' | 'firebase' | 'box';
+export type DbStrategy = 'local' | 'appwrite' | 'supabase' | 'box';
 
 export type SyncStatus = 'local' | 'offline' | 'syncing' | 'synced' | 'error';
 
@@ -58,15 +56,6 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(url && key);
 }
 
-export function isFirebaseConfigured(): boolean {
-  if (!isBrowser()) return false;
-  const custom = localStorage.getItem('pensieve_firebase_apiKey');
-  const project = localStorage.getItem('pensieve_firebase_projectId');
-  if (custom && project) return true;
-  // Built-in applet config is present in the bundle — strategy is usable when selected
-  return true;
-}
-
 export function isStrategyConfigured(strategy: DbStrategy): boolean {
   switch (strategy) {
     case 'local':
@@ -75,8 +64,6 @@ export function isStrategyConfigured(strategy: DbStrategy): boolean {
       return isSupabaseConfigured();
     case 'appwrite':
       return isAppwriteConfigured();
-    case 'firebase':
-      return isFirebaseConfigured();
     case 'box':
       return Boolean(
         isBrowser() &&
@@ -91,13 +78,22 @@ export function isStrategyConfigured(strategy: DbStrategy): boolean {
 export function getDbStrategy(): DbStrategy {
   if (!isBrowser()) return 'local';
   const val = localStorage.getItem('pensieve_db_strategy');
-  if (
-    val === 'local' ||
-    val === 'appwrite' ||
-    val === 'supabase' ||
-    val === 'firebase' ||
-    val === 'box'
-  ) {
+
+  // Firestore sync removed — migrate legacy choice to a real backend
+  if (val === 'firebase') {
+    if (isAppwriteConfigured()) {
+      localStorage.setItem('pensieve_db_strategy', 'appwrite');
+      return 'appwrite';
+    }
+    if (isSupabaseConfigured()) {
+      localStorage.setItem('pensieve_db_strategy', 'supabase');
+      return 'supabase';
+    }
+    localStorage.setItem('pensieve_db_strategy', 'local');
+    return 'local';
+  }
+
+  if (val === 'local' || val === 'appwrite' || val === 'supabase' || val === 'box') {
     return val;
   }
   // No explicit choice: prefer local when no cloud credentials exist
@@ -166,41 +162,6 @@ function stampItems(items: MindItem[]): MindItem[] {
 /* -------------------------------------------------------------------------- */
 /* Cloud adapters                                                              */
 /* -------------------------------------------------------------------------- */
-
-async function fetchFromFirebase(userId: string): Promise<MindItem[] | null> {
-  try {
-    const docRef = doc(db, 'pensieve_users', userId);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      if (data && data.items && Array.isArray(data.items)) {
-        return data.items;
-      }
-    }
-  } catch (error) {
-    console.error('[Firebase Firestore] Error fetching from Firebase:', error);
-  }
-  return null;
-}
-
-async function saveToFirebase(userId: string, items: MindItem[]): Promise<boolean> {
-  try {
-    const docRef = doc(db, 'pensieve_users', userId);
-    await setDoc(
-      docRef,
-      {
-        items,
-        updated_at: new Date().toISOString(),
-      },
-      { merge: true }
-    );
-    console.log(`[Firebase Firestore] Successfully saved ${items.length} items to Firestore.`);
-    return true;
-  } catch (error) {
-    console.error('[Firebase Firestore] Error saving to Firebase:', error);
-    return false;
-  }
-}
 
 async function fetchFromSupabase(userId: string): Promise<MindItem[] | null> {
   const url = localStorage.getItem('pensieve_supabase_url');
@@ -307,13 +268,6 @@ const supabaseAdapter: SyncAdapter = {
   push: async (userId, items) => saveToSupabase(userId, items),
 };
 
-const firebaseAdapter: SyncAdapter = {
-  id: 'firebase',
-  isConfigured: () => isFirebaseConfigured(),
-  pull: async (userId) => fetchFromFirebase(userId),
-  push: async (userId, items) => saveToFirebase(userId, items),
-};
-
 const boxAdapter: SyncAdapter = {
   id: 'box',
   isConfigured: () => isStrategyConfigured('box'),
@@ -331,8 +285,6 @@ export function getSyncAdapter(strategy: DbStrategy): SyncAdapter {
   switch (strategy) {
     case 'supabase':
       return supabaseAdapter;
-    case 'firebase':
-      return firebaseAdapter;
     case 'box':
       return boxAdapter;
     case 'appwrite':
@@ -526,11 +478,10 @@ export function describeStrategy(strategy: DbStrategy): { title: string; subtitl
         title: 'Box Storage',
         subtitle: 'Synchronizing with Box API',
       };
-    case 'firebase':
     default:
       return {
-        title: 'Firebase Firestore',
-        subtitle: 'Synchronizing with Google Firebase',
+        title: 'Local Only (IndexedDB)',
+        subtitle: 'Vault stays on this device — no cloud required',
       };
   }
 }

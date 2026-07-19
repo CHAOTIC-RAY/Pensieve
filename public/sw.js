@@ -61,7 +61,7 @@ function isCloudHost(url) {
     host.includes('googleapis') ||
     host.includes('gstatic.com') ||
     host.includes('firebaseio') ||
-    host.includes('firebasestorage') ||
+    host.includes('googleapis.com') ||
     host.includes('cloudflare') ||
     host.includes('generativelanguage') ||
     url.pathname.startsWith('/api')
