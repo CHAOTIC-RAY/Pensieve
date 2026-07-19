@@ -82,6 +82,7 @@ export default function Omnibar({
   
   const [detectedType, setDetectedType] = useState<{ type: MindItemType | 'topic'; value: string; label?: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Voice recording states
@@ -161,6 +162,17 @@ export default function Omnibar({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [noteBody, urlLink, quoteBody, imageFile, checklistItems]);
+
+  // "Add New Note" card in masonry grid
+  useEffect(() => {
+    const openNote = () => {
+      setComposerType('note');
+      setIsFocused(true);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    };
+    window.addEventListener('pensieve_compose_note', openNote);
+    return () => window.removeEventListener('pensieve_compose_note', openNote);
+  }, []);
 
   // Slash command filtering
   const filteredSlashCmds = slashFilter
@@ -614,6 +626,7 @@ export default function Omnibar({
           
           <input
             id="pensieve-omnibar-input"
+            ref={inputRef}
             type="text"
             autoFocus
             className="w-full text-[15px] font-sans outline-none placeholder-foreground/40 text-foreground bg-transparent tracking-tight"

@@ -355,15 +355,15 @@ export default function App() {
       if (user) {
         applyStudioTheme(userSettings);
       } else {
-        // Enforce light Editorial theme for the Landing Page
+        // Calm MyMind canvas for the Landing Page
         applyStudioTheme({
           themeMode: 'light',
-          themeColor: '#8b5cf6',
-          activePreset: 'Editorial',
-          uiStyle: 'editorial',
-          fontCombo: 'editorial',
-          borderRadius: 16,
-          blurStrength: 24,
+          themeColor: '#FF6B35',
+          activePreset: 'MyMind',
+          uiStyle: 'minimal',
+          fontCombo: 'minimal',
+          borderRadius: 14,
+          blurStrength: 8,
           cardStyle: 'comfortable',
           backgroundImage: '',
           reduceMotion: false,
@@ -848,21 +848,24 @@ export default function App() {
     );
   }
 
+  const isMyMindLook =
+    userSettings.activePreset === 'MyMind' ||
+    (userSettings.uiStyle === 'minimal' && userSettings.themeMode === 'light');
+
   return user ? (
     <div id="pensieve-workspace" className={`min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-foreground selection:text-background transition-colors duration-300 relative ${userSettings.activeEffect || ''}`}>
-        <GalaxyBackground />
-        {/* Editorial Ambient Spot Blurs */}
+        {!isMyMindLook && <GalaxyBackground />}
+        {/* Ambient blurs — muted for MyMind calm canvas */}
+        {!isMyMindLook && (
         <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden opacity-40 dark:opacity-25">
-          {/* Main Dark Grey ambient shadow */}
           <div className="absolute -top-40 left-1/4 w-[700px] h-[700px] rounded-full bg-neutral-800/10 dark:bg-neutral-900/35 blur-[130px]" />
-          {/* Subtle purple accent blur */}
           <div className="absolute top-1/3 -right-40 w-[600px] h-[600px] rounded-full bg-primary/5 dark:bg-primary/10 blur-[140px]" />
-          {/* Subtle whitish highlight blur */}
           <div className="absolute -bottom-40 left-10 w-[500px] h-[500px] rounded-full bg-white/20 dark:bg-white/5 blur-[120px]" />
         </div>
+        )}
 
-        {/* Paper Texture Overlay */}
-        <div className="paper-texture" />
+        {/* Paper Texture Overlay — skip for clean MyMind canvas */}
+        {!isMyMindLook && <div className="paper-texture" />}
 
       {/* Compact Mobile-Only Header */}
       <header className="flex md:hidden items-center justify-between px-4 py-3 bg-card-bg/50 backdrop-blur-md border-b border-border-subtle/40 shrink-0 z-40 select-none">
@@ -1479,6 +1482,9 @@ export default function App() {
             onUpdateChecklist={handleUpdateChecklist}
             onToggleTopMind={handleToggleTopMind}
             onOpenReader={setReaderItem}
+            onComposeNote={() => {
+              window.dispatchEvent(new CustomEvent('pensieve_compose_note'));
+            }}
           />
         )}
 

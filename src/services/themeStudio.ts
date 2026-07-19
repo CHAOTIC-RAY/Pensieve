@@ -151,6 +151,7 @@ export const FONT_COMBOS = [
 ];
 
 export const THEME_PRESETS = [
+  { name: 'MyMind',    color: '#FF6B35', fontCombo: 'minimal',   uiStyle: 'minimal',      borderRadius: 14, blurStrength: 8,  themeMode: 'light' as const },
   { name: 'Editorial', color: '#8b5cf6', fontCombo: 'editorial', uiStyle: 'editorial',    borderRadius: 16, blurStrength: 24, themeMode: 'light' as const },
   { name: 'Rose',      color: '#f43f5e', fontCombo: 'modern',    uiStyle: 'modern',       borderRadius: 24, blurStrength: 16, themeMode: 'dark' as const },
   { name: 'Emerald',   color: '#10b981', fontCombo: 'minimal',   uiStyle: 'minimal',      borderRadius: 12, blurStrength: 8,  themeMode: 'dark' as const },
@@ -174,12 +175,12 @@ export const PRESET_COLORS = [
 
 export const DEFAULT_SETTINGS: UserSettings = {
   themeMode: 'light',
-  themeColor: '#8b5cf6', // 2 shades of purple background vibe defaults to 8b5cf6
-  activePreset: 'Editorial', // The custom requested default preset
-  uiStyle: 'editorial',
-  fontCombo: 'editorial',
-  borderRadius: 16,
-  blurStrength: 24,
+  themeColor: '#FF6B35',
+  activePreset: 'MyMind',
+  uiStyle: 'minimal',
+  fontCombo: 'minimal',
+  borderRadius: 14,
+  blurStrength: 8,
   cardStyle: 'comfortable',
   backgroundImage: '',
   reduceMotion: false,
@@ -258,8 +259,12 @@ export function applyTheme(settings: UserSettings) {
   root.style.setProperty('--font-body', getFontBodyValue(settings.fontCombo));
   root.style.setProperty('--font-display', getFontDisplayValue(settings.fontCombo));
   
-  // Data attributes
-  root.setAttribute('data-theme', appliedThemeMode);
+  // Data attributes — MyMind preset uses dedicated calm vault tokens
+  const themeAttr =
+    settings.activePreset === 'MyMind' && appliedThemeMode === 'light'
+      ? 'mymind'
+      : appliedThemeMode;
+  root.setAttribute('data-theme', themeAttr);
   root.setAttribute('data-ui-style', settings.uiStyle || 'modern');
   root.setAttribute('data-hide-images', settings.hideImages ? 'true' : 'false');
   
@@ -364,7 +369,28 @@ export function loadSettings(): UserSettings {
     if (stored) {
       const parsed = JSON.parse(stored);
       // Ensure all fields exist
-      return { ...DEFAULT_SETTINGS, ...parsed };
+      let merged = { ...DEFAULT_SETTINGS, ...parsed };
+
+      // One-time migrate Editorial default → MyMind calm vault UI
+      if (
+        localStorage.getItem('pensieve_mymind_ui_migrated') !== 'true' &&
+        (parsed.activePreset === 'Editorial' || !parsed.activePreset)
+      ) {
+        merged = {
+          ...merged,
+          activePreset: 'MyMind',
+          uiStyle: 'minimal',
+          fontCombo: 'minimal',
+          themeColor: '#FF6B35',
+          themeMode: 'light',
+          borderRadius: 14,
+          blurStrength: 8,
+        };
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+        localStorage.setItem('pensieve_mymind_ui_migrated', 'true');
+      }
+
+      return merged;
     }
     return DEFAULT_SETTINGS;
   } catch {

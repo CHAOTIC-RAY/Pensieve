@@ -26,7 +26,7 @@ type ReaderWidth = 'narrow' | 'medium' | 'wide';
 export default function ReaderMode({ item, onClose, onUpdateItem }: ReaderModeProps) {
   // Appearance States (Persisted in localStorage for convenience)
   const [theme, setTheme] = useState<ReaderTheme>(() => {
-    return (localStorage.getItem('pensieve_reader_theme') as ReaderTheme) || 'sepia';
+    return (localStorage.getItem('pensieve_reader_theme') as ReaderTheme) || 'light';
   });
   const [fontFamily, setFontFamily] = useState<ReaderFont>(() => {
     return (localStorage.getItem('pensieve_reader_font') as ReaderFont) || 'serif';
@@ -244,15 +244,13 @@ export default function ReaderMode({ item, onClose, onUpdateItem }: ReaderModePr
 
   // Determine colors based on Theme selection
   const themeClasses = {
-    light: 'bg-zinc-50 text-zinc-900 border-zinc-200/50',
+    light: 'bg-white text-neutral-900 border-black/5',
     dark: 'bg-[#121212] text-[#e0e0e0] border-[#222222]',
     sepia: 'bg-[#fdf6e3] text-[#586e75] border-[#eedeb8]'
   };
 
-  const accentColor = theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600';
-
   const fontClasses = {
-    serif: 'font-serif tracking-normal leading-relaxed',
+    serif: 'font-serif tracking-normal leading-[1.75]',
     sans: 'font-sans tracking-tight leading-relaxed',
     mono: 'font-mono text-sm tracking-tight leading-loose'
   };
@@ -260,7 +258,7 @@ export default function ReaderMode({ item, onClose, onUpdateItem }: ReaderModePr
   const sizeClasses = {
     sm: 'text-sm md:text-base',
     md: 'text-base md:text-lg',
-    lg: 'text-lg md:text-xl',
+    lg: 'text-lg md:text-[1.2rem]',
     xl: 'text-xl md:text-2xl'
   };
 
@@ -275,21 +273,22 @@ export default function ReaderMode({ item, onClose, onUpdateItem }: ReaderModePr
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className={`fixed inset-0 z-[120] flex flex-col md:p-4 bg-black/80 backdrop-blur-md select-none`}
+      transition={{ duration: 0.25 }}
+      className="fixed inset-0 z-[120] flex flex-col md:p-6 lg:p-10 select-none"
+      style={{ backgroundColor: theme === 'dark' ? '#0a0a0a' : 'var(--reader-sage, #E1EAD9)' }}
     >
-      {/* Container Card */}
+      {/* Floating white reading card on sage canvas */}
       <motion.div 
-        initial={{ y: 20, scale: 0.98 }}
-        animate={{ y: 0, scale: 1 }}
-        exit={{ y: 20, scale: 0.98 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-        className={`w-full h-full md:rounded-3xl shadow-2xl flex flex-col overflow-hidden border ${themeClasses[theme]}`}
+        initial={{ y: 24, scale: 0.985, opacity: 0 }}
+        animate={{ y: 0, scale: 1, opacity: 1 }}
+        exit={{ y: 24, scale: 0.985, opacity: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+        className={`w-full h-full max-w-4xl mx-auto md:rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] flex flex-col overflow-hidden border ${themeClasses[theme]} relative`}
       >
         {/* Dynamic Top Progress Bar */}
-        <div className="w-full h-1 bg-foreground/5 shrink-0 relative">
+        <div className="w-full h-0.5 bg-black/5 shrink-0 relative">
           <div 
-            className="absolute top-0 left-0 h-full bg-indigo-500 transition-all duration-100"
+            className="absolute top-0 left-0 h-full bg-neutral-800/70 transition-all duration-100"
             style={{ width: `${scrollProgress}%` }}
           />
         </div>
@@ -495,86 +494,91 @@ export default function ReaderMode({ item, onClose, onUpdateItem }: ReaderModePr
         <div 
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto px-6 py-10 md:py-16 md:px-12 select-text custom-scrollbar bg-inherit transition-colors"
+          className="flex-1 overflow-y-auto px-8 py-12 md:py-16 md:px-16 lg:px-20 select-text custom-scrollbar bg-inherit transition-colors relative"
         >
           {isLoading ? (
-            /* Loading State */
             <div className="h-full min-h-[400px] flex flex-col items-center justify-center text-center p-8">
-              <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin mb-4" />
-              <p className="text-xs font-mono font-semibold text-foreground/80">Parsing article payload...</p>
-              <p className="text-[10px] text-foreground/50 mt-1 max-w-xs leading-relaxed">
-                Stripping away scripts, advertisements, cookies, tracker frames, and boilerplate menus...
+              <RefreshCw className="w-7 h-7 text-neutral-400 animate-spin mb-4" />
+              <p className="text-xs font-sans font-medium text-neutral-600">Preparing a quiet page…</p>
+              <p className="text-[11px] text-neutral-400 mt-1 max-w-xs leading-relaxed">
+                Stripping ads, chrome, and clutter so you can focus.
               </p>
             </div>
           ) : (
-            <div className={`mx-auto ${widthClasses[readerWidth]} space-y-8 md:space-y-12`}>
-              {/* Header Details */}
-              <div className="space-y-4 border-b border-foreground/10 pb-6 md:pb-8">
+            <div className={`mx-auto ${widthClasses[readerWidth]} space-y-8 md:space-y-10`}>
+              <div className="space-y-5 text-center md:text-left">
                 {item.readingTime && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold tracking-widest text-indigo-500 uppercase">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-sans font-medium tracking-wide text-neutral-400 uppercase">
                     <Clock className="w-3 h-3" />
                     <span>{item.readingTime} min read</span>
                   </span>
                 )}
                 
-                <h1 className="font-display font-medium text-2xl md:text-4xl text-foreground tracking-tight leading-tight">
+                <h1 className="font-serif font-medium text-3xl md:text-[2.5rem] text-neutral-900 tracking-tight leading-[1.2]">
                   {item.title}
                 </h1>
 
-                <div className="flex flex-wrap items-center gap-3 text-xs text-foreground/60 font-sans">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-xs text-neutral-500 font-sans">
                   {item.siteName && (
-                    <span className="font-semibold text-foreground/80">
+                    <span className="font-medium text-neutral-700">
                       {item.siteName}
                     </span>
                   )}
                   {item.createdAt && (
                     <>
-                      <span className="opacity-40">•</span>
+                      <span className="opacity-30">·</span>
                       <span>{new Date(item.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                     </>
                   )}
                 </div>
               </div>
 
-              {/* Error fallback banner */}
               {error && (
-                <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs text-foreground/80 font-sans flex items-start gap-2.5 leading-relaxed">
+                <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/15 text-xs text-neutral-700 font-sans flex items-start gap-2.5 leading-relaxed">
                   <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold">Offline or Extraction Fallback:</span> {error}
+                    <span className="font-semibold">Fallback:</span> {error}
                   </div>
                 </div>
               )}
 
-              {/* Main formatted article body content */}
-              <article className={`${fontClasses[fontFamily]} ${sizeClasses[fontSize]} leading-relaxed text-foreground/90 whitespace-pre-wrap break-words`}>
-                {bodyText || "No additional text content found. Open original tab to read full article."}
+              <article className={`${fontClasses[fontFamily]} ${sizeClasses[fontSize]} text-neutral-800 whitespace-pre-wrap break-words`}>
+                {bodyText || "No additional text content found. Open the original tab to read the full article."}
               </article>
 
-              {/* End of content footer signifier */}
-              <div className="pt-12 md:pt-16 border-t border-foreground/10 text-center space-y-4 pb-16 font-sans">
-                <div className="inline-flex items-center justify-center p-3 rounded-full bg-foreground/[0.03] border border-foreground/[0.06] text-indigo-500">
-                  <BookOpen className="w-6 h-6" />
+              <div className="pt-10 border-t border-neutral-100 text-center space-y-4 pb-20 font-sans">
+                <div className="inline-flex items-center justify-center p-3 rounded-full bg-neutral-50 text-neutral-500">
+                  <BookOpen className="w-5 h-5" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-foreground/80">You've finished reading</p>
-                  <p className="text-[10px] text-foreground/50">" {item.title} "</p>
+                  <p className="text-xs font-medium text-neutral-700">You've finished reading</p>
+                  <p className="text-[11px] text-neutral-400 font-serif italic">“{item.title}”</p>
                 </div>
-                <div className="pt-2">
+                <div className="pt-1">
                   <button
                     onClick={handleToggleRead}
-                    className={`px-5 py-2.5 rounded-xl border text-xs font-bold transition flex items-center gap-2 mx-auto cursor-pointer shadow-sm ${
+                    className={`px-5 py-2.5 rounded-full border text-xs font-semibold transition flex items-center gap-2 mx-auto cursor-pointer ${
                       isRead 
-                        ? 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600' 
-                        : 'bg-indigo-500 hover:bg-indigo-600 text-white border-indigo-500'
+                        ? 'bg-neutral-900 text-white border-neutral-900' 
+                        : 'bg-white text-neutral-800 border-neutral-200 hover:border-neutral-400'
                     }`}
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>{isRead ? 'Done reading (Unmark)' : 'Mark as Done'}</span>
+                    <span>{isRead ? 'Done reading' : 'Mark as Done'}</span>
                   </button>
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Soft fade into sage at bottom of card */}
+          {theme === 'light' && (
+            <div
+              className="pointer-events-none absolute bottom-0 left-0 right-0 h-24"
+              style={{
+                background: 'linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.95) 70%, #fff)',
+              }}
+            />
           )}
         </div>
       </motion.div>

@@ -1,11 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Cormorant+Garamond:ital,wght@0,400..700;1,400..700&family=Montserrat:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Cormorant+Garamond:ital,wght@0,400..700;1,400..700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Montserrat:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: var(--font-body, var(--font-main));
   --font-display: var(--font-display, var(--font-main));
   --font-mono: var(--font-secondary);
-  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  --font-serif: "Source Serif 4", "Playfair Display", ui-serif, Georgia, serif;
   
   --color-primary: var(--primary, #8b5cf6);
   --color-background: var(--bg-color);
@@ -23,38 +23,102 @@
   --color-input-bg: var(--bg-input);
   --color-text-heading: var(--text-heading);
   
-  /* Refined, high-end shadow curves */
-  --shadow-premium: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 8px -1px rgba(0, 0, 0, 0.02);
-  --shadow-premium-hover: 0 20px 40px -4px rgba(0, 0, 0, 0.06), 0 4px 16px -2px rgba(0, 0, 0, 0.03);
-  --shadow-omnibar: 0 30px 60px -15px rgba(0, 0, 0, 0.1), 0 10px 25px -5px rgba(0, 0, 0, 0.04);
+  /* Refined, high-end shadow curves — mymind soft lift */
+  --shadow-premium: 0 2px 12px -2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-premium-hover: 0 12px 28px -6px rgba(0, 0, 0, 0.1), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
+  --shadow-omnibar: 0 20px 40px -15px rgba(0, 0, 0, 0.12), 0 8px 16px -5px rgba(0, 0, 0, 0.04);
+  --shadow-mymind: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
+/* Default = mymind-inspired calm vault */
 :root {
-  --primary: #E8B4B8; /* Soft Pink */
-  --secondary: #A8D5BA; /* Sage Green */
-  --cta: #D4AF37; /* Gold */
+  --primary: #FF6B35; /* Warm accent for actions */
+  --secondary: #A8D5BA; /* Sage */
+  --cta: #FF6B35;
   
-  --font-body: "Montserrat", sans-serif;
-  --font-display: "Cormorant Garamond", serif;
-  --radius-base: 24px; /* Organic shapes */
-  --blur-strength: 32px;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Source Serif 4", "Cormorant Garamond", Georgia, serif;
+  --radius-base: 14px;
+  --blur-strength: 16px;
   
-  --bg-color: #FFF5F5; /* Warm White */
-  --text-color: #2D3436; /* Charcoal */
-  --bg-card: rgba(255, 255, 255, 0.6);
-  --text-card-title: #2D3436;
-  --text-card-desc: #4A5568;
-  --bg-card-footer: rgba(255, 255, 255, 0.4);
-  --border-card: rgba(255, 255, 255, 0.5);
+  --bg-color: #F0F0F2; /* Soft grey canvas */
+  --text-color: #1A1A1A;
+  --bg-card: #FFFFFF;
+  --text-card-title: #1A1A1A;
+  --text-card-desc: #6B6B6B;
+  --bg-card-footer: #FAFAFA;
+  --border-card: rgba(0, 0, 0, 0.04);
   
-  --bg-modal: #FFF5F5;
-  --bg-modal-sidebar: rgba(255, 255, 255, 0.6);
-  --border-subtle: rgba(45, 52, 54, 0.05);
-  --bg-input: rgba(255, 255, 255, 0.8);
-  --text-heading: #2D3436;
+  --bg-modal: #FFFFFF;
+  --bg-modal-sidebar: #F7F7F8;
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --bg-input: #FFFFFF;
+  --text-heading: #111111;
   
-  --font-main: "Cormorant Garamond", serif;
+  --font-main: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-secondary: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --reader-sage: #E1EAD9;
+  --highlight-yellow: #FFF59A;
+}
+
+:root[data-theme="mymind"] {
+  --bg-color: #F0F0F2;
+  --text-color: #1A1A1A;
+  --bg-card: #FFFFFF;
+  --text-card-title: #1A1A1A;
+  --text-card-desc: #6B6B6B;
+  --bg-card-footer: #FAFAFA;
+  --border-card: rgba(0, 0, 0, 0.04);
+  --primary: #FF6B35;
+  --font-main: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Source Serif 4", Georgia, serif;
+  --bg-modal: #FFFFFF;
+  --bg-modal-sidebar: #F7F7F8;
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --bg-input: #FFFFFF;
+  --text-heading: #111111;
+}
+
+/* Caption under masonry cards */
+.mind-card-caption {
+  margin-top: 0.55rem;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 450;
+  color: #8A8A8E;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  padding: 0 0.5rem;
+}
+
+.mind-card-shell {
+  background: var(--bg-card);
+  border-radius: 14px;
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-mymind);
+  overflow: hidden;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.group:hover .mind-card-shell {
+  box-shadow: var(--shadow-premium-hover);
+}
+
+.quote-ornament {
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 2.75rem;
+  line-height: 0.6;
+  color: rgba(0, 0, 0, 0.12);
+  font-weight: 500;
+  user-select: none;
+}
+
+.note-highlight-block {
+  background: linear-gradient(transparent 35%, var(--highlight-yellow) 35%, var(--highlight-yellow) 90%, transparent 90%);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .liquid-glass-panel {

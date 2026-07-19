@@ -228,26 +228,49 @@ export default function MindCard({
   const canMarkRead = item.type === 'article' || item.type === 'document';
   const canMarkWatched = item.type === 'film' || item.type === 'video';
 
+  const caption = (() => {
+    if (item.type === 'quote') {
+      return item.author ? `Quote by ${item.author}` : 'Quote';
+    }
+    if (item.type === 'color') {
+      const hex = (item.colorHex || '').toUpperCase();
+      const name =
+        item.title &&
+        !/^color(\s+swatch)?$/i.test(item.title.trim()) &&
+        item.title.trim().toUpperCase() !== hex
+          ? item.title.trim()
+          : item.colorPalette
+          ? 'Palette'
+          : 'Color';
+      return hex ? `${name} ${hex}` : name;
+    }
+    if (item.type === 'image' || item.type === 'video' || item.type === 'link' || item.type === 'article') {
+      return item.title || item.siteName || '';
+    }
+    if (item.type === 'product') {
+      return [item.brand, item.title].filter(Boolean).join(' · ');
+    }
+    return '';
+  })();
+
+  const showInnerTags =
+    item.type !== 'color' &&
+    item.type !== 'quote' &&
+    item.type !== 'image' &&
+    item.tags &&
+    item.tags.length > 0;
+
   return (
     <>
       <motion.div
         id={`mind-card-${item.id}`}
         onClick={onClick}
         onContextMenu={handleRightClick}
-        className={`group relative break-inside-avoid w-full cursor-pointer transition-all duration-500 flex flex-col text-foreground ${
-          item.type === 'color' ? 'mb-4' : 'mb-6'
-        }`}
-        whileHover={{ y: item.type === 'color' ? -2 : -4 }}
+        className="group relative break-inside-avoid w-full cursor-pointer transition-all duration-300 flex flex-col text-foreground mb-5"
+        whileHover={{ y: -3 }}
       >
-        {/* Animated glow effects visible on hover, matching key tags/colors */}
-        <div className="absolute -inset-[3px] bg-gradient-to-r from-primary via-[#a855f7] to-[#8b5cf6] rounded-[26px] opacity-0 group-hover:opacity-75 transition-all duration-500 blur-[8px] z-0 animate-gradient pointer-events-none" />
-        <div className="absolute -inset-[6px] bg-gradient-to-r from-primary via-[#a855f7] to-[#8b5cf6] rounded-[28px] opacity-0 group-hover:opacity-40 transition-all duration-500 blur-[18px] z-0 animate-gradient pointer-events-none" />
-        
-        {/* Actual Card Body with overflow-hidden */}
-        <div 
-          style={{ WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}
-          className="w-full h-full bg-card-bg border border-card-border rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:border-foreground/20 transition-all duration-300 flex flex-col text-foreground z-10 relative isolation-isolate"
-        >
+        {/* Soft card shell — mymind style (no neon glow) */}
+        <div className="mind-card-shell w-full h-full flex flex-col text-foreground z-10 relative isolation-isolate">
         {/* Top action rail - only visible on hover */}
         <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1.5 z-20">
           {(item.type === 'article' || item.type === 'link') && onUpdateItem && (
@@ -298,15 +321,15 @@ export default function MindCard({
 
         {/* CARD CONTENT TYPES */}
 
-        {/* 1. COLOR SWATCH — compact mymind-style card */}
+        {/* 1. COLOR SWATCH — solid block; caption lives below shell */}
         {item.type === 'color' && (item.colorHex || item.colorPalette) && (
           <div className="flex flex-col w-full">
             {item.colorPalette && item.colorPalette.length > 0 ? (
-              <div className="w-full h-12 flex overflow-hidden relative group/palette">
+              <div className="w-full h-[72px] flex overflow-hidden relative group/palette">
                 {item.colorPalette.map((colHex, index) => (
                   <div 
                     key={index}
-                    className="flex-1 h-full hover:flex-[1.6] transition-all duration-300 relative cursor-pointer group/swatch"
+                    className="flex-1 h-full hover:flex-[1.5] transition-all duration-300 relative cursor-pointer group/swatch"
                     style={{ backgroundColor: colHex }}
                     onClick={(e) => handleCopyColor(e, colHex)}
                     title={`Click to copy hex ${colHex}`}
@@ -319,7 +342,7 @@ export default function MindCard({
               </div>
             ) : (
               <div 
-                className="w-full h-12 relative flex items-center justify-end px-2.5"
+                className="w-full h-[72px] relative flex items-center justify-end px-2.5"
                 style={{ backgroundColor: item.colorHex }}
               >
                 <button
@@ -331,81 +354,68 @@ export default function MindCard({
                 </button>
               </div>
             )}
-            <div className="px-3 py-2.5 flex flex-col gap-0.5 bg-card-bg">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-sm font-bold text-card-title tracking-tight uppercase truncate">
-                  {item.colorPalette
-                    ? item.colorPalette.slice(0, 2).join(' · ') + (item.colorPalette.length > 2 ? '…' : '')
-                    : (item.colorHex || '').toUpperCase()}
-                </span>
-                <span className="text-[9px] font-sans font-medium text-card-desc flex items-center gap-1 shrink-0 opacity-70">
-                  <Palette className="w-2.5 h-2.5" />
-                  {item.colorPalette ? 'Palette' : 'Color'}
-                </span>
-              </div>
-              {item.title && item.title.toLowerCase() !== 'color swatch' && item.title.toLowerCase() !== (item.colorHex || '').toLowerCase() && (
-                <h3 className="font-display font-medium text-xs text-card-title/80 line-clamp-1 leading-snug">
-                  {item.title}
-                </h3>
-              )}
-            </div>
           </div>
         )}
 
-        {/* 2. QUOTE */}
+        {/* 2. QUOTE — white literary card with ornaments */}
         {item.type === 'quote' && (
-          <div className="p-6 flex flex-col gap-4 bg-[#121212] text-white min-h-[140px] justify-center items-center text-center">
-            <span className="text-[9px] uppercase tracking-widest text-white/40 mb-1 font-bold">Quote</span>
-            <blockquote className="font-serif italic text-base text-white leading-snug">
-              "{item.content}"
+          <div className="px-6 py-8 flex flex-col gap-3 bg-white min-h-[140px] justify-center items-center text-center">
+            <span className="quote-ornament" aria-hidden>“</span>
+            <blockquote className="font-serif text-[15px] md:text-base text-neutral-800 leading-relaxed tracking-tight px-1">
+              {item.content}
             </blockquote>
-            {item.author && (
-              <div className="text-[11px] font-mono text-white/50">
-                — {item.author}
-              </div>
-            )}
+            <span className="quote-ornament mt-1" aria-hidden>”</span>
           </div>
         )}
 
-        {/* 3. NOTES & CHECKLISTS — with custom noteStyle */}
+        {/* 3. NOTES & CHECKLISTS — clean white / optional yellow highlight */}
         {item.type === 'note' && (
           <div 
-            className="flex flex-col h-full transition-colors duration-300"
+            className="flex flex-col h-full transition-colors duration-300 bg-white"
             style={{
-              backgroundColor: item.noteStyle?.bgColor || '#FEEBC8',
-              color: item.noteStyle?.color || '#121212',
+              backgroundColor: item.noteStyle?.bgColor || '#FFFFFF',
+              color: item.noteStyle?.color || '#1A1A1A',
             }}
           >
-            {/* Fallback image if categorized as note but has an image URL */}
             {item.imageUrl && (
-              <div className="w-full h-32 overflow-hidden bg-black/5 border-b border-black/5 relative">
+              <div className="w-full max-h-40 overflow-hidden bg-neutral-100 relative">
                 <img 
                   src={item.imageUrl} 
                   alt={item.title} 
-                  className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all" 
+                  className="w-full h-full object-cover" 
                 />
               </div>
             )}
-            <div className="p-6 flex flex-col gap-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] uppercase tracking-widest font-bold opacity-40">
-                  {isChecklist ? 'List' : 'Note'}
-                </span>
-                <span className="text-[10px] font-mono opacity-40">
-                  {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </span>
-              </div>
+            <div className="px-5 py-5 flex flex-col gap-2">
+              {item.title && (
+                <h3 
+                  className="font-semibold tracking-tight leading-snug text-[15px] text-neutral-900"
+                  style={getNoteStyles({ ...item.noteStyle, fontSize: 'base', bold: true })}
+                >
+                  {item.title}
+                </h3>
+              )}
 
-              <h3 
-                className="font-semibold tracking-tight leading-snug"
-                style={getNoteStyles({ ...item.noteStyle, fontSize: 'base', bold: true })}
+              <div
+                className="text-[13.5px] font-sans leading-[1.55] break-words text-neutral-700"
+                style={getNoteStyles(item.noteStyle)}
               >
-                {item.title}
-              </h3>
-
-              <div className="text-sm font-sans leading-relaxed break-words opacity-75" style={getNoteStyles(item.noteStyle)}>
                 {isChecklist ? renderChecklist() : (
-                  <p className="line-clamp-6 whitespace-pre-wrap">{item.content}</p>
+                  <p
+                    className={`whitespace-pre-wrap line-clamp-8 ${
+                      item.noteStyle?.bgColor?.toLowerCase().includes('ff') &&
+                      (item.noteStyle?.bgColor?.toLowerCase().includes('f3') ||
+                        item.noteStyle?.bgColor?.toLowerCase().includes('eb') ||
+                        item.noteStyle?.bgColor?.toLowerCase().includes('f59') ||
+                        item.noteStyle?.bgColor?.toLowerCase().includes('ffe'))
+                        ? ''
+                        : item.tags?.includes('highlight')
+                        ? 'note-highlight-block px-0.5'
+                        : ''
+                    }`}
+                  >
+                    {item.content}
+                  </p>
                 )}
               </div>
             </div>
@@ -557,66 +567,41 @@ export default function MindCard({
           </div>
         )}
 
-        {/* 6. UPLOADED IMAGE */}
+        {/* 6. UPLOADED IMAGE — full-bleed; caption below */}
         {item.type === 'image' && item.imageUrl && (
           <div className="flex flex-col w-full relative">
-            <div className="w-full overflow-hidden bg-card-footer relative">
+            <div className="w-full overflow-hidden bg-neutral-100 relative">
               <img 
                 src={item.imageUrl} 
                 alt={item.title} 
-                className="w-full object-cover max-h-[360px] transition-transform duration-500 group-hover:scale-102"
+                className="w-full object-cover max-h-[420px]"
                 loading="lazy"
               />
-            </div>
-            <div className="p-4 flex flex-col gap-1.5 bg-card-bg border-t border-card-border">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono text-card-desc">
-                  {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </span>
-                <span className="text-[10px] font-sans font-medium text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
-                  <Eye className="w-2.5 h-2.5" /> Image
-                </span>
-              </div>
-              <h3 className="font-display font-medium text-sm text-card-title line-clamp-1 leading-snug">
-                {item.title}
-              </h3>
-              <p className="text-[11px] text-card-desc font-sans leading-relaxed line-clamp-2">
-                {item.content}
-              </p>
             </div>
           </div>
         )}
 
-        {/* 7. VIDEO BOOKMARK */}
+        {/* 7. VIDEO BOOKMARK — play overlay, caption below */}
         {item.type === 'video' && (
           <div className="flex flex-col w-full">
             {item.imageUrl ? (
-              <div className="w-full h-44 overflow-hidden bg-neutral-950 relative group/video">
+              <div className="w-full aspect-[4/3] overflow-hidden bg-neutral-200 relative group/video">
                 <img 
                   src={item.imageUrl} 
                   alt={item.title} 
-                  className="w-full h-full object-cover opacity-85 transition-transform duration-500 group-hover/video:scale-102 group-hover/video:opacity-75"
+                  className="w-full h-full object-cover"
                   loading="lazy"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-lg group-hover/video:scale-110 transition duration-300">
-                    <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+                  <div className="w-14 h-14 rounded-full bg-white/85 backdrop-blur-sm flex items-center justify-center shadow-md group-hover/video:scale-105 transition duration-300">
+                    <Play className="w-5 h-5 text-neutral-800 fill-neutral-800 ml-0.5" />
                   </div>
                 </div>
                 {item.duration && (
-                  <div className="absolute bottom-3 right-3 bg-black/75 text-white text-[9px] font-mono font-medium px-2 py-0.5 rounded backdrop-blur-sm">
+                  <div className="absolute bottom-3 right-3 bg-black/70 text-white text-[9px] font-mono font-medium px-2 py-0.5 rounded">
                     {item.duration}
                   </div>
                 )}
-                {item.isWatched && (
-                  <div className="absolute top-3 left-3 flex items-center gap-1 bg-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    <CheckCircle2 className="w-3 h-3" /> Watched
-                  </div>
-                )}
-                <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/60 text-white text-[10px] font-mono backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 shadow-sm">
-                  <Tv className="w-3 h-3 text-red-400" />
-                  <span className="font-medium">{item.siteName || 'Video'}</span>
-                </div>
               </div>
             ) : (
               <div className="p-4 bg-card-footer border-b border-card-border flex items-center justify-between">
@@ -997,27 +982,30 @@ export default function MindCard({
 
         {/* 15. PRODUCT CARD */}
         {item.type === 'product' && (
-          <div className="flex flex-col w-full bg-card-bg rounded-3xl overflow-hidden">
-            {/* Product image */}
+          <div className="flex flex-col w-full bg-white overflow-hidden">
             {(item.productImageUrl || item.imageUrl) && (
-              <div className="w-full h-48 bg-neutral-50 border-b border-card-border overflow-hidden relative">
+              <div className="w-full aspect-square bg-neutral-50 overflow-hidden relative">
                 <img 
                   src={item.productImageUrl || item.imageUrl} 
                   alt={item.title} 
-                  className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover"
                   loading="lazy"
                 />
+                {item.price && (
+                  <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-white text-neutral-800 text-[11px] font-sans font-medium shadow-sm">
+                    {item.currency || '$'}{item.price}
+                  </span>
+                )}
               </div>
             )}
 
-            <div className="p-4 flex flex-col gap-2.5">
-              {/* Brand + type */}
+            <div className="p-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-card-desc flex items-center gap-1">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1">
                   <ShoppingBag className="w-2.5 h-2.5" /> {item.brand || 'Product'}
                 </span>
-                {item.price && (
-                  <span className="text-sm font-bold text-foreground font-mono">
+                {item.price && !(item.productImageUrl || item.imageUrl) && (
+                  <span className="text-sm font-medium text-neutral-800">
                     {item.currency || '$'}{item.price}
                   </span>
                 )}
@@ -1054,20 +1042,18 @@ export default function MindCard({
           </div>
         )}
 
-        {/* Bottom info: Tags footer */}
-        {item.tags && item.tags.length > 0 && (
-          <div className={`flex items-center gap-1 flex-wrap overflow-hidden border-t border-card-border bg-foreground/[0.02] group-hover:bg-transparent ${
-            item.type === 'color' ? 'px-3 pb-2 pt-1 min-h-0' : 'px-4 pb-3 pt-1 min-h-[28px]'
-          }`}>
-            {item.tags.slice(0, item.type === 'color' ? 2 : 3).map((tag, idx) => {
+        {/* Tags — only for types without external captions */}
+        {showInnerTags && (
+          <div className="flex items-center gap-1 flex-wrap overflow-hidden px-4 pb-3 pt-0 min-h-0">
+            {item.tags!.slice(0, 3).map((tag, idx) => {
               const isAiTag = item.aiTags?.includes(tag);
               return (
                 <span 
                   key={idx} 
                   className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md border transition flex items-center gap-0.5 ${
                     isAiTag 
-                      ? 'text-indigo-400 dark:text-indigo-300 bg-indigo-500/10 border-indigo-500/20 shadow-sm' 
-                      : 'text-foreground/70 bg-foreground/[0.05] hover:bg-foreground/[0.08] border-card-border/60 hover:border-card-border shadow-sm'
+                      ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' 
+                      : 'text-neutral-500 bg-neutral-50 border-neutral-100'
                   }`}
                 >
                   {isAiTag && <Sparkles className="w-2.5 h-2.5 opacity-70" />}
@@ -1075,17 +1061,12 @@ export default function MindCard({
                 </span>
               );
             })}
-            {item.tags.length > 3 && (
-              <span className="text-[9px] font-mono text-foreground/50 font-bold ml-0.5">
-                +{item.tags.length - 3} more
-              </span>
-            )}
           </div>
         )}
 
         {item.analyzing && (
           <div 
-            className="absolute inset-0 bg-card-bg/75 backdrop-blur-[2.5px] flex flex-col items-center justify-center gap-3 z-20 pointer-events-auto cursor-wait"
+            className="absolute inset-0 bg-white/80 backdrop-blur-[2px] flex flex-col items-center justify-center gap-3 z-20 pointer-events-auto cursor-wait rounded-[14px]"
             onClick={(e) => {
               e.stopPropagation();
               if (onClick) onClick();
@@ -1101,6 +1082,11 @@ export default function MindCard({
           </div>
         )}
       </div>
+
+      {/* Caption under card (mymind style) */}
+      {caption && (
+        <p className="mind-card-caption">{caption}</p>
+      )}
     </motion.div>
 
       {/* RIGHT-CLICK CONTEXT MENU */}
