@@ -286,7 +286,28 @@ export function applyTheme(settings: UserSettings) {
   root.setAttribute('data-active-effect', activeEffects[0] || 'none');
 
   // Sync active effects as classes on body
-  const ALL_EFFECTS = ['search-neon', 'effect-crt', 'theme-glass', 'avatar-glow', 'rank-insignia', 'widget-weather', 'search-glass', 'icon-royal'];
+  const ALL_EFFECTS = [
+    'search-neon',
+    'effect-crt',
+    'theme-glass',
+    'avatar-glow',
+    'rank-insignia',
+    'widget-weather',
+    'search-glass',
+    'icon-royal',
+    'aura-aurora',
+    'aura-ember',
+    'aura-ocean',
+    'aura-mist',
+    'aura-sunset',
+    'effect-film-grain',
+    'effect-matrix',
+    'effect-particles',
+    'card-halo',
+    'avatar-orbit',
+    'search-pulse',
+    'effect-sparkle',
+  ];
   ALL_EFFECTS.forEach(effectId => {
     if (activeEffects.includes(effectId)) {
       document.body.classList.add(effectId);
@@ -431,10 +452,41 @@ export function saveSettings(settings: UserSettings) {
 
 export function getEffectCategory(effectId: string): string {
   if (effectId === 'theme-glass') return 'theme';
-  if (effectId === 'effect-crt') return 'screen-overlay';
+  if (
+    effectId === 'effect-crt' ||
+    effectId === 'effect-film-grain' ||
+    effectId === 'effect-matrix'
+  ) {
+    return 'screen-overlay';
+  }
+  if (
+    effectId === 'aura-aurora' ||
+    effectId === 'aura-ember' ||
+    effectId === 'aura-ocean' ||
+    effectId === 'aura-mist' ||
+    effectId === 'aura-sunset'
+  ) {
+    return 'ambient-aura';
+  }
+  // Shares workspace ::before with ambient auras — keep exclusive
+  if (effectId === 'effect-particles') return 'ambient-aura';
+  if (effectId === 'effect-sparkle') return 'particles';
+  if (effectId === 'card-halo') return 'cards';
   if (effectId === 'widget-weather') return 'widget';
-  if (effectId === 'avatar-glow' || effectId === 'rank-insignia') return 'avatar-border';
-  if (effectId === 'search-glass' || effectId === 'search-neon') return 'search-bar';
+  if (
+    effectId === 'avatar-glow' ||
+    effectId === 'rank-insignia' ||
+    effectId === 'avatar-orbit'
+  ) {
+    return 'avatar-border';
+  }
+  if (
+    effectId === 'search-glass' ||
+    effectId === 'search-neon' ||
+    effectId === 'search-pulse'
+  ) {
+    return 'search-bar';
+  }
   if (effectId === 'icon-royal') return 'profile-icon';
   return 'other';
 }

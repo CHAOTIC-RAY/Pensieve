@@ -1044,3 +1044,248 @@ html:fullscreen {
   80% { clip-path: inset(50% 0 45% 0); transform: translate(1px, -1px); }
   100% { clip-path: inset(25% 0 55% 0); transform: translate(-1px, 1px); }
 }
+
+/* ─── Marketplace Auras & Effects (v2) ─────────────────────────────── */
+
+/* Ambient auras use workspace ::before so they stack with body CRT overlays */
+body.aura-aurora #pensieve-workspace::before,
+body.aura-ember #pensieve-workspace::before,
+body.aura-ocean #pensieve-workspace::before,
+body.aura-mist #pensieve-workspace::before,
+body.aura-sunset #pensieve-workspace::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.aura-aurora #pensieve-workspace::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(56, 189, 248, 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 80% 20%, rgba(167, 139, 250, 0.2), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 50% 90%, rgba(244, 114, 182, 0.14), transparent 55%);
+  animation: aura-drift 18s ease-in-out infinite alternate;
+}
+
+body.aura-ember #pensieve-workspace::before {
+  background:
+    radial-gradient(ellipse 70% 55% at 0% 100%, rgba(255, 107, 53, 0.28), transparent 55%),
+    radial-gradient(ellipse 55% 40% at 100% 0%, rgba(251, 191, 36, 0.18), transparent 50%);
+  animation: aura-breathe 10s ease-in-out infinite alternate;
+}
+
+body.aura-ocean #pensieve-workspace::before {
+  background:
+    radial-gradient(ellipse 75% 50% at 10% 30%, rgba(14, 165, 233, 0.2), transparent 55%),
+    radial-gradient(ellipse 65% 45% at 90% 70%, rgba(99, 102, 241, 0.18), transparent 50%),
+    radial-gradient(ellipse 50% 35% at 50% 50%, rgba(45, 212, 191, 0.1), transparent 60%);
+  animation: aura-drift 22s ease-in-out infinite alternate-reverse;
+}
+
+body.aura-mist #pensieve-workspace::before {
+  background:
+    radial-gradient(ellipse 100% 80% at 50% 50%, transparent 40%, rgba(240, 240, 242, 0.55) 100%),
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255, 255, 255, 0.35), transparent 60%);
+  opacity: 0.85;
+}
+
+body.aura-sunset #pensieve-workspace::before {
+  background:
+    radial-gradient(ellipse 80% 55% at 15% 0%, rgba(251, 146, 60, 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 85% 15%, rgba(244, 114, 182, 0.18), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(253, 186, 116, 0.16), transparent 55%);
+  animation: aura-breathe 14s ease-in-out infinite alternate;
+}
+
+@keyframes aura-drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.85; }
+  100% { transform: translate3d(2%, -1.5%, 0) scale(1.05); opacity: 1; }
+}
+
+@keyframes aura-breathe {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Film grain — workspace ::after */
+body.effect-film-grain #pensieve-workspace::after {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  animation: grain-shift 0.4s steps(3) infinite;
+  mix-blend-mode: multiply;
+}
+
+@keyframes grain-shift {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-2%, 1%); }
+  50% { transform: translate(1%, -1%); }
+  75% { transform: translate(-1%, 2%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* Digital rain */
+body.effect-matrix #pensieve-workspace::after {
+  content: "01001101 01111001 01101101 01101001 01101110 01100100  ア カ サ タ ナ ハ マ ヤ ラ ワ";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  opacity: 0.045;
+  color: #22c55e;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  letter-spacing: 0.2em;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow: hidden;
+  animation: matrix-scroll 40s linear infinite;
+  mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+}
+
+@keyframes matrix-scroll {
+  0% { transform: translateY(-10%); }
+  100% { transform: translateY(10%); }
+}
+
+/* Dust motes via layered radial dots */
+body.effect-particles #pensieve-workspace::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 45;
+  background-image:
+    radial-gradient(1.5px 1.5px at 10% 20%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 30% 70%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 55% 35%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 75% 60%, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1.5px 1.5px at 90% 25%, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(1px 1px at 45% 85%, rgba(255, 255, 255, 0.4), transparent);
+  background-size: 100% 100%;
+  animation: motes-drift 24s ease-in-out infinite alternate;
+  opacity: 0.55;
+  mix-blend-mode: soft-light;
+}
+
+@keyframes motes-drift {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(1.5%, -2%, 0); }
+}
+
+/* Card halo on hover */
+body.card-halo .mind-card-shell {
+  transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+body.card-halo .group:hover .mind-card-shell {
+  box-shadow:
+    0 0 0 1px rgba(var(--primary-rgb), 0.15),
+    0 8px 28px -6px rgba(var(--primary-rgb), 0.35),
+    0 2px 10px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.card-halo .group:hover {
+  filter: drop-shadow(0 0 18px rgba(var(--primary-rgb), 0.18));
+}
+
+/* Avatar orbital ring */
+body.avatar-orbit .avatar-container {
+  overflow: visible !important;
+}
+
+body.avatar-orbit .avatar-container::before,
+body.avatar-orbit .avatar-container::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 9999px;
+  background: var(--primary);
+  box-shadow: 0 0 8px var(--primary);
+  pointer-events: none;
+  z-index: 60;
+}
+
+body.avatar-orbit .avatar-container::before {
+  animation: orbit-a 4.5s linear infinite;
+}
+
+body.avatar-orbit .avatar-container::after {
+  background: #fbbf24;
+  box-shadow: 0 0 8px #fbbf24;
+  animation: orbit-b 6s linear infinite;
+}
+
+@keyframes orbit-a {
+  from { transform: rotate(0deg) translateX(28px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(28px) rotate(-360deg); }
+}
+
+@keyframes orbit-b {
+  from { transform: rotate(180deg) translateX(34px) rotate(-180deg); }
+  to { transform: rotate(540deg) translateX(34px) rotate(-540deg); }
+}
+
+/* Search pulse */
+body.search-pulse #pensieve-omnibar-box {
+  position: relative;
+}
+
+body.search-pulse #pensieve-omnibar-box::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 1.5px solid rgba(var(--primary-rgb), 0.35);
+  animation: search-pulse-ring 2.8s ease-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes search-pulse-ring {
+  0% { transform: scale(1); opacity: 0.55; }
+  70% { transform: scale(1.04); opacity: 0; }
+  100% { transform: scale(1.04); opacity: 0; }
+}
+
+/* Sparkle shimmer on omnibar / interactive chrome */
+body.effect-sparkle #pensieve-omnibar-box {
+  background-image: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.35) 45%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: sparkle-sweep 4.5s ease-in-out infinite;
+}
+
+body.effect-sparkle .mind-card-shell:hover {
+  outline: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+@keyframes sparkle-sweep {
+  0%, 60% { background-position: 120% 0; }
+  100% { background-position: -80% 0; }
+}
+
+/* Ensure overlays sit above canvas but below UI chrome */
+body.aura-aurora #pensieve-workspace > *:not(.galaxy-background),
+body.aura-ember #pensieve-workspace > *:not(.galaxy-background),
+body.aura-ocean #pensieve-workspace > *:not(.galaxy-background),
+body.aura-mist #pensieve-workspace > *:not(.galaxy-background),
+body.aura-sunset #pensieve-workspace > *:not(.galaxy-background) {
+  position: relative;
+  z-index: 1;
+}

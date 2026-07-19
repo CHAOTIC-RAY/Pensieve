@@ -84,6 +84,102 @@ const MOCK_ITEMS: StoreItem[] = [
     description: 'Adds a vibrant neon glow to your search bar when active.',
     price: 50,
     effectId: 'search-neon'
+  },
+  {
+    $id: 'item-aura-aurora',
+    name: 'Aurora Aura',
+    type: 'effect',
+    description: 'Soft northern-lights wash across your vault — teal, violet, and rose drifting slowly.',
+    price: 400,
+    effectId: 'aura-aurora'
+  },
+  {
+    $id: 'item-aura-ember',
+    name: 'Ember Glow',
+    type: 'effect',
+    description: 'Warm amber and coral edge lighting — like candlelight around your mind.',
+    price: 350,
+    effectId: 'aura-ember'
+  },
+  {
+    $id: 'item-aura-ocean',
+    name: 'Ocean Depths',
+    type: 'effect',
+    description: 'Cool indigo–cyan ambient aura for a calm, deep-focus atmosphere.',
+    price: 350,
+    effectId: 'aura-ocean'
+  },
+  {
+    $id: 'item-aura-mist',
+    name: 'Morning Mist',
+    type: 'effect',
+    description: 'Gentle vignette fog that softens the edges of your workspace.',
+    price: 280,
+    effectId: 'aura-mist'
+  },
+  {
+    $id: 'item-aura-sunset',
+    name: 'Sunset Bloom',
+    type: 'effect',
+    description: 'Peach and rose gradient bloom for a warm, editorial evening mood.',
+    price: 380,
+    effectId: 'aura-sunset'
+  },
+  {
+    $id: 'item-film-grain',
+    name: 'Film Grain',
+    type: 'effect',
+    description: 'Subtle cinematic grain overlay — tactile, analog, quietly premium.',
+    price: 220,
+    effectId: 'effect-film-grain'
+  },
+  {
+    $id: 'item-matrix-rain',
+    name: 'Digital Rain',
+    type: 'effect',
+    description: 'Whisper-quiet matrix glyphs falling behind your vault (very subtle).',
+    price: 550,
+    effectId: 'effect-matrix'
+  },
+  {
+    $id: 'item-particles',
+    name: 'Dust Motes',
+    type: 'effect',
+    description: 'Floating light particles that drift slowly through the workspace air.',
+    price: 320,
+    effectId: 'effect-particles'
+  },
+  {
+    $id: 'item-card-halo',
+    name: 'Card Halo',
+    type: 'effect',
+    description: 'Soft colored halo blooms behind mind cards when you hover.',
+    price: 300,
+    effectId: 'card-halo'
+  },
+  {
+    $id: 'item-avatar-orbit',
+    name: 'Orbital Ring',
+    type: 'effect',
+    description: 'Tiny accent dots orbit your profile avatar like a micro solar system.',
+    price: 420,
+    effectId: 'avatar-orbit'
+  },
+  {
+    $id: 'item-search-pulse',
+    name: 'Search Pulse',
+    type: 'effect',
+    description: 'A soft breathing ring around the omnibar — calm focus cue while searching.',
+    price: 180,
+    effectId: 'search-pulse'
+  },
+  {
+    $id: 'item-sparkle-cursor',
+    name: 'Sparkle Trail',
+    type: 'effect',
+    description: 'Adds a subtle sparkle shimmer to interactive surfaces and the omnibar edge.',
+    price: 260,
+    effectId: 'effect-sparkle'
   }
 ];
 

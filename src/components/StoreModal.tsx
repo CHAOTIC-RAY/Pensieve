@@ -84,6 +84,114 @@ const EFFECT_CHANGES: Record<string, { impact: string; details: string[] }> = {
       'Adds a lightning-fast sweep effect when executing search queries.',
       'Delivers exceptional visibility, perfect for high-tech dark themes.'
     ]
+  },
+  'aura-aurora': {
+    impact: 'Ambient Workspace Aura',
+    details: [
+      'Washes the vault in drifting teal, violet, and rose northern-light ribbons.',
+      'Slow parallax bloom that breathes behind your mind cards.',
+      'Stacks cleanly with CRT or film overlays without fighting the UI.',
+      'Ideal for late-night capture sessions with a soft cinematic mood.'
+    ]
+  },
+  'aura-ember': {
+    impact: 'Ambient Workspace Aura',
+    details: [
+      'Warm amber and coral edge lighting like candlelight around the canvas.',
+      'Gentle breathing glow from the corners of the vault.',
+      'Pairs well with editorial light themes and cozy focus blocks.',
+      'Unequips other ambient auras so only one mood is active.'
+    ]
+  },
+  'aura-ocean': {
+    impact: 'Ambient Workspace Aura',
+    details: [
+      'Cool indigo–cyan depth wash for calm, deep-focus sessions.',
+      'Layered aquatic gradients that drift slowly across the workspace.',
+      'Keeps text and cards readable while adding atmospheric depth.',
+      'Great companion to minimal or glass UI styles.'
+    ]
+  },
+  'aura-mist': {
+    impact: 'Ambient Workspace Aura',
+    details: [
+      'Soft fog vignette that gently feathers the edges of the vault.',
+      'Diffused light haze for a quiet, uncluttered atmosphere.',
+      'Reduces harsh contrast without dimming card content.',
+      'Perfect for long reading and note-review sessions.'
+    ]
+  },
+  'aura-sunset': {
+    impact: 'Ambient Workspace Aura',
+    details: [
+      'Peach and rose golden-hour bloom across the workspace.',
+      'Warm evening gradient that slowly breathes in intensity.',
+      'Editorial mood lighting without covering your mind cards.',
+      'Exclusive ambient aura slot — swaps with other auras on equip.'
+    ]
+  },
+  'effect-film-grain': {
+    impact: 'Screen Texture Overlay',
+    details: [
+      'Subtle cinematic grain across the entire vault canvas.',
+      'Analog film noise with a soft multiply blend.',
+      'Adds tactile depth without obscuring text or cards.',
+      'Shares the screen-overlay slot with CRT and Digital Rain.'
+    ]
+  },
+  'effect-matrix': {
+    impact: 'Screen Texture Overlay',
+    details: [
+      'Whisper-quiet matrix glyphs drifting behind the vault.',
+      'Terminal-green code rain at very low opacity.',
+      'Cyberpunk accent that stays out of the way of reading.',
+      'Exclusive with other screen overlays like CRT and film grain.'
+    ]
+  },
+  'effect-particles': {
+    impact: 'Ambient Particle Field',
+    details: [
+      'Floating dust motes that drift slowly through workspace air.',
+      'Soft-light particles for depth without distraction.',
+      'Uses the ambient aura slot so it swaps with color auras.',
+      'Lovely with dark themes and glass cards.'
+    ]
+  },
+  'effect-sparkle': {
+    impact: 'Interactive Surface Shimmer',
+    details: [
+      'Light-sweep shimmer across the omnibar edge.',
+      'Soft highlight outline when hovering mind cards.',
+      'Premium micro-interaction without cluttering the canvas.',
+      'Stacks with search styles and card effects.'
+    ]
+  },
+  'card-halo': {
+    impact: 'Mind Card Hover Presence',
+    details: [
+      'Soft colored halo blooms behind cards on hover.',
+      'Accent-tinted lift that follows your theme color.',
+      'Gives the masonry grid a premium, tactile feel.',
+      'Exclusive cards-category effect — one halo style at a time.'
+    ]
+  },
+  'avatar-orbit': {
+    impact: 'Header Profile Identity',
+    details: [
+      'Tiny accent dots orbit your avatar like a micro solar system.',
+      'Primary-color and gold satellites for dual-tone motion.',
+      'Works alongside rank frames in the avatar border slot.',
+      'Subtle prestige without replacing your profile icon.'
+    ]
+  },
+  'search-pulse': {
+    impact: 'Global Search Command Bar',
+    details: [
+      'Soft breathing ring around the omnibar while you search.',
+      'Calm focus cue synchronized with your accent color.',
+      'Lightweight pulse that never fights typed text.',
+      'Shares the search-bar slot with neon and crystal styles.'
+    ]
   }
 };
 
@@ -338,6 +446,152 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
           </div>
         );
 
+      case 'aura-aurora':
+      case 'aura-ember':
+      case 'aura-ocean':
+      case 'aura-mist':
+      case 'aura-sunset': {
+        const auraBg =
+          effectId === 'aura-aurora'
+            ? 'radial-gradient(ellipse at 20% 20%, rgba(56,189,248,0.45), transparent 50%), radial-gradient(ellipse at 80% 30%, rgba(167,139,250,0.4), transparent 45%), radial-gradient(ellipse at 50% 90%, rgba(244,114,182,0.3), transparent 50%)'
+            : effectId === 'aura-ember'
+              ? 'radial-gradient(ellipse at 10% 90%, rgba(255,107,53,0.5), transparent 50%), radial-gradient(ellipse at 90% 10%, rgba(251,191,36,0.35), transparent 45%)'
+              : effectId === 'aura-ocean'
+                ? 'radial-gradient(ellipse at 15% 40%, rgba(14,165,233,0.45), transparent 50%), radial-gradient(ellipse at 85% 70%, rgba(99,102,241,0.4), transparent 45%)'
+                : effectId === 'aura-mist'
+                  ? 'radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(226,232,240,0.55) 100%)'
+                  : 'radial-gradient(ellipse at 20% 0%, rgba(251,146,60,0.45), transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(244,114,182,0.35), transparent 45%)';
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-950 flex items-center justify-center">
+            <div
+              className="absolute inset-0 animate-pulse"
+              style={{ background: auraBg }}
+            />
+            <div className="relative z-10 px-4 py-3 rounded-xl border border-white/15 bg-white/10 backdrop-blur-sm text-[10px] font-mono text-white/80 uppercase tracking-widest">
+              Ambient aura
+            </div>
+          </div>
+        );
+      }
+
+      case 'effect-film-grain':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-gradient-to-br from-stone-200 via-neutral-100 to-stone-300 flex items-center justify-center">
+            <div
+              className="absolute inset-0 opacity-40 mix-blend-multiply pointer-events-none"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+                backgroundSize: '120px 120px',
+              }}
+            />
+            <div className="relative z-10 px-4 py-3 rounded-lg bg-white/70 border border-stone-300/60 text-[10px] font-mono uppercase tracking-widest text-stone-700">
+              Film grain
+            </div>
+          </div>
+        );
+
+      case 'effect-matrix':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-950 border border-emerald-500/20 flex items-center justify-center font-mono text-[9px] text-emerald-400/70">
+            <div className="absolute inset-0 opacity-40 overflow-hidden leading-relaxed tracking-widest p-2 animate-pulse">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} style={{ opacity: 0.3 + (i % 3) * 0.15 }}>
+                  01{i % 2}10 アカサタ 0110{i}1 MYMIND
+                </div>
+              ))}
+            </div>
+            <span className="relative z-10 text-emerald-300 font-bold tracking-[0.25em] uppercase">Digital rain</span>
+          </div>
+        );
+
+      case 'effect-particles':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-950 flex items-center justify-center">
+            {Array.from({ length: 14 }).map((_, i) => (
+              <span
+                key={i}
+                className="absolute w-1 h-1 rounded-full bg-white/70 animate-pulse"
+                style={{
+                  left: `${8 + (i * 6.5) % 84}%`,
+                  top: `${12 + (i * 11) % 70}%`,
+                  animationDelay: `${i * 0.15}s`,
+                  opacity: 0.35 + (i % 4) * 0.15,
+                }}
+              />
+            ))}
+            <span className="relative z-10 text-[10px] font-mono uppercase tracking-widest text-white/70">Dust motes</span>
+          </div>
+        );
+
+      case 'effect-sparkle':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-900 flex flex-col items-center justify-center p-6 gap-3">
+            <div className="relative w-full max-w-[220px] p-3 rounded-xl border border-white/20 bg-neutral-800 overflow-hidden">
+              <div className="absolute inset-y-0 w-20 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12 animate-[sweep_2.5s_ease-in-out_infinite]" />
+              <div className="w-28 h-2 bg-white/25 rounded relative z-10" />
+            </div>
+            <p className="text-[9px] text-white/50 font-mono uppercase tracking-widest">Sparkle trail</p>
+            <style>{`
+              @keyframes sweep {
+                0% { left: -40%; }
+                100% { left: 120%; }
+              }
+            `}</style>
+          </div>
+        );
+
+      case 'card-halo':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center p-6">
+            <div
+              className="w-40 p-4 rounded-xl bg-white dark:bg-neutral-900 border border-border-subtle text-[10px] font-mono uppercase tracking-wider text-foreground/70"
+              style={{
+                boxShadow: '0 0 0 1px rgba(139,92,246,0.2), 0 12px 36px -8px rgba(139,92,246,0.45)',
+                filter: 'drop-shadow(0 0 16px rgba(139,92,246,0.25))',
+              }}
+            >
+              Halo lift
+            </div>
+          </div>
+        );
+
+      case 'avatar-orbit':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-950 flex items-center justify-center">
+            <div className="relative w-20 h-20">
+              <div className="absolute inset-0 rounded-full bg-neutral-900 border-2 border-violet-400/60 flex items-center justify-center text-2xl">
+                👤
+              </div>
+              <span className="absolute top-1/2 left-1/2 w-1.5 h-1.5 -ml-[3px] -mt-[3px] rounded-full bg-violet-400 shadow-[0_0_8px_rgba(139,92,246,0.8)] animate-[orbitA_4s_linear_infinite]" />
+              <span className="absolute top-1/2 left-1/2 w-1.5 h-1.5 -ml-[3px] -mt-[3px] rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-[orbitB_6s_linear_infinite]" />
+            </div>
+            <style>{`
+              @keyframes orbitA {
+                from { transform: rotate(0deg) translateX(36px) rotate(0deg); }
+                to { transform: rotate(360deg) translateX(36px) rotate(-360deg); }
+              }
+              @keyframes orbitB {
+                from { transform: rotate(180deg) translateX(44px) rotate(-180deg); }
+                to { transform: rotate(540deg) translateX(44px) rotate(-540deg); }
+              }
+            `}</style>
+          </div>
+        );
+
+      case 'search-pulse':
+        return (
+          <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-950 flex flex-col items-center justify-center p-6">
+            <div className="relative w-full max-w-[220px]">
+              <div className="absolute -inset-1 rounded-xl border border-violet-400/50 animate-ping opacity-40" />
+              <div className="relative p-3 rounded-xl border border-violet-400/40 bg-neutral-900 flex items-center gap-2">
+                <span className="text-violet-300 text-xs">⌕</span>
+                <div className="w-24 h-2 bg-violet-400/25 rounded" />
+              </div>
+            </div>
+            <p className="text-[9px] text-violet-300/70 font-mono uppercase tracking-widest mt-4">Search pulse</p>
+          </div>
+        );
+
       default:
         return (
           <div className="relative w-full h-full min-h-[160px] md:min-h-[220px] rounded-2xl overflow-hidden bg-neutral-900 flex items-center justify-center">
@@ -454,7 +708,9 @@ export default function StoreModal({ isOpen, onClose, userSettings, onUpdateSett
                 
                 if (!matchesSearch) return false;
                 if (!activeCategory || activeCategory === 'all') return true;
-                if (activeCategory === 'avatar') return item.effectId === 'avatar-glow' || item.effectId === 'rank-insignia' || item.effectId === 'icon-royal';
+                if (activeCategory === 'avatar') {
+                  return ['avatar-glow', 'rank-insignia', 'icon-royal', 'avatar-orbit'].includes(item.effectId);
+                }
                 return item.type === activeCategory;
               });
 
