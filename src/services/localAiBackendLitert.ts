@@ -35,14 +35,17 @@ export function setLocalAiEnabled(enabled: boolean): void {
   localStorage.setItem(LOCAL_AI_ENABLED_KEY, enabled ? 'true' : 'false');
 }
 
-/** User preference (global). Use getEffectiveAiStrategy() for per-device routing. */
-export type AiStrategy = 'local' | 'api_key';
+/** User preference (global). `off` = Pensieve Brain only (no AI models). */
+export type AiStrategy = 'off' | 'local' | 'api_key';
 
 export function getAiStrategy(): AiStrategy {
-  if (typeof window === 'undefined') return 'api_key';
+  if (typeof window === 'undefined') return 'off';
   const val = localStorage.getItem('pensieve_ai_strategy');
-  if (val === 'local' || val === 'api_key') return val;
-  return isLocalAiEnabled() ? 'local' : 'api_key';
+  if (val === 'off' || val === 'local' || val === 'api_key') return val;
+  // Legacy: enabled local flag without explicit strategy
+  if (isLocalAiEnabled() && val !== 'api_key') return 'local';
+  // Default: non-AI brain — AI stays optional
+  return 'off';
 }
 
 export function setAiStrategy(strategy: AiStrategy): void {
@@ -227,26 +230,11 @@ export async function generateLocalVisionResponse(
  * Replicates the structure of /api/analyze but offline.
  */
 export async function organizeAndTagItemLocally(item: any): Promise<any> {
-  // Heuristic fallback generator
-  const getHeuristicFallback = () => {
-    const tags = [item.type];
-    if (item.title) {
-      item.title.toLowerCase().split(/\s+/).forEach((w: string) => {
-        if (w.length > 4) tags.push(w.replace(/[^a-z0-9]/g, ''));
-      });
-    }
-    return {
-      success: true,
-      title: item.title || `Local ${item.type}`,
-      content: item.content || '',
-      tags: tags.slice(0, 8),
-      aiSummary: 'Saved locally using on-device indexing (heuristic fallback)',
-      dominantColor: 'grey'
-    };
-  };
+  const { organizeWithBrain } = await import('./pensieveBrain');
+  const getHeuristicFallback = () => organizeWithBrain(item);
 
   if (!activeEngine) {
-    console.warn('[Pensieve Local AI] Model not ready for local analysis. Using heuristic fallback.');
+    console.warn('[Pensieve Local AI] Model not ready. Using Pensieve Brain.');
     return getHeuristicFallback();
   }
 
@@ -357,7 +345,8 @@ export async function organizeAndTagItemLocally(item: any): Promise<any> {
     const parsed = JSON.parse(cleanJson);
     return {
       success: true,
-      ...parsed
+      analyzedBy: 'local',
+      ...parsed,
     };
   } catch (error) {
     console.error('[Local AI Parser Fail]', error);

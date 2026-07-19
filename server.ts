@@ -8,6 +8,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import { organizeWithBrain } from "./src/services/pensieveBrain";
 
 dotenv.config();
 
@@ -602,19 +603,13 @@ app.post("/api/analyze", async (req, res) => {
 
   const ai = getGeminiClient();
   if (!ai) {
-    // Graceful fallback if no API key is set
     console.log(
-      "Gemini API key is not configured. Falling back to local heuristic tags.",
+      "Gemini API key is not configured. Using Pensieve Brain (non-AI).",
     );
-    const generatedTags = generateFallbackTags(item);
+    const brain = organizeWithBrain(item);
     res.json({
-      success: true,
-      title: item.title || "Untitled " + item.type,
-      content: item.content || "",
-      tags: generatedTags,
-      aiSummary: `Saved ${item.type} (Local Offline Indexing)`,
-      dominantColor: item.type === "color" ? item.colorHex : "grey",
-      readingTime: item.type === "article" ? 3 : undefined,
+      ...brain,
+      aiSummary: brain.aiSummary || `Saved ${item.type} (Pensieve Brain)`,
     });
     return;
   }
@@ -758,50 +753,15 @@ app.post("/api/analyze", async (req, res) => {
     });
   } catch (error: any) {
     console.error("Gemini AI error:", error);
-    // Fallback in case of parsing/API errors
+    const brain = organizeWithBrain(item);
     res.json({
-      success: true,
-      title: item.title || "Untitled " + item.type,
-      content: item.content || "",
-      tags: generateFallbackTags(item),
-      aiSummary: "Saved " + item.type + " (AI indexing currently unavailable)",
-      dominantColor: "grey",
+      ...brain,
+      aiSummary:
+        brain.aiSummary ||
+        "Saved " + item.type + " (Pensieve Brain — AI unavailable)",
     });
   }
 });
-
-// Fallback tags generator if Gemini fails or is not configured
-function generateFallbackTags(item: any): string[] {
-  const tagsSet = new Set<string>();
-  tagsSet.add(item.type);
-
-  if (item.title) {
-    item.title
-      .toLowerCase()
-      .split(/\s+/)
-      .forEach((w: string) => {
-        if (w.length > 3) tagsSet.add(w.replace(/[^a-z0-9]/g, ""));
-      });
-  }
-
-  if (item.content) {
-    item.content
-      .toLowerCase()
-      .split(/\s+/)
-      .slice(0, 30)
-      .forEach((w: string) => {
-        if (w.length > 4) tagsSet.add(w.replace(/[^a-z0-9]/g, ""));
-      });
-  }
-
-  if (item.type === "color" && item.colorHex) {
-    tagsSet.add("color");
-    tagsSet.add("palette");
-    tagsSet.add(item.colorHex);
-  }
-
-  return Array.from(tagsSet).filter(Boolean).slice(0, 10);
-}
 
 // Dev server vs Production setup
 async function startServer() {

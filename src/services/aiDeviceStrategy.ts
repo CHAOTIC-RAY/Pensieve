@@ -1,6 +1,6 @@
 /**
- * Device-aware AI routing: local WebGPU on capable desktops,
- * cloud API on mobile / unsupported GPUs. Analysis results sync via the vault.
+ * Device-aware AI routing + optional AI.
+ * When preference is `off`, enrichment uses Pensieve Brain (non-AI) only.
  */
 
 import { AiStrategy, getAiStrategy, isLocalAiEnabled } from './localAiBackendLitert';
@@ -9,7 +9,6 @@ export function isLikelyMobileDevice(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent || '';
   if (/Android|iPhone|iPad|iPod|Mobile/i.test(ua)) return true;
-  // iPadOS desktop UA still has touch
   if (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1) {
     return true;
   }
@@ -23,15 +22,14 @@ export function hasLocalAiHardwareHints(): boolean {
   return true;
 }
 
-/** True when this device can realistically run WebLLM local models. */
 export function canRunLocalAiOnThisDevice(): boolean {
   if (!hasLocalAiHardwareHints()) return false;
-  // Mobile browsers almost never sustain useful WebGPU LLM inference
   if (isLikelyMobileDevice()) return false;
   return true;
 }
 
-export type EffectiveAiStrategy = AiStrategy;
+/** Effective compute path for enrichment */
+export type EffectiveAiStrategy = 'brain' | 'local' | 'api_key';
 
 export interface EffectiveAiInfo {
   preference: AiStrategy;
@@ -39,35 +37,47 @@ export interface EffectiveAiInfo {
   reason: string;
   localCapable: boolean;
   isMobile: boolean;
+  aiEnabled: boolean;
 }
 
-/**
- * Preference stays global (synced via settings QR).
- * Effective strategy is per-device so mobile always gets cloud/API when needed.
- */
 export function getEffectiveAiInfo(): EffectiveAiInfo {
   const preference = getAiStrategy();
   const isMobile = isLikelyMobileDevice();
   const localCapable = canRunLocalAiOnThisDevice();
 
-  if (preference !== 'local') {
+  if (preference === 'off') {
     return {
       preference,
-      effective: 'api_key',
-      reason: 'Using cloud API as preferred.',
+      effective: 'brain',
+      reason:
+        'AI is off. Pensieve Brain indexes, tags, and classifies items locally with no models or API keys.',
       localCapable,
       isMobile,
+      aiEnabled: false,
     };
   }
 
+  if (preference === 'api_key') {
+    return {
+      preference,
+      effective: 'api_key',
+      reason: 'Using cloud API when online; Pensieve Brain covers offline / failures.',
+      localCapable,
+      isMobile,
+      aiEnabled: true,
+    };
+  }
+
+  // preference === 'local'
   if (isMobile) {
     return {
       preference,
       effective: 'api_key',
       reason:
-        'Mobile device detected — local WebGPU models are limited here. Using cloud API; desktop-local results sync through your vault.',
+        'Mobile — local WebGPU skipped. Cloud API when online; Brain otherwise. Desktop can still use local AI.',
       localCapable: false,
       isMobile,
+      aiEnabled: true,
     };
   }
 
@@ -75,19 +85,20 @@ export function getEffectiveAiInfo(): EffectiveAiInfo {
     return {
       preference,
       effective: 'api_key',
-      reason:
-        'WebGPU / SharedArrayBuffer unavailable — falling back to cloud API on this device.',
+      reason: 'WebGPU unavailable — cloud API when online, Pensieve Brain offline.',
       localCapable: false,
       isMobile,
+      aiEnabled: true,
     };
   }
 
   return {
     preference,
-    effective: isLocalAiEnabled() ? 'local' : 'api_key',
-    reason: 'Preferring local WebGPU on this desktop; cloud API is the fallback.',
+    effective: isLocalAiEnabled() ? 'local' : 'brain',
+    reason: 'Preferring local WebGPU on this desktop; Brain is the instant fallback.',
     localCapable: true,
     isMobile,
+    aiEnabled: true,
   };
 }
 

@@ -44,6 +44,7 @@ import {
   AiStrategy
 } from './services/localAiBackendLitert';
 import { getEffectiveAiStrategy, getEffectiveAiInfo } from './services/aiDeviceStrategy';
+import { organizeWithBrain } from './services/pensieveBrain';
 import { subscribeToBootstrap, bootstrapLocalAiOnLaunch, getCurrentBootstrapStatus } from './services/localAiBootstrap';
 import { fetchModelManifest, ModelManifestEntry } from './services/litertModelResolver';
 import { 
@@ -443,14 +444,14 @@ export default function App() {
       setBootstrapState(state);
     });
 
-    if (isLocalAiEnabled()) {
+    if (getAiStrategy() === 'local') {
       bootstrapLocalAiOnLaunch();
     }
 
     return () => unsubscribe();
   }, []);
 
-  // Cross-device: finish items queued with needsAnalysis when this device can enrich
+  // Finish items queued with needsAnalysis (Brain always works; AI optional)
   useEffect(() => {
     if (!user) return;
     const pending = items.filter((i) => i.needsAnalysis && !i.analyzing);
@@ -459,18 +460,17 @@ export default function App() {
     const effective = getEffectiveAiStrategy();
     const boot = getCurrentBootstrapStatus();
     const canLocal = effective === 'local' && boot.phase === 'ready';
-    const canCloud = navigator.onLine;
-    if (!canLocal && !canCloud) return;
+    const canCloud = effective === 'api_key' && navigator.onLine;
 
     let cancelled = false;
     (async () => {
-      for (const item of pending.slice(0, 3)) {
+      for (const item of pending.slice(0, 5)) {
         if (cancelled) break;
         await safeUpdateItem(item.id, { analyzing: true, needsAnalysis: true });
         try {
           if (canLocal) {
             const aiResult = await organizeAndTagItemLocally(item);
-            if (aiResult?.success) {
+            if (aiResult?.success && aiResult.analyzedBy !== 'brain') {
               await safeUpdateItem(item.id, {
                 title: aiResult.title || item.title,
                 content: aiResult.content || item.content,
@@ -494,7 +494,7 @@ export default function App() {
             });
             if (res.ok) {
               const aiResult = await res.json();
-              if (aiResult.success) {
+              if (aiResult.success && !String(aiResult.aiSummary || '').includes('Pensieve Brain')) {
                 await safeUpdateItem(item.id, {
                   title: aiResult.title || item.title,
                   content: aiResult.content || item.content,
@@ -511,10 +511,26 @@ export default function App() {
               }
             }
           }
-          await safeUpdateItem(item.id, { analyzing: false });
+          // Always resolve with Pensieve Brain — never leave items stuck
+          const brain = organizeWithBrain(item);
+          await safeUpdateItem(item.id, {
+            title: brain.title || item.title,
+            content: brain.content || item.content,
+            type: (brain.category as MindItemType) || item.type,
+            tags: Array.from(new Set([...(item.tags || []), ...brain.tags])),
+            aiTags: brain.tags,
+            aiSummary: brain.aiSummary,
+            dominantColor: brain.dominantColor,
+            siteName: brain.siteName || item.siteName,
+            author: brain.author || item.author,
+            readingTime: brain.readingTime ?? item.readingTime,
+            analyzing: false,
+            needsAnalysis: false,
+            analyzedBy: 'brain',
+          });
         } catch (err) {
-          console.warn('[Pensieve AI] Deferred enrich failed', item.id, err);
-          await safeUpdateItem(item.id, { analyzing: false });
+          console.warn('[Pensieve Brain] Deferred enrich failed', item.id, err);
+          await safeUpdateItem(item.id, { analyzing: false, needsAnalysis: false, analyzedBy: 'brain' });
         }
       }
     })();
@@ -711,97 +727,92 @@ export default function App() {
           }
         }
 
-        // 2B/2C. Device-aware AI: local WebGPU on capable desktops, cloud on mobile
+        // Enrichment: Pensieve Brain (always) + optional AI upgrade
         const effectiveAi = getEffectiveAiStrategy();
-        console.log('[Pensieve AI]', getEffectiveAiInfo());
+        const aiInfo = getEffectiveAiInfo();
+        console.log('[Pensieve Intelligence]', aiInfo);
 
+        const applyResult = async (result: any, analyzedBy: 'brain' | 'local' | 'cloud') => {
+          const finalDoc: Partial<MindItem> = {
+            title: result.title || processedItem.title,
+            content: result.content || processedItem.content,
+            type: (result.category as MindItemType) || processedItem.type,
+            tags: Array.from(new Set([...(docData.tags || []), ...(result.tags || [])])),
+            aiTags: result.tags || [],
+            manualTags: docData.manualTags || [],
+            aiSummary: result.aiSummary || '',
+            dominantColor: result.dominantColor || 'grey',
+            analyzing: false,
+            needsAnalysis: false,
+            analyzedBy,
+          };
+          if (result.author) finalDoc.author = result.author;
+          if (result.authorUsername) finalDoc.authorUsername = result.authorUsername;
+          if (result.readingTime) finalDoc.readingTime = result.readingTime;
+          if (result.siteName) finalDoc.siteName = result.siteName;
+          if (result.ingredients) finalDoc.ingredients = result.ingredients;
+          if (result.steps) finalDoc.steps = result.steps;
+          if (result.duration) finalDoc.duration = result.duration;
+          await safeUpdateItem(createdId, finalDoc);
+        };
+
+        // Optional local WebGPU
         if (effectiveAi === 'local' && isLocalAiEnabled()) {
-          console.log('[Pensieve Local AI] Initiating on-device WebGPU model...');
           try {
             const aiResult = await organizeAndTagItemLocally(processedItem);
-            if (aiResult && aiResult.success) {
-              const finalDoc = {
-                title: aiResult.title || processedItem.title,
-                content: aiResult.content || processedItem.content,
-                type: aiResult.category || processedItem.type,
-                tags: Array.from(new Set([...(docData.tags), ...(aiResult.tags || [])])),
-                aiTags: aiResult.tags || [],
-                manualTags: docData.manualTags || [],
-                aiSummary: aiResult.aiSummary || 'Organized and tagged locally on your device.',
-                dominantColor: aiResult.dominantColor || 'grey',
-                analyzing: false,
-                needsAnalysis: false,
-                analyzedBy: 'local' as const,
-              } as any;
-
-              if (aiResult.author) finalDoc.author = aiResult.author;
-              if (aiResult.readingTime) finalDoc.readingTime = aiResult.readingTime;
-              if (aiResult.siteName) finalDoc.siteName = aiResult.siteName;
-
-              await safeUpdateItem(createdId, finalDoc);
+            if (aiResult?.success && aiResult.analyzedBy !== 'brain') {
+              await applyResult(aiResult, 'local');
               return;
             }
           } catch (localErr) {
-            console.warn('[Pensieve Local AI] Local model failed. Falling back...', localErr);
+            console.warn('[Pensieve Local AI] failed — using Brain', localErr);
           }
         }
 
-        // Cloud / Gemini (primary path on mobile and when local unavailable)
-        if (!offline) {
+        // Optional cloud API (only when explicitly preferred / device-routed to api_key)
+        if (effectiveAi === 'api_key' && !offline) {
           try {
             const analyzeResponse = await fetch('/api/analyze', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ item: processedItem })
+              body: JSON.stringify({ item: processedItem }),
             });
-
             if (analyzeResponse.ok) {
               const aiResult = await analyzeResponse.json();
               if (aiResult.success) {
-                const finalDoc = {
-                  title: aiResult.title || processedItem.title,
-                  content: aiResult.content || processedItem.content,
-                  type: aiResult.category || processedItem.type,
-                  tags: Array.from(new Set([...(docData.tags), ...(aiResult.tags || [])])),
-                  aiTags: aiResult.tags || [],
-                  manualTags: docData.manualTags || [],
-                  aiSummary: aiResult.aiSummary || '',
-                  dominantColor: aiResult.dominantColor || 'grey',
-                  analyzing: false,
-                  needsAnalysis: false,
-                  analyzedBy: 'cloud' as const,
-                } as any;
-
-                if (aiResult.author) finalDoc.author = aiResult.author;
-                if (aiResult.readingTime) finalDoc.readingTime = aiResult.readingTime;
-                if (aiResult.siteName) finalDoc.siteName = aiResult.siteName;
-
-                await safeUpdateItem(createdId, finalDoc);
+                await applyResult(aiResult, 'cloud');
                 return;
               }
             }
           } catch (serverErr) {
-            console.warn('[Pensieve] Server AI analysis failed.', serverErr);
+            console.warn('[Pensieve] Cloud AI failed — using Brain', serverErr);
           }
         }
 
-        // Defer enrichment: syncs via vault so a desktop/cloud session can finish later
-        await safeUpdateItem(createdId, {
-          analyzing: false,
-          needsAnalysis: true,
-          analyzedBy: 'deferred',
-          aiSummary: offline
-            ? 'Saved locally — will enrich when online or on a capable device'
-            : 'Queued for enrichment (AI unavailable on this device)',
-        });
+        // Default / fallback: Pensieve Brain (no AI required)
+        const brain = organizeWithBrain(processedItem);
+        await applyResult(brain, 'brain');
       } catch (error) {
-        console.error("Background indexing failed:", error);
-        await safeUpdateItem(createdId, {
-          analyzing: false,
-          needsAnalysis: true,
-          analyzedBy: 'deferred',
-          aiSummary: 'Saved locally — queued for enrichment',
-        });
+        console.error('Background indexing failed:', error);
+        try {
+          const brain = organizeWithBrain({ ...createdItem });
+          await safeUpdateItem(createdId, {
+            ...brain,
+            type: (brain.category as MindItemType) || createdItem.type,
+            tags: Array.from(new Set([...(createdItem.tags || []), ...brain.tags])),
+            aiTags: brain.tags,
+            analyzing: false,
+            needsAnalysis: false,
+            analyzedBy: 'brain',
+          });
+        } catch {
+          await safeUpdateItem(createdId, {
+            analyzing: false,
+            needsAnalysis: false,
+            analyzedBy: 'brain',
+            aiSummary: 'Saved to vault',
+          });
+        }
       }
     })();
 

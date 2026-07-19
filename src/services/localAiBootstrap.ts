@@ -58,7 +58,9 @@ export function getCurrentBootstrapStatus(): BootstrapState {
  * Checks if the system should auto bootstrap.
  */
 export function shouldAutoBootstrapLocalAi(): boolean {
-  return isLocalAiEnabled();
+  // Only auto-download models when user explicitly prefers local AI
+  if (typeof localStorage === 'undefined') return false;
+  return localStorage.getItem('pensieve_ai_strategy') === 'local' && isLocalAiEnabled();
 }
 
 /**

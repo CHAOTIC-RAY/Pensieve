@@ -521,9 +521,8 @@ export default function SettingsModal({
     setAiStrategy(strategy);
     setAiStrategyState(strategy);
     setLocalAiEnabledState(strategy === "local");
-    if (strategy === "local") {
-      // force=false so mobile skips heavy downloads; desktop still bootstraps
-      bootstrapLocalAiOnLaunch(getEffectiveAiInfo().localCapable);
+    if (strategy === "local" && getEffectiveAiInfo().localCapable) {
+      bootstrapLocalAiOnLaunch(true);
     }
   };
 
@@ -1576,7 +1575,25 @@ export default function SettingsModal({
     window.dispatchEvent(new CustomEvent('pensieve_trigger_playground'));
 
     try {
-      if (aiStrategy === "api_key") {
+      if (aiStrategy === "off") {
+        const { organizeWithBrain } = await import("../services/pensieveBrain");
+        const sample = items[0];
+        const brain = organizeWithBrain(
+          sample || {
+            type: "note",
+            title: userMsg.slice(0, 80),
+            content: userMsg,
+          },
+        );
+        setPlaygroundHistory((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `Pensieve Brain (no AI models):\n\n• Title: ${brain.title}\n• Type: ${brain.category || "note"}\n• Tags: ${brain.tags.join(", ")}\n• Summary: ${brain.aiSummary}\n• Color vibe: ${brain.dominantColor}\n\nTurn on Local AI or Cloud AI in Intelligence mode if you want model chat.`,
+          },
+        ]);
+        setPlaygroundLoading(false);
+      } else if (aiStrategy === "api_key") {
         let base64Image: string | null = null;
         if (currentImg) {
           // Mock a real base64 for vision if an image is "attached" in the playground
@@ -1669,45 +1686,63 @@ export default function SettingsModal({
 
   const renderStrategySelector = () => {
     const deviceAi = getEffectiveAiInfo();
+    const effectiveLabel =
+      deviceAi.effective === 'brain'
+        ? 'Pensieve Brain'
+        : deviceAi.effective === 'local'
+          ? 'Local WebGPU'
+          : 'Cloud API';
     return (
     <section className="space-y-3">
       <label className="block text-[11px] font-mono uppercase tracking-wider text-foreground/60">
-        Preferred AI Strategy (cross-device)
+        Intelligence mode
       </label>
-      <div className="grid grid-cols-2 p-1 bg-foreground/5 rounded-2xl border border-border-subtle">
+      <div className="grid grid-cols-3 p-1 bg-foreground/5 rounded-2xl border border-border-subtle gap-1">
+        <button
+          onClick={() => handleStrategyChange("off")}
+          className={`flex items-center justify-center gap-1.5 py-3 px-1.5 rounded-xl text-[11px] font-semibold transition-all ${
+            aiStrategy === "off"
+              ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
+              : "text-foreground/60 hover:text-foreground"
+          }`}
+        >
+          <Brain className="w-3.5 h-3.5 text-emerald-500" />
+          Brain
+        </button>
         <button
           onClick={() => handleStrategyChange("local")}
-          className={`flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl text-xs font-semibold transition-all ${
+          className={`flex items-center justify-center gap-1.5 py-3 px-1.5 rounded-xl text-[11px] font-semibold transition-all ${
             aiStrategy === "local"
               ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
               : "text-foreground/60 hover:text-foreground"
           }`}
         >
-          <Brain className="w-3.5 h-3.5 text-indigo-400" />
-          Prefer Local
+          <Server className="w-3.5 h-3.5 text-indigo-400" />
+          Local AI
         </button>
         <button
           onClick={() => handleStrategyChange("api_key")}
-          className={`flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl text-xs font-semibold transition-all ${
+          className={`flex items-center justify-center gap-1.5 py-3 px-1.5 rounded-xl text-[11px] font-semibold transition-all ${
             aiStrategy === "api_key"
               ? "bg-card-bg text-text-heading shadow-md border border-border-subtle/40"
               : "text-foreground/60 hover:text-foreground"
           }`}
         >
           <Cloud className="w-3.5 h-3.5 text-orange-400" />
-          Cloud API
+          Cloud AI
         </button>
       </div>
       <div className="rounded-xl border border-border-subtle bg-foreground/[0.02] px-3 py-2.5 space-y-1">
         <p className="text-[10px] font-mono uppercase tracking-wider text-foreground/45">
-          On this device: {deviceAi.effective === "local" ? "Local WebGPU" : "Cloud API"}
+          Active on this device: {effectiveLabel}
           {deviceAi.isMobile ? " · mobile" : ""}
+          {!deviceAi.aiEnabled ? " · AI optional / off" : ""}
         </p>
         <p className="text-[10px] text-foreground/55 leading-relaxed">
           {deviceAi.reason}
         </p>
         <p className="text-[10px] text-foreground/45 leading-relaxed">
-          Capture on phone → cloud enrich (or queue). Desktop local enrichments sync through Appwrite/Supabase so every device sees the same vault.
+          Pensieve Brain classifies links, tags notes, names colors, and estimates reading time with no models. Turn on Local or Cloud AI only when you want model upgrades.
         </p>
       </div>
     </section>
@@ -1723,11 +1758,15 @@ export default function SettingsModal({
           <Server className="w-4 h-4 text-indigo-400" />
           Local Engine Configuration
         </h4>
-        {aiStrategy === "local" && (
+        {aiStrategy === "local" ? (
           <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase">
-            Active
+            Optional AI
           </span>
-        )}
+        ) : aiStrategy === "off" ? (
+          <span className="text-[10px] font-bold text-foreground/45 bg-foreground/5 px-2 py-0.5 rounded-full uppercase">
+            AI off
+          </span>
+        ) : null}
       </div>
 
       <div className="space-y-4 bg-foreground/[0.02] border border-border-subtle/80 p-5 rounded-2xl">
@@ -2352,9 +2391,11 @@ export default function SettingsModal({
               onChange={(e) => setPlaygroundPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendPlaygroundMessage()}
               placeholder={
-                aiStrategy === "local"
-                  ? "Ask the local engine anything..."
-                  : "Send a message to Cloud AI..."
+                aiStrategy === "off"
+                  ? "Try Pensieve Brain indexing…"
+                  : aiStrategy === "local"
+                    ? "Ask the local engine anything..."
+                    : "Send a message to Cloud AI..."
               }
               className="flex-1 bg-input-bg/50 border-none focus:ring-0 text-xs text-foreground py-2 outline-none"
             />
